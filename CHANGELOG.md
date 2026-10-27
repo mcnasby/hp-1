@@ -4,6 +4,21 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.2.0
+
+- **It sounds like a handpan now, not an electric piano.** The tone fields were rebuilt from
+  measurements of real pans:
+  - The octave and fifth **shimmer**, pulsing at 3–9 Hz the way a real pan's do. Each field has its
+    own rate.
+  - Notes ring for **about 3 seconds**, like a real pan (the ding longer, the high fields shorter),
+    instead of an electric piano's long, even ring.
+  - The **octave is nearly as loud as the fundamental** and often outlasts it. A faint double octave
+    sits above the fifth.
+  - Each strike starts with a short **burst of skin on steel**, more of it the firmer the Strike.
+  - The **ding sounds faintly under every note**, through the air inside the pan.
+- The metals' character changes with the shimmer: Raw pulses quickest, Ember gentlest.
+- **Worn** also widens the shimmer.
+
 ## 0.1.0
 
 The first HP-1: FiMba-1's kalimba made into a handpan.

@@ -292,6 +292,53 @@ static void test_partials(void)
     }
 }
 
+/* the shimmer: a field's octave pulses at a few Hz, as measured pans' do (3 to 9 Hz), its fundamental
+ * holds steady. (Without it a field is an electric piano's tine.) The level of each, in 2048-sample
+ * windows 0.2 to 1.6 s in, the decay taken out; the pulse's depth and its rate by its zero crossings */
+static void pulse_of(float f, float *depth, float *rate)
+{
+    float e[140], sx = 0.0f, sy = 0.0f, sxx = 0.0f, sxy = 0.0f, sd = 0.0f, k, b;
+    int i, n = 0, cross = 0;
+    for (i = 0; i < 120; i++) {
+        e[i] = db(mag(8820 + (uint32_t)i * 512, 2048, f));
+        sx += (float)i;
+        sy += e[i];
+        sxx += (float)i * (float)i;
+        sxy += (float)i * e[i];
+        n++;
+    }
+    k = ((float)n * sxy - sx * sy) / ((float)n * sxx - sx * sx);
+    b = (sy - k * sx) / (float)n;
+    for (i = 0; i < n; i++) {
+        e[i] -= k * (float)i + b;
+        sd += e[i] * e[i];
+        if (i && (e[i] > 0.0f) != (e[i - 1] > 0.0f))
+            cross++;
+    }
+    *depth = 2.0f * fm_sqrtf(sd / (float)n);
+    *rate = (float)cross * 0.5f / ((float)n * 512.0f / 44100.0f);
+}
+
+static void test_shimmer(void)
+{
+    static const int NOTE[3] = {5700, 6400, 6900};
+    int i, m;
+    for (m = 0; m < MET_N; m++)
+        for (i = 0; i < 3; i++) {
+            float f = hz(NOTE[i]), od, orate, fd, frate;
+            fresh();
+            km_set(P_METAL, m);
+            km_set(P_PORT, 0);
+            km_pluck(NOTE[i], 100, 0, 0);
+            render(0, 8820 + 120 * 512 + 2048);
+            pulse_of(2.0f * f, &od, &orate);
+            pulse_of(f, &fd, &frate);
+            CHECK(od > 1.5f && orate > 2.0f && orate < 10.0f, "%s %d: the octave pulses %.1f dB at %.1f Hz",
+                  km_metal(m)->name, NOTE[i], (double)od, (double)orate);
+            CHECK(fd < 0.6f, "%s %d: the fundamental steady (%.2f dB)", km_metal(m)->name, NOTE[i], (double)fd);
+        }
+}
+
 static float ring_at(int metal, int sustain, int cents, float sec)
 {
     fresh();
@@ -306,16 +353,29 @@ static void test_decay(void)
 {
     float st = ring_at(MET_STAINLESS, 50, 5000, 3.0f), raw = ring_at(MET_RAW, 50, 5000, 3.0f),
           lo = ring_at(MET_NITRIDED, 0, 5000, 1.5f), hi = ring_at(MET_NITRIDED, 100, 5000, 1.5f),
-          ding = ring_at(MET_NITRIDED, 50, 5000, 3.0f), top = ring_at(MET_NITRIDED, 50, 6900, 3.0f), start;
+          ding = ring_at(MET_NITRIDED, 50, 5000, 3.0f), top = ring_at(MET_NITRIDED, 50, 6900, 3.0f);
     CHECK(st > 2.0f * raw, "Stainless rings longer than Raw (%.5f %.5f)", (double)st, (double)raw);
     CHECK(hi > 4.0f * lo, "Sustain (%.5f %.5f)", (double)lo, (double)hi);
     CHECK(ding > top, "the ding outlasts a high field (%.5f %.5f)", (double)ding, (double)top);
-    /* a handpan rings: the ding still well up three seconds on */
-    fresh();
-    km_pluck(5000, 100, 0, 0);
-    render(0, 44100 * 3 + 4410);
-    start = rms(bufl, 2205, 4410);
-    CHECK(db(ding / start) > -30.0f, "the ding at 3 s: %.1f dB", (double)db(ding / start));
+    /* as measured pans ring (Alon, York 2015: T60 0.9 to 5.9 s, ~3 s on average, low notes longer): the
+     * fundamental's T60, from its level at 0.5 s and 2 s, between 3 and 7 s for the ding, 1.5 and 4 s
+     * for a high field. (Not an electric piano's long, even ring.) */
+    {
+        static const int NOTE[2] = {5000, 7400};
+        static const float LO[2] = {3.0f, 1.5f}, HI[2] = {7.0f, 4.0f};
+        int k;
+        for (k = 0; k < 2; k++) {
+            float f = hz(NOTE[k]), a, b, t60;
+            fresh();
+            km_set(P_PORT, 0);
+            km_pluck(NOTE[k], 100, 0, 0);
+            render(0, 44100 * 2 + 8192);
+            a = mag(22050 - 4096, 8192, f);
+            b = mag(88200 - 4096, 8192, f);
+            t60 = 60.0f * 1.5f / db(a / b);
+            CHECK(t60 > LO[k] && t60 < HI[k], "%d: the fundamental's T60 %.2f s", NOTE[k], (double)t60);
+        }
+    }
     {   /* a bigger, thicker pan rings longer */
         float small, big;
         fresh();
@@ -849,8 +909,9 @@ static void test_color(void)
     km_set(P_METAL, MET_RAW);
     km_set(P_SUSTAIN, 0);
     km_pluck(6000, 110, 0, 0);
-    render(0, 44100 * 4);
-    CHECK(rms(bufl, 44100 * 3, 44100) < 1e-4f, "lo-fi hiss dies with the music: %.6f", (double)rms(bufl, 44100 * 3, 44100));
+    render(0, 44100 * 2);
+    render(0, 44100 * 3);                        /* (the last of it: 4 to 5 s on) */
+    CHECK(rms(bufl, 44100 * 2, 44100) < 1e-4f, "lo-fi hiss dies with the music: %.6f", (double)rms(bufl, 44100 * 2, 44100));
     {   /* none clicks in or out mid-note */
         static const int P[5] = {P_TAPE, P_LOFI, P_CHORUS, P_FILTER, P_FILTER};
         static const int V[5] = {100, 100, 100, -60, 60};
@@ -1010,6 +1071,7 @@ int main(int argc, char **argv)
 {
     test_music();
     test_partials();
+    test_shimmer();
     test_decay();
     test_damp();
     test_voices();

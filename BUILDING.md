@@ -86,7 +86,7 @@ tests/run_tests.sh
 
 Runs, on the build machine: the maths library against libm; the instrument
 (`tests/host/handpan_test.c`, linked without libm as on the device: the scales, the layouts and the
-second pans, every metal's pitch, octave and fifth, the decays, damping and the pedal, one voice per
+second pans, every metal's pitch, octave and fifth, the shimmer and the decays measured pans have, damping and the pedal, one voice per
 field, sympathy, every hit on the steel, the delay's echo times, grains and freeze, no clicks, the
 grooves and MIDI clock, a 20-minute run); flash storage; Felucca's update-path
 tests against `build/hp1.fwsc` (when it exists); and the whole app in the simulator
