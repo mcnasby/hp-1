@@ -55,7 +55,7 @@ wait 500
 expect note5700 <2
 expect note5000 <2
 # REC: the palm mute too
-tapkey w10
+tapkey w5
 wait 100
 expect note6200 >5
 tap REC
