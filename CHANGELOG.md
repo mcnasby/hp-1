@@ -16,6 +16,10 @@ taken from its section below. Add the section in the same pull request as the `V
     sits above the fifth.
   - Each strike starts with a short **burst of skin on steel**, more of it the firmer the Strike.
   - The **ding sounds faintly under every note**, through the air inside the pan.
+  - A **metallic attack**: each strike rings the field's higher, inharmonic modes for a moment, the
+    bright "tang" at the front of a struck pan.
+  - **The air**: each note leaves a halo of its harmonics hanging in the pan for a couple of seconds,
+    always in tune with the scale. Sympathy sets how much (now 50 by default). A palm mute silences it.
 - The metals' character changes with the shimmer: Raw pulses quickest, Ember gentlest.
 - **Worn** also widens the shimmer.
 

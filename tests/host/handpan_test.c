@@ -339,6 +339,67 @@ static void test_shimmer(void)
         }
 }
 
+/* the strike's metallic ping: the field's higher, inharmonic modes (5.2, 6.8, 8.6 times it) ring at the
+ * strike, within ~20 dB of the fundamental, and are gone a third of a second on */
+static float ping_db(uint32_t a, uint32_t n, float f)
+{
+    static const float R[3] = {5.21f, 6.83f, 8.62f};
+    float m = 0.0f;
+    int k;
+    for (k = 0; k < 3; k++)
+        m = fm_maxf(m, mag(a, n, f * R[k]));
+    return db(m / mag(a, n, f));
+}
+
+static void test_ping(void)
+{
+    int m;
+    for (m = 0; m < MET_N; m++) {
+        float f = hz(6200), at, later;
+        fresh();
+        km_set(P_METAL, m);
+        km_set(P_PORT, 0);
+        km_pluck(6200, 100, 0, 0);
+        render(0, 22050);
+        at = ping_db(0, 1024, f);
+        later = ping_db(13230, 4096, f);
+        CHECK(at > -26.0f, "%s: the ping at the strike %.1f dB", km_metal(m)->name, (double)at);
+        CHECK(later < at - 25.0f, "%s: the ping gone at 0.3 s (%.1f dB, %.1f at the strike)", km_metal(m)->name,
+              (double)later, (double)at);
+    }
+}
+
+/* the air: a note let go (Release Damp) leaves its harmonics hanging in the pan for a moment, more with
+ * Sympathy, none without; a palm mute silences it. Measured on A3's own fundamental, 1 to 1.5 s after
+ * the hand: the damped field itself is long gone by then, and no other field of D Kurd has 220 Hz among
+ * its partials (sympathy can't stand in for the air) */
+static float air_after(int sym, int mute)
+{
+    fresh();
+    km_set(P_SYMPATHY, sym);
+    km_set(P_PORT, 0);
+    give_pan(0, 2);
+    render(0, 256);
+    km_pluck(5700, 110, 0, 0);
+    render(0, 13230);
+    if (mute)
+        km_hit(HIT_MUTE, 100, 0);
+    else
+        km_damp(5700);
+    render(0, 44100 + 22050);
+    return mag(44100, 22050, hz(5700)) + 1e-9f;
+}
+
+static void test_air(void)
+{
+    float none = air_after(0, 0), some = air_after(50, 0), more = air_after(100, 0), muted = air_after(100, 1);
+    /* (mag() over 0.5 s: ~7 with the air at 50, ~3e-6 with its output cut) */
+    CHECK(some > 1.0f && some > 1000.0f * none, "the air at Sympathy 50: %.3g (none at 0: %.3g)", (double)some, (double)none);
+    CHECK(db(more / some) > 3.0f, "more air at 100: %.1f dB over 50", (double)db(more / some));
+    CHECK(db(muted / more) < -20.0f, "a mute silences the air: %.1f dB", (double)db(muted / more));
+    CHECK(!nan_seen && peak < 1.0f, "air peak %.3f", (double)peak);
+}
+
 static float ring_at(int metal, int sustain, int cents, float sec)
 {
     fresh();
@@ -1072,6 +1133,8 @@ int main(int argc, char **argv)
     test_music();
     test_partials();
     test_shimmer();
+    test_ping();
+    test_air();
     test_decay();
     test_damp();
     test_voices();
