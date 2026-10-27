@@ -127,6 +127,10 @@ int km_duo_count(int scale, int key);
 void km_duo_choice(int scale, int key, int choice, int *duo_scale, int *duo_key);
 /* its notes: its ding (a register above the first pan's) and its first six fields */
 int km_duo_notes(int scale, int key, int octave, int choice, int out[KM_NDUO]);
+/* the note (into km_duo_notes) the second pan's key i (0..6, left to right) plays: laid out as the
+ * white keys are (Layout). Pan: its ding on the middle key, its fields alternating outward, left
+ * first; Mirror: right first; Linear: low to high */
+int km_duo_index(int layout, int i);
 const char *km_duo_name(int scale, int key, int choice, char *buf);   /* "A Kurd" (16 bytes) */
 
 /* ---- commands (main loop -> render). The main loop is the only producer. */

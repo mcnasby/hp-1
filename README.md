@@ -115,8 +115,10 @@ Keys, KNOB 4).
 - **Rim:** a knuckle on the rim seam.
 - **Mute:** a palm over the top. Every field and the shell are damped.
 
-**Duo:** the seven middle keys become a **second handpan**, its ding and six fields left to right,
-standing a register above the first. Its scale and key are chosen to fit with the first pan: every
+**Duo:** the seven middle keys become a **second handpan**, a register above the first, laid out the
+way the white keys are (Layout). In Pan, its ding is on the middle key (black key 6, F#4) and its
+fields alternate outward, left then right; Mirror goes right first; Linear runs low to high from the
+left. Its ding's key glows dimly, as the first pan's do. Its scale and key are chosen to fit with the first pan: every
 one of its notes is already in the first pan's scale (a pan with very few notes, such as Pygmy, may
 add one, never a semitone off its ding). **Duo** (SEL → Duo, KNOB 1) steps through the matches, best
 first: the same ding in another scale, then a fifth up, a fourth, the relative major or minor. It

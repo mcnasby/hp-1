@@ -94,6 +94,6 @@ __attribute__((used, visibility("default"))) int32_t web_key_label(uint32_t k)
             return white_cents(i);
     for (i = 0; i < NBLACK; i++)
         if (BLACK_K[i] == k)
-            return is_duo_key(i) ? duo_cents(i - B_DUO0) : -(1 + (int32_t)HIT_OF[i]);
+            return is_duo_key(i) ? duo_cents(duo_index(i)) : -(1 + (int32_t)HIT_OF[i]);
     return 0;
 }

@@ -4,6 +4,12 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.2.1
+
+- **The second pan is laid out like the first.** With Black on Duo, its ding is now on the middle of
+  the seven keys (black key 6) and its notes alternate outward, left then right, as on the white keys.
+  It follows Layout: Mirror goes right first, Linear runs low to high. Its ding's key glows dimly.
+
 ## 0.2.0
 
 - **It sounds like a handpan now, not an electric piano.** The tone fields were rebuilt from

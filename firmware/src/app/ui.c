@@ -276,6 +276,8 @@ static int duo_cents(int i)
     km_duo_notes(proj.par[P_SCALE], proj.par[P_KEY], octave_now(), proj.par[P_DUO], n);
     return tune(n[i < 0 ? 0 : i >= KM_NDUO ? KM_NDUO - 1 : i]);
 }
+/* the second pan's key b (a black key) : its note's index, laid out as the white keys are */
+static int duo_index(int b) { return km_duo_index(proj.par[P_LAYOUT], b - B_DUO0); }
 static int view_knob(int i) { return VIEW_KNOB[ui.view][i]; }
 static int midi_ch(void) { return proj.par[P_MIDICH] ? proj.par[P_MIDICH] - 1 : 0; }
 static uint8_t cents_note(int c) { int n = (c + 50) / 100; return (uint8_t)(n < 0 ? 0 : n > 127 ? 127 : n); }
@@ -362,8 +364,8 @@ static void white_down(int w)
 static void black_down(int b)
 {
     if (is_duo_key(b)) {                             /* the second pan, standing to the right */
-        const int i = b - B_DUO0;
-        key_strike(BLACK_K[b], duo_cents(i), 100 * proj.par[P_DUOLVL] / 100 + 12, 55 + 5 * (i & 1));
+        const int i = duo_index(b);
+        key_strike(BLACK_K[b], duo_cents(i), 100 * proj.par[P_DUOLVL] / 100 + 12, 55 + 8 * (b - B_DUO0 - 3));
         ui.ripple[KM_NPAN + i] = ui.frame + 1u;
         return;
     }
@@ -941,7 +943,7 @@ static void draw_black(int32_t y0)
         int on = (ui.keys >> BLACK_K[b] & 1u) != 0, steel = b < B_DUO0 || b >= B_DUO0 + KM_NDUO;
         uint16_t bg = steel ? K_ACC_T : K_TEAL_T, fg = steel ? K_ACC : K_TEXT;
         if (is_duo_key(b)) {
-            const int c = duo_cents(b - B_DUO0);
+            const int c = duo_cents(duo_index(b));
             s_cpy(t, KM_NOTE_NAME[((c + 50) / 100) % 12]);
             if (note_level(c) > 0.15f)
                 on = 1;
@@ -1068,7 +1070,8 @@ static void draw_knobs(void)
     cv_blit(0, KNB_Y);
 }
 
-/* the ding's keys, marked by a dim LED (Pan, Mirror: the middle two; Linear: the first) */
+/* the ding's keys, marked by a dim LED (Pan, Mirror: the middle two; Linear: the first), and with Duo
+ * the second pan's ding */
 static uint32_t ding_keys(void)
 {
     uint32_t m = 0;
@@ -1076,6 +1079,9 @@ static uint32_t ding_keys(void)
     for (w = 0; w < NWHITE; w++)
         if (!white_index(w))
             m |= 1u << WHITE_K[w];
+    for (w = B_DUO0; w < B_DUO0 + KM_NDUO; w++)      /* and the second pan's, with Duo */
+        if (is_duo_key(w) && !duo_index(w))
+            m |= 1u << BLACK_K[w];
     return m;
 }
 
@@ -1090,7 +1096,7 @@ static void leds(void)
         if (note_level(white_cents((int)i)) > 0.08f)
             k |= 1u << WHITE_K[i];
     for (i = 0; i < NBLACK; i++)
-        if (is_duo_key((int)i) ? note_level(duo_cents((int)i - B_DUO0)) > 0.08f : ripple_age(ui.hit_t[HIT_OF[i]]) < 12u)
+        if (is_duo_key((int)i) ? note_level(duo_cents(duo_index((int)i))) > 0.08f : ripple_age(ui.hit_t[HIT_OF[i]]) < 12u)
             k |= 1u << BLACK_K[i];
     k |= ui.keys;
     plat_leds(b, k, ding_keys());
