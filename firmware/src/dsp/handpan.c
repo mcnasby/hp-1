@@ -60,8 +60,11 @@ static const scale_t SCALES[KM_NSCALE] = {
     {"Aegean", 0, 8, {4, 7, 11, 12, 16, 18, 19, 23}},      /* C / E G B C E F# G B */
     {"Equinox", 5, 8, {3, 7, 8, 10, 12, 14, 15, 19}},      /* F / Ab C Db Eb F G Ab C */
     {"Akebono", 2, 8, {7, 8, 12, 14, 15, 19, 20, 24}},     /* D / A Bb D E F A Bb D */
-    {"Major", 0, 8, {7, 9, 11, 12, 14, 16, 17, 19}},       /* C / G A B C D E F G (Sabye-like) */
+    {"Major", 0, 8, {7, 9, 11, 12, 14, 16, 17, 19}},       /* C / G A B C D E F G */
     {"Mixolyd.", 7, 8, {7, 9, 10, 12, 14, 16, 17, 19}},    /* G / D E F G A B C D */
+    {"SaByeD", 4, 8, {5, 7, 9, 11, 12, 14, 16, 19}},       /* E / A B C# D# E F# G# B: major, its fourth
+                                                            * tucked below the octave (Sela's D Sabye,
+                                                            * PanAmor's E Sabye, Isthmus's E SaByeD) */
 };
 
 static const scale_t *scale_of(int s) { return &SCALES[(unsigned)s < KM_NSCALE ? s : 0]; }
@@ -132,6 +135,35 @@ float km_white_pos(int layout, int w)
         int i = km_white_index(layout, w), side = (w & 15) < 8 ? -1 : 1;
         return i ? (float)side * (0.25f + 0.05f * (float)(i < 15 ? i : 15)) : 0.0f;
     }
+}
+
+uint16_t km_sharps(int s, int key)
+{
+    static const uint16_t DEF = 1u << 1 | 1u << 6;     /* C# and F#; Eb Ab Bb */
+    uint16_t m = 0, pcs = scale_pcs(s), out = DEF;
+    int p;
+    key = ((key % 12) + 12) % 12;
+    for (p = 0; p < 12; p++)                            /* the pan's pitch classes over C */
+        if (pcs >> p & 1u)
+            m |= (uint16_t)(1u << ((p + key) % 12));
+    for (p = 1; p < 12; p++) {
+        const int below = p - 1, above = (p + 1) % 12;  /* the naturals a sharp and a flat are named after */
+        if (!(0x54Au >> p & 1u) || !(m >> p & 1u))     /* (0x54A: 1 3 6 8 10, the black keys) */
+            continue;                                   /* (naturals, and notes the pan doesn't have) */
+        if (!(m >> below & 1u) && (m >> above & 1u))
+            out |= (uint16_t)(1u << p);
+        else if ((m >> below & 1u) && !(m >> above & 1u))
+            out &= (uint16_t)~(1u << p);
+    }
+    return out;
+}
+
+const char *km_note_name(int cents, uint16_t sharps)
+{
+    static const char *const SHARP[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+    static const char *const FLAT[12] = {"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"};
+    int p = (((cents + 50) / 100) % 12 + 12) % 12;
+    return (sharps >> p & 1u) ? SHARP[p] : FLAT[p];
 }
 
 int km_just_cents(int cents, int tonic_cents)

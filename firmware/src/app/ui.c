@@ -279,6 +279,8 @@ static int duo_cents(int i)
 /* the second pan's key b (a black key) : its note's index, laid out as the white keys are */
 static int duo_index(int b) { return km_duo_index(proj.par[P_LAYOUT], b - B_DUO0); }
 static int view_knob(int i) { return VIEW_KNOB[ui.view][i]; }
+/* a note's name, spelled as the pan's scale spells it (G# on an E pan, Ab on an F one) */
+static const char *note_name(int cents) { return km_note_name(cents, km_sharps(proj.par[P_SCALE], proj.par[P_KEY])); }
 static int midi_ch(void) { return proj.par[P_MIDICH] ? proj.par[P_MIDICH] - 1 : 0; }
 static uint8_t cents_note(int c) { int n = (c + 50) / 100; return (uint8_t)(n < 0 ? 0 : n > 127 ? 127 : n); }
 
@@ -873,7 +875,7 @@ static void draw_field(spot_t s, int cents, int age, float lv, int ding, uint16_
         cv_ring(s.x, s.y, rr - 1, rr, 0, mix(K_GLOW, base, age * 16 / (int)RIPPLE_FR));
     }
     if (label) {
-        const char *nm = KM_NOTE_NAME[((cents + 50) / 100) % 12];
+        const char *nm = note_name(cents);
         text_c(s.x, s.y - 8, &FONT_XS, nm, t > 8 ? mix(ink, dark, 12) : ink);
     }
 }
@@ -910,8 +912,8 @@ static void draw_pan(void)
                 continue;
             draw_field(s, c, (int)ripple_age(ui.ripple[idx]), note_level(c), 0, dark, light, ink, 0);
             {
-                const char *nm = KM_NOTE_NAME[((c + 50) / 100) % 12];
-                text_c(s.x, s.y - 20, &FONT_XS, nm, K_DIM);
+                const char *nm = note_name(c);
+                text_c(s.x, s.y - ((w & 1) ? 29 : 20), &FONT_XS, nm, K_DIM);   /* (staggered: "D#" "F#" side by side) */
             }
         }
     }
@@ -944,7 +946,7 @@ static void draw_black(int32_t y0)
         uint16_t bg = steel ? K_ACC_T : K_TEAL_T, fg = steel ? K_ACC : K_TEXT;
         if (is_duo_key(b)) {
             const int c = duo_cents(duo_index(b));
-            s_cpy(t, KM_NOTE_NAME[((c + 50) / 100) % 12]);
+            s_cpy(t, note_name(c));
             if (note_level(c) > 0.15f)
                 on = 1;
         } else {

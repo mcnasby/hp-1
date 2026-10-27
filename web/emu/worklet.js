@@ -71,6 +71,7 @@ class Handpan extends AudioWorkletProcessor {
     }
     const labels = [];                                 // what each key plays now (its note, or a hit)
     for (let k = 0; k < 27; k++) labels.push(ex.web_key_label(k) | 0);
+    labels.push(ex.web_sharps() | 0);                  // (last: how the pan spells its accidentals)
     const sig = labels.join(",");
     if (sig !== this.sentLabels) { this.sentLabels = sig; msg.labels = labels; }
     const transfer = [];

@@ -203,6 +203,26 @@ static void test_music(void)
     }
     CHECK(km_ding_cents(2, 1) == 6200 && km_ding_cents(2, -1) == 3800, "octave");
     CHECK(km_ding_cents(km_scale_root(3), 0) == 5400, "Pygmy comes in F#3");
+    {   /* accidentals spelled as each scale spells them */
+        static const struct {
+            int scale, key, cents;
+            const char *name;
+        } SP[] = {{10, 4, 6800, "G#"}, {10, 4, 6300, "D#"}, {10, 4, 6100, "C#"}, {0, 2, 5800, "Bb"},
+                  {6, 5, 5600, "Ab"}, {6, 5, 6100, "Db"}, {6, 5, 6300, "Eb"}, {4, 2, 5800, "Bb"},
+                  {4, 2, 6100, "C#"}, {3, 6, 5600, "G#"}, {5, 0, 6600, "F#"}, {1, 2, 6000, "C"}};
+        for (i = 0; i < (int)(sizeof SP / sizeof SP[0]); i++) {
+            const char *got = km_note_name(SP[i].cents, km_sharps(SP[i].scale, SP[i].key));
+            CHECK(!strcmp(got, SP[i].name), "%s %s: %s, wanted %s", KM_NOTE_NAME[SP[i].key], km_scale_name(SP[i].scale),
+                  got, SP[i].name);
+        }
+    }
+    {   /* E SaByeD (Isthmus; Sela's D Sabye and PanAmor's E Sabye the same steps): E3 / A B C# D# E F# G# B */
+        static const int SABYE[9] = {5200, 5700, 5900, 6100, 6300, 6400, 6600, 6800, 7100};
+        own = km_pan_notes(10, km_scale_root(10), 0, n);
+        CHECK(!strcmp(km_scale_name(10), "SaByeD") && km_scale_root(10) == 4 && own == 9, "SaByeD in E");
+        for (i = 0; i < 9; i++)
+            CHECK(n[i] == SABYE[i], "E SaByeD note %d: %d, wanted %d", i, n[i], SABYE[i]);
+    }
     /* every scale: its fields climb, and what comes past them stays in the scale */
     for (s = 0; s < KM_NSCALE; s++) {
         own = km_pan_notes(s, km_scale_root(s), 0, n);

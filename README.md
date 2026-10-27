@@ -259,8 +259,9 @@ any key: PRESETS moves the whole pan.
 | Aegean     | C         | C3 / E G B C E F# G B             | 4 7 11 12 16 18 19 23       | Lydian major, bright, floating                 |
 | Equinox    | F         | F3 / Ab C Db Eb F G Ab C          | 3 7 8 10 12 14 15 19        | Dark, dreamy                                   |
 | Akebono    | D         | D3 / A Bb D E F A Bb D            | 7 8 12 14 15 19 20 24       | Japanese pentatonic, spare                     |
-| Major      | C         | C3 / G A B C D E F G              | 7 9 11 12 14 16 17 19       | Plain major (Sabye-like), sunny                |
+| Major      | C         | C3 / G A B C D E F G              | 7 9 11 12 14 16 17 19       | Plain major, sunny                             |
 | Mixolydian | G         | G3 / D E F G A B C D              | 7 9 10 12 14 16 17 19       | Major with a flat seventh                      |
+| SaByeD     | E         | E3 / A B C# D# E F# G# B          | 5 7 9 11 12 14 16 19        | Major, its fourth below the octave: sweet, open |
 
 The ding always sits between A2 and G#3, where the makers put it; OCT−/OCT+ move the whole pan.
 Makers vary these lists a little from pan to pan.
