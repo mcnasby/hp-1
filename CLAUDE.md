@@ -1,13 +1,14 @@
-# FiMba-1: working on an issue or a feature
+# HP-1: working on an issue or a feature
 
 The steps for every GitHub issue or new feature, from the first look to the release.
 
 ## 1. Understand it
 
 - `gh issue view N --json title,body,comments` (plain `gh issue view` can print nothing here).
-- Find the code: the instrument and its music are `firmware/src/dsp/kalimba.{c,h}`; the panel and
-  the screen are `firmware/src/app/ui.c`. The host simulator and the web app build the same sources.
-- When the request leaves a real choice open (behaviour, naming, the default), ask before building.
+- Find the code: the instrument and its music (scales, layouts, the second pan) are
+  `firmware/src/dsp/handpan.{c,h}`; the panel and the screen are `firmware/src/app/ui.c`. The host
+  simulator and the web app build the same sources.
+- When the request leaves a real choice open (behavior, naming, the default), ask before building.
 
 ## 2. Build it on a branch
 
@@ -19,13 +20,13 @@ The steps for every GitHub issue or new feature, from the first look to the rele
 
 ## 3. Test it
 
-- Unit tests go in `tests/host/kalimba_test.c`. Whole-app behaviour goes in a scenario,
+- Unit tests go in `tests/host/handpan_test.c`. Whole-app behavior goes in a scenario,
   `tests/scenarios/<name>.kal` (`tap`, `spin`, `tapkey`, `expect`, `shot`): add one for a new feature.
 - Run `tests/run_tests.sh`. Everything must pass (update-loader is skipped locally without
-  `AC79_SDK`). When a change moves existing behaviour, update the scenarios that assumed the old way.
+  `AC79_SDK`). When a change moves existing behavior, update the scenarios that assumed the old way.
 - Make sure a new check can fail: break one expectation, see it fail, put it back.
 - Screen changes: look at the screenshots in `build/scenarios/*/`. To see a release build's
-  version, build the host with `-DOM_VERSION=\"0.4.1 BETA\"` (see `host/build_host.sh`).
+  version, build the host with `-DOM_VERSION=\"0.1.0 BETA\"` (see `host/build_host.sh`).
 
 ## 4. Document it
 
@@ -33,7 +34,7 @@ The steps for every GitHub issue or new feature, from the first look to the rele
   ("In rough order") for anything a player would notice.
 - `web/emu/index.html`: the help text, when controls change.
 - `docs/img/*.png`: copy the regenerated screenshots from `build/scenarios/` when the screen changed
-  (not `keyboard.png` unless the Keyboard layout changed).
+  (`browser.png` is a screenshot of the page itself, retaken by hand).
 
 ## 5. Version and changelog (in the same PR)
 
@@ -60,9 +61,9 @@ The steps for every GitHub issue or new feature, from the first look to the rele
 
 - Merging to `main` with a new `VERSION` releases it, all in that one run: the release build, the tag
   `vX.Y.Z`, the GitHub Release with the CHANGELOG section, and the site at
-  https://jadamsowers.github.io/fm1-fimba/ with the new firmware in its installer.
+  https://mcnasby.github.io/hp-1/ with the new firmware in its installer.
 - Never push tags by hand, never create releases with `gh release create`, and never re-run the
   Pages job. GitHub Pages keeps only the first deployment of a commit, and a tag pushed by a run
   starts no other run.
 - Afterwards, check: `gh release view vX.Y.Z`, and
-  `curl -s https://jadamsowers.github.io/fm1-fimba/firmware/latest.json` shows the new version.
+  `curl -s https://mcnasby.github.io/hp-1/firmware/latest.json` shows the new version.

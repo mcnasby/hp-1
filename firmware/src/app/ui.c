@@ -53,7 +53,7 @@ static const char *const HIT_LONG[HIT_N] = {"THWAP", "TAK", "GU", "GHOST", "DING
                                             "MUTE", "TAK", "THWAP"};
 static int is_duo_key(int b) { return proj.par[P_BLACK] == BLK_DUO && b >= B_DUO0 && b < B_DUO0 + KM_NDUO; }
 
-/* the screen's colours (Setup: Theme). Dark (the default): a dim room, warm cream type, and gold for what
+/* the screen's colors (Setup: Theme). Dark (the default): a dim room, warm cream type, and gold for what
  * sounds. Light: sand and ink. The pan keeps its metal in both. */
 typedef struct {
     uint16_t bg, panel, line, dim, text, white, acc, acc_t, teal, teal_t, glow;
@@ -85,7 +85,7 @@ static const struct {
     {RGB(44, 33, 26), RGB(158, 118, 80), RGB(250, 236, 214)},     /* Nitrided: dark bronze */
     {RGB(78, 84, 92), RGB(222, 228, 234), RGB(28, 30, 34)},        /* Stainless: bright steel */
     {RGB(52, 28, 20), RGB(186, 102, 60), RGB(255, 230, 206)},      /* Ember: copper-brown */
-    {RGB(46, 46, 48), RGB(146, 142, 134), RGB(244, 240, 232)},     /* Raw: grey steel */
+    {RGB(46, 46, 48), RGB(146, 142, 134), RGB(244, 240, 232)},     /* Raw: gray steel */
 };
 #define METAL (&METAL_COL[(unsigned)proj.par[P_METAL] < MET_N ? proj.par[P_METAL] : 0])
 
@@ -863,7 +863,7 @@ static void draw_field(spot_t s, int cents, int age, float lv, int ding, uint16_
     cv_disc(s.x, s.y, s.r, fill);
     if (ding) {                                       /* the ding's dome */
         cv_disc(s.x - 1, s.y - 1, s.r * 6 / 10, mix(mix(base, light, 6), K_GLOW, t * 3 / 4));
-    } else if (!label && s.r >= 5) {                  /* the dimple (a labelled field shows its note there) */
+    } else if (!label && s.r >= 5) {                  /* the dimple (a labeled field shows its note there) */
         cv_ring(s.x, s.y, s.r * 4 / 10, s.r * 4 / 10 + 1, 0, mix(fill, dark, 4));
     }
     if (age < (int)RIPPLE_FR) {                       /* a ripple, out from the strike */
@@ -1022,7 +1022,7 @@ static void draw_knobs(void)
             cv_rect(x, 14, 1, KNB_H - 30, K_LINE);
         if (k == K_NONE)
             continue;
-        if (knob_off(k)) {                           /* nothing to set now: the name greyed, no value, no bar */
+        if (knob_off(k)) {                           /* nothing to set now: the name grayed, no value, no bar */
             text_c(cx, 6, &FONT_XS, km_param_info(k)->name, K_LINE);
             text_c(cx, 26, &FONT_B, "--", K_LINE);
             continue;
@@ -1058,7 +1058,7 @@ static void draw_knobs(void)
         }
         bw = hi > lo ? (int32_t)(44 * (v - lo) / (hi - lo)) : 0;
         cv_round(cx - 22, 50, 44, 6, 3, K_LINE);
-        if (lo < 0) {                                /* centred values: a bar from the middle */
+        if (lo < 0) {                                /* centered values: a bar from the middle */
             int32_t m = cx - 22 + 44 * (0 - lo) / (hi - lo), e = cx - 22 + bw;
             cv_round(e < m ? e : m, 50, (e < m ? m - e : e - m) + 6, 6, 3, hot ? K_ACC : K_TEAL);
         } else if (bw) {

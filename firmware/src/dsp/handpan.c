@@ -304,7 +304,7 @@ void km_param_text(int i, int v, char *b)
         *b++ = '#';
         v++;
         break;
-    case P_THICK:                                  /* tenths of a millimetre: "1.2mm" */
+    case P_THICK:                                  /* tenths of a millimeter: "1.2mm" */
         b[0] = (char)('0' + v / 10);
         b[1] = '.';
         b[2] = (char)('0' + v % 10);
@@ -458,7 +458,7 @@ static float cents_hz(int c) { return 8.17579892f * fm_exp2f((float)c * (1.0f / 
 
 /* Worn: an old, played-in pan. Each field has its own quirks, the same each time it's struck (they come
  * from its pitch): a little out of tune (up to +-10 cents), its octave a little off true, a sustain
- * longer or shorter than its neighbours', a faster or slower beat, and a little louder or softer. */
+ * longer or shorter than its neighbors', a faster or slower beat, and a little louder or softer. */
 static float worn;                                    /* 0..1 */
 static float wear(int cents, int i)                   /* the field's quirk i, -1..1 */
 {
@@ -633,7 +633,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
             v->y1[k] = v->y2[k] = 0.0f;
     for (k = 0; k < KM_NMODE; k++) {
         static const float E[5][KM_NMODE] = {{1, 1, 1, 1, 1},
-                                             {0.06f, 0.0f, 1.6f, 1.3f, 0.6f},   /* a finger on the centre */
+                                             {0.06f, 0.0f, 1.6f, 1.3f, 0.6f},   /* a finger on the center */
                                              {1, 1, 0.12f, 0.08f, 0},           /* sympathy: one partial */
                                              {0.12f, 0.0f, 1, 0.1f, 0},
                                              {0.10f, 0.0f, 0.1f, 1, 0}};
@@ -867,7 +867,7 @@ static void pulse(float l, float r, float c, float ms)
 
 /* The percussion: per hit, where it lands (-1 left, 0 middle, 1 right), the contact (ms: a flat palm is
  * long and deep, a fingertip short and bright), how much reaches the shell and the air, the skin's
- * burst (level, centre Hz, q, decay ms), and how much the fields around it ring along. */
+ * burst (level, center Hz, q, decay ms), and how much the fields around it ring along. */
 typedef struct {
     int8_t side;
     float ms, shell, cav, noise, nhz, nq, nms, sym;
@@ -904,7 +904,7 @@ static void hit(int kind, int vel)
         voice_t *v = voice_for(ding);
         strike(v, ding, vel, 0, 0.8f, EMPH_ALL);
         pend_add(PD_SLAPDAMP, ding, 0, 0, 0, (uint32_t)(0.03f * KM_SR));
-    } else if (kind == HIT_HARM) {                      /* a finger on the ding's centre: its octave sings */
+    } else if (kind == HIT_HARM) {                      /* a finger on the ding's center: its octave sings */
         voice_t *v = voice_for(ding);
         strike(v, ding, vel, 0, 0.7f, EMPH_HARMONIC);
     } else if (kind == HIT_MUTE) {
@@ -1182,8 +1182,8 @@ static inline float line_read(const float *b, uint32_t mask, uint32_t w, float b
     return b[i0] + (b[i1] - b[i0]) * f;
 }
 
-/* Filter: one knob. Left of centre a low-pass from 20 kHz down to ~200 Hz, right a high-pass from 20 Hz
- * up to ~3.9 kHz, the resonance rising with the sweep; centre is off. Simper's SVF per channel, its
+/* Filter: one knob. Left of center a low-pass from 20 kHz down to ~200 Hz, right a high-pass from 20 Hz
+ * up to ~3.9 kHz, the resonance rising with the sweep; center is off. Simper's SVF per channel, its
  * setting glides (no zipper, no click) */
 static svf_t flt[2];
 static float flt_t, flt_s;                     /* 1/q; target (-1..1) and how far now (0..1) */

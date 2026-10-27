@@ -12,6 +12,7 @@ class Handpan extends AudioWorkletProcessor {
     this.input = null;
     this.sentBlits = -1;
     this.sentWrites = -1;
+    this.sentLabels = "";
     this.lastFrame = 0;
     this.busy = 0;
     this.frames = 0;
@@ -68,6 +69,10 @@ class Handpan extends AudioWorkletProcessor {
       msg.load = Math.round(100 * this.busy / (this.frames / 44.1));
       this.busy = this.frames = 0;
     }
+    const labels = [];                                 // what each key plays now (its note, or a hit)
+    for (let k = 0; k < 27; k++) labels.push(ex.web_key_label(k) | 0);
+    const sig = labels.join(",");
+    if (sig !== this.sentLabels) { this.sentLabels = sig; msg.labels = labels; }
     const transfer = [];
     if (blits !== this.sentBlits) {
       this.sentBlits = blits;

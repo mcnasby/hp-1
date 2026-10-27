@@ -83,3 +83,17 @@ __attribute__((used, visibility("default"))) void web_store_set_len(uint32_t obj
 __attribute__((used, visibility("default"))) uint32_t web_store_writes(void) { return store_writes; }
 __attribute__((used, visibility("default"))) uint32_t web_nobj(void) { return OBJ_NOBJ; }
 __attribute__((used, visibility("default"))) uint32_t web_store_max(void) { return PLAT_STORE_MAX; }
+
+/* what each key plays now, for the page's labels: a white key or a second-pan key its note (cents),
+ * a black key of the steel or the kit -(1 + its HIT_*) */
+__attribute__((used, visibility("default"))) int32_t web_key_label(uint32_t k)
+{
+    int i;
+    for (i = 0; i < NWHITE; i++)
+        if (WHITE_K[i] == k)
+            return white_cents(i);
+    for (i = 0; i < NBLACK; i++)
+        if (BLACK_K[i] == k)
+            return is_duo_key(i) ? duo_cents(i - B_DUO0) : -(1 + (int32_t)HIT_OF[i]);
+    return 0;
+}

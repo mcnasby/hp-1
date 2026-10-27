@@ -1,60 +1,94 @@
 <title>HP-1</title>
+<meta name="description" content="HP-1: a handpan for the M-VAVE FM-1, playable in the browser.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
 <style>
-:root { --ground: #faf4e8; --ink: #48392f; --muted: #8a7764; --rule: #e6dccb; --accent: #e0683a; --teal: #26a69a; --card: #fffaf1; color-scheme: light; }
+:root { --ground: #f6f1e8; --ink: #2e2822; --muted: #76695b; --rule: #e2d8c8; --accent: #c4691b; --accent-ink: #fffaf2; --teal: #227f77;
+        --card: #fffaf2; --pan-a: #9c7350; --pan-b: #3a2a20; color-scheme: light; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --ground: #1c1814; --ink: #f2e8d8; --muted: #b3a28e; --rule: #3a322a; --accent: #f28a5a; --teal: #4cc3b6; --card: #26201b; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --ground: #121010; --ink: #efe6d8; --muted: #a89a88; --rule: #2e2723; --accent: #f2a848; --accent-ink: #241404;
+                                    --teal: #64bcb0; --card: #1b1714; --pan-a: #a57a52; --pan-b: #2a1e17; color-scheme: dark; }
 }
-:root[data-theme="dark"] { --ground: #1c1814; --ink: #f2e8d8; --muted: #b3a28e; --rule: #3a322a; --accent: #f28a5a; --teal: #4cc3b6; --card: #26201b; color-scheme: dark; }
-body { background: var(--ground); color: var(--ink); margin: 0; padding-inline: 16px; padding-block: 28px 48px;
+:root[data-theme="dark"] { --ground: #121010; --ink: #efe6d8; --muted: #a89a88; --rule: #2e2723; --accent: #f2a848; --accent-ink: #241404;
+                           --teal: #64bcb0; --card: #1b1714; --pan-a: #a57a52; --pan-b: #2a1e17; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); margin: 0; padding-inline: 16px; padding-block: 28px 56px;
        font: 400 16px/1.55 "Barlow", "Helvetica Neue", Arial, sans-serif; }
 main { max-width: 1040px; margin: 0 auto; }
-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1.2rem; margin: 0 0 1rem; }
-h1 { font: 700 2rem/1.1 "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.1rem; margin: 0 0 1.1rem; }
+.mark { width: 44px; height: 44px; border-radius: 50%; flex: none;
+        background: radial-gradient(circle at 38% 34%, var(--pan-a), var(--pan-b) 72%);
+        box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 0 0 1px var(--rule); position: relative; }
+.mark::after { content: ""; position: absolute; inset: 31%; border-radius: 50%; background: radial-gradient(circle at 40% 36%, #e0b47e, #8a5f3c); }
+h1 { font: 700 2.1rem/1 "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0; letter-spacing: .01em; }
 header p { margin: 0; color: var(--muted); }
-header nav { margin-left: auto; display: flex; gap: 1rem; }
-a { color: var(--accent); }
+.titles { display: grid; gap: .15rem; }
+header nav { margin-left: auto; display: flex; gap: 1.1rem; font-weight: 600; }
+a { color: var(--accent); text-underline-offset: .15em; }
+.quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .6rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.quick li { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: .55rem .8rem; color: var(--muted); font-size: .95rem; }
+.quick b { color: var(--ink); font-weight: 600; }
+.quick .n { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; margin-right: .4rem; border-radius: 50%;
+            background: var(--accent); color: var(--accent-ink); font: 700 .8rem "Barlow Semi Condensed", sans-serif; vertical-align: .05em; }
 .device { position: relative; width: 100%; aspect-ratio: 1000 / 640; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 .device svg { pointer-events: none; }
 .hit { position: absolute; touch-action: none; cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 12px; }
 .hit.knob { cursor: ns-resize; border-radius: 50%; }
-.hit:focus-visible { outline: 2px solid #f28a5a; outline-offset: 2px; }
+.hit:focus-visible { outline: 2px solid #f2a848; outline-offset: 2px; }
 .device svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .device canvas { position: absolute; left: 31.8%; top: 9.6875%; width: 20%; height: 31.25%; image-rendering: pixelated; background: #000; border-radius: 2px; }
 .ctl { cursor: pointer; }
 .ctl.knob { cursor: ns-resize; }
 .btnface { transition: fill .06s; }
-.lit .btnface { fill: #f28a5a; }
-.lit text.btn { fill: #2a140a; }
-.held .btnface, .held .keyface { stroke: #f28a5a; stroke-width: 3; }
+.lit .btnface { fill: #f2a848; }
+.lit text.btn { fill: #2a1604; }
+.held .btnface, .held .keyface { stroke: #f2a848; stroke-width: 3; }
 .latched .btnface { stroke: #6fc3ff; stroke-width: 3; }
-.keyface { transition: fill .06s; }
-.lit .keyface.white { fill: #f6b48e; }
-.lit .keyface.black { fill: #4cc3b6; }
-.dim .keyface.white { fill: #f9dccb; }
-.dim .keyface.black { fill: #2f5f5a; }
-.start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 11, 13, .55); border-radius: 4.4% / 6.9%; }
-.start button { font: 600 1.25rem "Barlow Semi Condensed", "Barlow", sans-serif; letter-spacing: .04em; padding: .7em 1.6em;
-                border-radius: 999px; border: 0; background: #f28a5a; color: #2a140a; cursor: pointer; }
+.keyface { transition: fill .08s; }
+.lit .keyface.white { fill: #f6c58a; }
+.lit .keyface.black { fill: #f2a848; }
+.lit .keyface.black.pan2 { fill: #64bcb0; }
+.dim .keyface.white { fill: #efdcc4; }
+.keyname { font-family: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif; font-weight: 700; pointer-events: none; }
+.keyname.w { fill: #2b221b; }
+.keyname.b { fill: #2b2f36; }
+.lit .keyname.b { fill: #241404; }
+.keyhint { font: 600 12px ui-monospace, Menlo, monospace; fill: #8b8579; pointer-events: none; }
+.keyhint.b { fill: #7d8088; }
+.start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 9, 8, .55); border-radius: 4.4% / 6.9%; }
+.start button { font: 700 1.3rem "Barlow Semi Condensed", "Barlow", sans-serif; letter-spacing: .04em; padding: .75em 1.8em;
+                border-radius: 999px; border: 0; background: #f2a848; color: #241404; cursor: pointer; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.start button:hover { background: #f7bb68; }
 .start[hidden] { display: none; }
 .turn { display: none; margin: 0 0 .8rem; color: var(--muted); font-size: .92rem; }
 @media (orientation: portrait) and (max-width: 700px) { .turn { display: block; } }
 .start button:disabled { opacity: .6; cursor: progress; }
 .bar { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; align-items: center; margin: .9rem 0 0; color: var(--muted); font-size: .92rem; }
 .bar button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: .3em .8em; cursor: pointer; }
+.bar button:hover { border-color: var(--accent); }
 .bar .cpu { font-variant-numeric: tabular-nums; }
-.help h2 { font: 600 1.1rem "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0 0 .3rem; }
-.help { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 2rem; margin: 1.6rem 0 0; }
-.help h2 { font: 600 1.1rem "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0 0 .3rem; }
-.help p, .help ul { margin: 0; color: var(--muted); max-width: 60ch; }
+.help { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.2rem 2.2rem; margin: 1.8rem 0 0; }
+.help h2 { font: 700 1.15rem "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0 0 .35rem; }
+.help p, .help ul { margin: 0; color: var(--muted); max-width: 62ch; }
 .help ul { padding-left: 1.1rem; }
+.help li + li { margin-top: .2rem; }
+.help b { color: var(--ink); font-weight: 600; }
+.scales { margin: 1.8rem 0 0; }
+.scales h2 { font: 700 1.15rem "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0 0 .5rem; }
+.scales .wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 12px; background: var(--card); }
+.scales table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.scales th, .scales td { text-align: left; padding: .45rem .8rem; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.scales tr:last-child td { border-bottom: 0; }
+.scales th { font: 600 .85rem "Barlow Semi Condensed", sans-serif; color: var(--muted); letter-spacing: .03em; text-transform: uppercase; }
+.scales td:first-child { font-weight: 600; }
+.scales td.notes { font-variant-numeric: tabular-nums; color: var(--muted); }
+.scales td.notes b { color: var(--ink); }
 kbd { font: 600 .85em ui-monospace, Menlo, monospace; background: var(--card); border: 1px solid var(--rule); border-radius: 4px; padding: 0 .3em; color: var(--ink); }
 .midi { color: var(--muted); }
 .midi b { color: var(--teal); font-weight: 600; }
 /* the installer */
-.install { margin: 1.8rem 0 0; padding: 1.1rem 1.2rem 1.2rem; background: var(--card); border: 1px solid var(--rule); border-radius: 14px; }
+.install { margin: 2rem 0 0; padding: 1.1rem 1.2rem 1.2rem; background: var(--card); border: 1px solid var(--rule); border-radius: 14px; }
 .install h2 { font: 700 1.35rem "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0 0 .5rem; }
 .install h3 { font: 600 1.05rem "Barlow Semi Condensed", "Barlow", sans-serif; margin: 0; display: inline; }
 .install p, .install ol { margin: .45rem 0; max-width: 72ch; }
@@ -62,7 +96,7 @@ kbd { font: 600 .85em ui-monospace, Menlo, monospace; background: var(--card); b
 .install .warn { border-left: 3px solid var(--accent); padding: .35rem .7rem; background: var(--ground); border-radius: 0 8px 8px 0; }
 .install .row { display: flex; flex-wrap: wrap; gap: .5rem .9rem; align-items: center; margin: .7rem 0; }
 .install button { font: 600 1rem "Barlow Semi Condensed", "Barlow", sans-serif; letter-spacing: .02em; padding: .5em 1.1em; border-radius: 999px;
-                  border: 1px solid var(--accent); background: var(--accent); color: #2a140a; cursor: pointer; }
+                  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
 .install button.quiet { background: transparent; color: var(--ink); border-color: var(--rule); }
 .install button:disabled { opacity: .45; cursor: not-allowed; }
 .install input[type=file] { font: inherit; color: var(--muted); max-width: 100%; }
@@ -73,13 +107,23 @@ kbd { font: 600 .85em ui-monospace, Menlo, monospace; background: var(--card); b
 .install summary { cursor: pointer; color: var(--muted); }
 .install pre { max-height: 12rem; overflow: auto; font: .8rem ui-monospace, Menlo, monospace; color: var(--muted); background: var(--ground);
                padding: .5rem; border-radius: 8px; white-space: pre-wrap; }
+footer { margin: 2rem 0 0; color: var(--muted); font-size: .88rem; }
 </style>
 <main>
 <header>
-  <h1>HP-1</h1>
-  <p>a thumb piano firmware for the M-VAVE FM-1, running in the browser from the same C code</p>
-  <nav><a href="https://github.com/mcnasby/hp-1">Source and manual</a></nav>
+  <div class="mark" aria-hidden="true"></div>
+  <div class="titles">
+    <h1>HP-1</h1>
+    <p>A handpan for the M-VAVE FM-1, running in your browser from the firmware's own C code</p>
+  </div>
+  <nav><a href="#install">Install</a><a href="https://github.com/mcnasby/hp-1">Source and manual</a></nav>
 </header>
+
+<ol class="quick" aria-label="Quick start">
+  <li><span class="n">1</span><b>Switch on</b>, then tap the two middle keys: that's the <b>ding</b>.</li>
+  <li><span class="n">2</span>Work <b>outward</b>, left then right, to climb the scale. Every note fits.</li>
+  <li><span class="n">3</span>The <b>black keys at each end</b> thwap the steel. Tap <b>ARP</b> for a groove to play over.</li>
+</ol>
 
 <p class="turn">Turn your phone sideways for bigger controls.</p>
 <div class="device" id="device">
@@ -91,10 +135,69 @@ kbd { font: 600 .85em ui-monospace, Menlo, monospace; background: var(--card); b
 <div class="bar">
   <span id="status">Off. Sound starts when you switch it on.</span>
   <span class="cpu" id="cpu"></span>
-  <button id="midi" type="button" title="Play it from a MIDI keyboard (Chrome or Edge)">Connect MIDI</button>
+  <button id="midi" type="button" title="Play it from a MIDI keyboard or pads (Chrome or Edge)">Connect MIDI</button>
   <span class="midi" id="midistat"></span>
+  <button id="hints" type="button" aria-pressed="true" title="Show or hide the computer keys on the keybed">Hide key hints</button>
   <button id="reset" type="button" title="Forget your sound and settings, and start again from the factory settings">Factory reset</button>
 </div>
+
+<section class="help">
+  <div>
+    <h2>Playing</h2>
+    <ul>
+      <li>The <b>white keys</b> are the pan. The two in the middle play the <b>ding</b>, the low center note. The tone fields climb outward from it in a zigzag, left, right, left, right, the way they climb around a real handpan. Every key is in the scale, so anything you play sounds good.</li>
+      <li>Past the pan's own fields, the outermost keys carry the scale on up, like an extended "mutant" pan.</li>
+      <li>The <b>black keys at the ends</b> are the steel: a palm <b>thwap</b> on the outer ones, a fingertip <b>tak</b> on the next ones in, each on its own side of the shell.</li>
+      <li>The <b>seven black keys between</b> are the kit: <b>Gu</b> (a slap on the bottom port), <b>ghost</b> note, <b>ding slap</b>, <b>tak</b>, the ding's <b>harmonic</b>, <b>rim</b> knock, <b>mute</b>. Set <b>Black</b> to <b>Duo</b> (SEL) and they become a second handpan whose scale fits with the first.</li>
+      <li><b>ARP</b> starts a groove (hold it for its settings). <b>REC</b> mutes. <b>PLAY</b> freezes the grain cloud. <b>OCT−</b> / <b>OCT+</b> move the pan an octave.</li>
+    </ul>
+  </div>
+  <div>
+    <h2>Shaping the instrument</h2>
+    <ul>
+      <li><b>SELECT</b> the metal: <b>Nitrided</b> (warm, the classic dark pan), <b>Stainless</b> (bright, the longest ring), <b>Ember</b> (mellow), <b>Raw</b> steel (earthy, drier).</li>
+      <li><b>ALGORITHM</b> the scale, in the key it's usually built in. <b>PRESETS</b> moves the ding to any root.</li>
+      <li><b>HOME</b> Pan: metal, strike, sustain, harmonics (how loud the octave and fifth above each note are). Press again for <b>Shell</b>: size (44 to 62 cm), thickness (1.0 to 1.4 mm), sympathy (how much the pan rings along), port (the air inside).</li>
+      <li><b>ENV</b> Touch: worn, humanize, tuning, release. <b>FX</b> Space, Color. <b>LFO</b> Grain, Spread. <b>SEL</b> Keys, Duo. <b>SEQ</b> Groove. <b>GLO</b> Setup. <b>EDIT</b> steps through them all.</li>
+      <li>Hold <b>SAVE</b> for 1.5 s to go back to the defaults (SAVE again to confirm).</li>
+    </ul>
+  </div>
+  <div>
+    <h2>Computer keyboard</h2>
+    <ul>
+      <li><kbd>Space</kbd>, <kbd>G</kbd>, <kbd>H</kbd>: the ding. Home row out from the middle: <kbd>F</kbd> <kbd>J</kbd> <kbd>D</kbd> <kbd>K</kbd> <kbd>S</kbd> <kbd>L</kbd> <kbd>A</kbd> <kbd>;</kbd>, then <kbd>R</kbd> <kbd>U</kbd> <kbd>E</kbd> <kbd>I</kbd> <kbd>W</kbd> <kbd>O</kbd>.</li>
+      <li>Black keys: <kbd>1</kbd> to <kbd>0</kbd> and <kbd>-</kbd> (<kbd>1</kbd> and <kbd>-</kbd> thwap).</li>
+      <li><kbd>B</kbd> groove, <kbd>Enter</kbd> mute, <kbd>`</kbd> freeze, <kbd>Esc</kbd> HOME, <kbd>Z</kbd> / <kbd>X</kbd> octave.</li>
+      <li><kbd>↑</kbd> <kbd>↓</kbd> metal, <kbd>←</kbd> <kbd>→</kbd> scale, <kbd>[</kbd> <kbd>]</kbd> key.</li>
+      <li>Mouse and touch: drag a knob up or down, or scroll over it. <kbd>Shift</kbd>-click a button to hold it down.</li>
+    </ul>
+  </div>
+  <div>
+    <h2>MIDI</h2>
+    <p>Notes strike the note of their pitch at their velocity, so a keyboard or pad controller plays it with real dynamics. <b>Channel 10</b> plays the steel (kick: Gu, snare: thwap, hats: tak). The sustain pedal holds, the mod wheel sets sympathy, pitch bend bends the ringing notes, program change picks the metal, and MIDI clock leads the groove. Needs Web MIDI (Chrome or Edge).</p>
+  </div>
+</section>
+
+<section class="scales" aria-labelledby="scales-h">
+  <h2 id="scales-h">The scales</h2>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Scale</th><th>Usual key</th><th>Ding / tone fields</th><th>Character</th></tr></thead>
+      <tbody>
+        <tr><td>Kurd</td><td>D</td><td class="notes"><b>D3</b> / A Bb C D E F G A</td><td>The best-known handpan scale: natural minor, warm and versatile</td></tr>
+        <tr><td>Celtic</td><td>D</td><td class="notes"><b>D3</b> / A C D E F G A C</td><td>Celtic minor (Amara): no sixth, open and folky</td></tr>
+        <tr><td>Integral</td><td>D</td><td class="notes"><b>D3</b> / A Bb C D E F A</td><td>Minor and meditative, seven fields</td></tr>
+        <tr><td>Pygmy</td><td>F#</td><td class="notes"><b>F#3</b> / G# A C# E F# G# A C#</td><td>Pentatonic, earthy and hypnotic</td></tr>
+        <tr><td>Hijaz</td><td>D</td><td class="notes"><b>D3</b> / A Bb C# D E F G A</td><td>Harmonic minor, Middle Eastern color</td></tr>
+        <tr><td>Aegean</td><td>C</td><td class="notes"><b>C3</b> / E G B C E F# G B</td><td>Lydian major, bright and floating</td></tr>
+        <tr><td>Equinox</td><td>F</td><td class="notes"><b>F3</b> / Ab C Db Eb F G Ab C</td><td>Dark and dreamy, a lowered second</td></tr>
+        <tr><td>Akebono</td><td>D</td><td class="notes"><b>D3</b> / A Bb D E F A Bb D</td><td>Japanese pentatonic, spare and poignant</td></tr>
+        <tr><td>Major</td><td>C</td><td class="notes"><b>C3</b> / G A B C D E F G</td><td>Plain major (Sabye-like), sunny</td></tr>
+        <tr><td>Mixolydian</td><td>G</td><td class="notes"><b>G3</b> / D E F G A B C D</td><td>Major with a flat seventh, bluesy and bright</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
 <section class="install" id="install" aria-labelledby="install-h">
   <h2 id="install-h">Install on your FM-1</h2>
@@ -134,46 +237,11 @@ kbd { font: 600 .85em ui-monospace, Menlo, monospace; background: var(--card); b
   </details>
 </section>
 
-<section class="help">
-  <div>
-    <h2>Playing</h2>
-    <ul>
-      <li><b>Layout</b> (Keys page): <b>Tine</b>, the default, puts the tines on the white keys as on a real kalimba, lowest note (C4) in the middle, the next (D4) to its left and the scale alternating outward. <b>Mirror</b> is the same, flipped: D4 to the right of C4. <b>Keyboard</b> makes every key, white and black, play its printed note from F3 up, with <b>Transpose</b> on the Keys page (or PRESETS).</li>
-      <li><b>Black keys</b> in the Tine layout follow the Keys page's <b>Black</b> setting: <b>Chords</b> (a thumb roll: C Dm Em F G Am Bdim, then CM7 FM7 G7 Am7), <b>Sharps</b> (the white key to the left, a semitone up) or <b>Perform</b> (mute, cover the hole, freeze, octave down / up while held, six materials).</li>
-      <li><b>PLAY</b> freezes the grain cloud. <b>REC</b> mutes every tine. <b>ARP</b>, tapped, starts and stops the mbira pattern over the chord you pick (a chord key, held keys in Keyboard, or held MIDI notes); held, it opens the pattern's settings.</li>
-      <li><b>OCT−</b> / <b>OCT+</b>: octave. <b>SELECT</b> material, <b>ALGORITHM</b> scale, <b>PRESETS</b> key.</li>
-    </ul>
-  </div>
-  <div>
-    <h2>Pages</h2>
-    <ul>
-      <li>Press a page button again for its next page (the dots by the page's name show which).</li>
-      <li><b>HOME</b> Tine: material, hardness, decay, tone → Character: worn, glide, tuning, release.</li>
-      <li><b>ENV</b> Body: box, gourd or board, buzzers, wah, wah rate.</li>
-      <li><b>FX</b> Space: reverb, size, delay, time → Color: tape, lo-fi, chorus, filter.</li>
-      <li><b>LFO</b> Grain: level, size, density, pitch → Spread: spray, feedback, width.</li>
-      <li><b>SEL</b> Keys: layout, then scale, key and black-key mode (Tine) or transpose and octave (Keyboard) → Play: strum, octave.</li>
-      <li><b>SEQ</b> Pattern: pattern, tempo (or hold <b>ARP</b>). <b>GLO</b> Setup: tune, MIDI channel, MIDI out (off by default), and the <b>Theme</b> (Light or Dark); the header shows the version. Hold <b>SAVE</b> for 1.5 s to reset the sound to its defaults (SAVE again to confirm). <b>EDIT</b> steps through every page.</li>
-    </ul>
-  </div>
-  <div>
-    <h2>Mouse, touch and keyboard</h2>
-    <ul>
-      <li>Drag a knob up or down, or scroll over it. Click or touch keys and buttons; several fingers work on a touch screen.</li>
-      <li>White keys 1–8: <kbd>Q</kbd>–<kbd>I</kbd>, 9–16: <kbd>A</kbd>–<kbd>K</kbd>. Black keys 1–11: <kbd>1</kbd>–<kbd>0</kbd>, <kbd>-</kbd>.</li>
-      <li><kbd>Space</kbd> freeze, <kbd>Enter</kbd> mute, <kbd>Esc</kbd> HOME, <kbd>Z</kbd> / <kbd>X</kbd> OCT− / OCT+, <kbd>↑</kbd> <kbd>↓</kbd> material.</li>
-      <li><kbd>Shift</kbd>-click (or right-click) a button to hold it down.</li>
-    </ul>
-  </div>
-  <div>
-    <h2>MIDI</h2>
-    <p>Connect MIDI to play from a keyboard: notes pluck the tine of that pitch at their velocity, the mod wheel and pressure cover the sound hole, the sustain pedal holds damps, pitch bend bends every ringing tine, program change picks the material. It needs a browser with Web MIDI (Chrome or Edge), and the page may not be allowed to ask for it when shown inside another site.</p>
-  </div>
-  <div>
-    <h2>What this is</h2>
-    <p>The firmware's UI and sound engine compiled to WebAssembly, running at the FM-1's 44.1 kHz: what you hear is the physical model the FM-1 would run. SAVE keeps your settings in this browser. The emulator is FoMni's, by way of X0X; the idea comes from <a href="https://www.groove-os.com/">Groove OS</a>.</p>
-  </div>
-</section>
+<footer>
+  HP-1 is built on <a href="https://github.com/jadamsowers/fm1-fimba">FiMba-1</a> (jadamsowers), itself from
+  <a href="https://github.com/charlesvestal/fm1-fomni">FoMni</a> and <a href="https://github.com/charlesvestal/fm1-x0x">X0X</a> by Charles Vestal and
+  <a href="https://github.com/hugelton/Felucca">Felucca</a> by Leo Kuroshita. GPL-3.0. Not affiliated with M-VAVE or any handpan maker.
+</footer>
 </main>
 
 <script>
@@ -184,8 +252,13 @@ const ENC = { SELECT: 0, ALGORITHM: 1, PRESETS: 2, KNOB1: 3, KNOB2: 4, KNOB3: 5,
 const WHITE_K = [0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26];
 const BLACK_K = [1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25];
 const BLACK_AFTER = [0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14];
-const BODY = "#3a3d42", TRAY = "#26282c", KEY_W = "#d9dadc", KEY_B = "#c9cacd", KNOB = "#1f2124", BTNC = "#2e3135", LABEL = "#e8e8ea";
+const BODY = "#3a3d42", TRAY = "#26282c", KEY_W = "#e2dfd9", KEY_B = "#c9cacd", KNOB = "#1f2124", BTNC = "#2e3135", LABEL = "#e8e8ea";
 const STORE_KEY = "hp1-emu-store";
+const NOTE = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+const HIT = ["Thwap", "Tak", "Gu", "Ghost", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwap"];
+// the computer keys, by FM-1 key: the ding on Space / G / H, the fields out along the home row, then the row above
+const WHITE_HINT = ["W", "E", "R", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "U", "I", "O"];
+const BLACK_HINT = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"];
 
 const svg = document.getElementById("panel");
 function el(tag, attrs, parent = svg) {
@@ -244,19 +317,27 @@ const keys = [];
   const pitch = (w - 24) / 16, kw = pitch * 0.78;
   for (let i = 0; i < 16; i++) {
     const g = el("g", { class: "ctl", role: "button", "aria-label": `white key ${i + 1}` });
-    el("rect", { x: x0 + 12 + i * pitch + (pitch - kw) / 2, y: y0 + h * 0.43, width: kw, height: h * 0.52, rx: kw / 2, fill: KEY_W, class: "keyface white" }, g);
-    keys[WHITE_K[i]] = { g };
+    const kx = x0 + 12 + i * pitch + (pitch - kw) / 2, ky = y0 + h * 0.43;
+    el("rect", { x: kx, y: ky, width: kw, height: h * 0.52, rx: kw / 2, fill: KEY_W, class: "keyface white" }, g);
+    const name = el("text", { x: kx + kw / 2, y: ky + h * 0.52 - 26, "text-anchor": "middle", "font-size": 21, class: "keyname w" }, g);
+    const hint = el("text", { x: kx + kw / 2, y: ky + 26, "text-anchor": "middle", class: "keyhint" }, g);
+    hint.textContent = WHITE_HINT[i];
+    keys[WHITE_K[i]] = { g, name, hint };
   }
   BLACK_AFTER.forEach((a, k) => {
     const g = el("g", { class: "ctl", role: "button", "aria-label": `black key ${k + 1}` });
-    el("rect", { x: x0 + 12 + (a + 1) * pitch - kw / 2, y: y0 + h * 0.06, width: kw, height: h * 0.33, rx: kw / 2, fill: KEY_B, class: "keyface black" }, g);
-    keys[BLACK_K[k]] = { g };
+    const kx = x0 + 12 + (a + 1) * pitch - kw / 2, ky = y0 + h * 0.06;
+    const face = el("rect", { x: kx, y: ky, width: kw, height: h * 0.33, rx: kw / 2, fill: KEY_B, class: "keyface black" }, g);
+    const name = el("text", { x: kx + kw / 2, y: ky + h * 0.33 - 18, "text-anchor": "middle", "font-size": 14, class: "keyname b" }, g);
+    const hint = el("text", { x: kx + kw / 2, y: ky + 22, "text-anchor": "middle", class: "keyhint b" }, g);
+    hint.textContent = BLACK_HINT[k];
+    keys[BLACK_K[k]] = { g, name, hint, face };
   });
 })(36, 340, 928, 270);
 
 // ---------------------------------------------------------------- touch targets
 // The drawing is only a picture (pointer-events: none). Each control gets an invisible HTML target
-// over it: browsers (iOS Safari above all) honour touch-action and touchstart on HTML elements but
+// over it: browsers (iOS Safari above all) honor touch-action and touchstart on HTML elements but
 // not on SVG ones, so the controls keep their touches while a finger anywhere else on the device
 // scrolls the page natively.
 const device = document.getElementById("device");
@@ -272,11 +353,11 @@ function hit(c, cls) {
   c.hit = d;
 }
 // what each control does, on hover (the Buttons list below says the same)
-const TIP = { FX: "Space, then Color: reverb, delay; tape, lo-fi, chorus, filter", SEL: "Keys, then Play: layout, scale, key, black keys; strum",
-  ENV: "Body page: body, buzz, wah", LFO: "Grain, then Spread: the grain cloud; spray, feedback, width", EDIT: "Every page in turn",
-  GLO: "Setup page", HOME: "Tine, then Character: material and pluck; worn, glide, tuning, release", SAVE: "Save (hold: reset to the defaults)",
-  ARP: "Tap: mbira pattern on / off. Hold: its settings", SEQ: "Pattern page: pattern, tempo", PLAY: "Freeze the grains", REC: "Palm mute: damp every tine",
-  "OCT-": "Octave down", "OCT+": "Octave up", SELECT: "Material", ALGORITHM: "Scale", PRESETS: "Key (Tine) or transpose (Keyboard)",
+const TIP = { FX: "Space, then Color: reverb, delay; tape, lo-fi, chorus, filter", SEL: "Keys, then Duo: layout, scale, key, black keys; the second pan",
+  ENV: "Touch: worn, humanize, tuning, release", LFO: "Grain, then Spread: the grain cloud; spray, feedback, width", EDIT: "Every page in turn",
+  GLO: "Setup page", HOME: "Pan, then Shell: metal, strike, sustain, harmonics; size, thickness, sympathy, port", SAVE: "Save (hold: reset to the defaults)",
+  ARP: "Tap: a groove on / off. Hold: its settings", SEQ: "Groove page: groove, tempo, percussion", PLAY: "Freeze the grains", REC: "Palm mute: damp everything",
+  "OCT-": "Octave down", "OCT+": "Octave up", SELECT: "Metal", ALGORITHM: "Scale (in its usual key)", PRESETS: "Key: the ding's note",
   MASTER: "Volume" };
 for (const [n, c] of [...Object.entries(buttons), ...Object.entries(knobs)]) if (TIP[n]) c.g.setAttribute("aria-description", TIP[n]);
 for (const k of Object.values(knobs)) hit(k, "knob");
@@ -394,15 +475,17 @@ for (const k of Object.values(knobs)) {
 }
 
 const KEYMAP = {};
-"qwertyui".split("").forEach((c, i) => KEYMAP["Key" + c.toUpperCase()] = { key: WHITE_K[i] });
-"asdfghjk".split("").forEach((c, i) => KEYMAP["Key" + c.toUpperCase()] = { key: WHITE_K[8 + i] });
-"1234567890".split("").forEach((c, i) => KEYMAP["Digit" + c] = { key: BLACK_K[i] });
-KEYMAP.Minus = { key: BLACK_K[10] };
-Object.assign(KEYMAP, { Space: { btn: BTN.PLAY }, Enter: { btn: BTN.REC },
+const CODE = { ";": "Semicolon" };
+WHITE_HINT.forEach((c, i) => KEYMAP[CODE[c] || "Key" + c] = { key: WHITE_K[i] });
+KEYMAP.Space = { key: WHITE_K[7] };
+BLACK_HINT.forEach((c, i) => KEYMAP[c === "-" ? "Minus" : "Digit" + c] = { key: BLACK_K[i] });
+Object.assign(KEYMAP, { KeyB: { btn: BTN.ARP }, Backquote: { btn: BTN.PLAY }, Enter: { btn: BTN.REC },
                         Escape: { btn: BTN.HOME }, KeyZ: { btn: BTN["OCT-"] }, KeyX: { btn: BTN["OCT+"] } });
 addEventListener("keydown", (e) => {
   if (!node || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.code === "ArrowUp" || e.code === "ArrowDown") { turn(knobs.SELECT, e.code === "ArrowUp" ? 1 : -1); e.preventDefault(); return; }
+  if (e.code === "ArrowLeft" || e.code === "ArrowRight") { turn(knobs.ALGORITHM, e.code === "ArrowRight" ? 1 : -1); e.preventDefault(); return; }
+  if (e.code === "BracketLeft" || e.code === "BracketRight") { turn(knobs.PRESETS, e.code === "BracketRight" ? 1 : -1); e.preventDefault(); return; }
   const m = KEYMAP[e.code];
   if (!m) return;
   e.preventDefault();
@@ -439,7 +522,16 @@ function drawLights(b, k, d) {
   for (const x of Object.values(buttons)) x.g.classList.toggle("lit", !!(b & (1 << x.bit)));
   keys.forEach((x, i) => {
     x.g.classList.toggle("lit", !!(k & (1 << i)));
-    x.g.classList.toggle("dim", !(k & (1 << i)) && !!(d & (1 << i)));   // the middle of the kalimba
+    x.g.classList.toggle("dim", !(k & (1 << i)) && !!(d & (1 << i)));   // the ding's keys
+  });
+}
+// what each key plays, as the firmware says: a note's name, or the hit on the steel
+function drawLabels(labels) {
+  keys.forEach((x, i) => {
+    const v = labels[i];
+    x.name.textContent = v < 0 ? HIT[-v - 1] : NOTE[Math.round(v / 100) % 12];
+    if (x.face) x.face.classList.toggle("pan2", v >= 0);
+    x.hit.setAttribute("aria-label", `${x.face ? "black" : "white"} key: ${x.name.textContent}`);
   });
 }
 
@@ -478,6 +570,7 @@ async function switchOn() {
         else if (m.type === "frame") {
           if (m.fb) drawScreen(m.fb);
           drawLights(m.buttons, m.keys, m.dim);
+          if (m.labels) drawLabels(m.labels);
           if (m.load !== undefined) cpu.textContent = `The firmware uses ${m.load}% of this computer's time`;
           if (m.store) saveStore(m.store);
         }
@@ -522,6 +615,18 @@ document.getElementById("midi").addEventListener("click", async () => {
     midiStat.textContent = "MIDI was refused here (" + (err && err.name || "blocked") + "). Opening the page on its own, outside another site, may allow it.";
   }
 });
+// the computer keys printed on the keybed: on unless turned off (remembered)
+function showHints(on) {
+  document.querySelectorAll(".keyhint").forEach((t) => t.style.display = on ? "" : "none");
+  const b = document.getElementById("hints");
+  b.textContent = on ? "Hide key hints" : "Show key hints";
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+  try { localStorage.setItem("hp1-hints", on ? "1" : "0"); } catch {}
+}
+let hintsOn = true;
+try { hintsOn = localStorage.getItem("hp1-hints") !== "0"; } catch {}
+showHints(hintsOn);
+document.getElementById("hints").addEventListener("click", () => showHints(hintsOn = !hintsOn));
 document.getElementById("reset").addEventListener("click", () => {
   if (document.getElementById("reset").dataset.armed) {
     try { localStorage.removeItem(STORE_KEY); } catch {}

@@ -407,7 +407,7 @@ static void test_delayed(void)
     km_pluck(6000, 100, 0, 100);
     km_damp(6000);                               /* let go before it sounds: it never does */
     render(0, 8820);
-    CHECK(peak < 1e-4f, "a cancelled strike sounded (%.5f)", (double)peak);
+    CHECK(peak < 1e-4f, "a canceled strike sounded (%.5f)", (double)peak);
 }
 
 /* Sympathy: D4 struck on a D Kurd wakes the D3 ding (its octave) and the A3 field (its compound fifth

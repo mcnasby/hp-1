@@ -230,15 +230,16 @@ static void safe_main(void)
 
 static void splash(void)
 {
-    lcd_fill(0, 0, 240, 240, RGB(250, 244, 232));
-    cv_begin(240, 84, RGB(250, 244, 232));
+    const uint16_t bg = RGB(18, 16, 15);              /* the UI's Dark theme: a dim room, gold type */
+    lcd_fill(0, 0, 240, 240, bg);
+    cv_begin(240, 84, bg);
     {
         int32_t w = text_w(&FONT_L, "HP-1");
-        cv_text((240 - w) / 2, 0, &FONT_L, "HP-1", RGB(196, 142, 92));
-        w = text_w(&FONT_S, "A thumb piano for the FM-1");
-        cv_text((240 - w) / 2, 42, &FONT_S, "A thumb piano for the FM-1", RGB(150, 132, 110));
+        cv_text((240 - w) / 2, 0, &FONT_L, "HP-1", RGB(242, 168, 72));
+        w = text_w(&FONT_S, "A handpan for the FM-1");
+        cv_text((240 - w) / 2, 42, &FONT_S, "A handpan for the FM-1", RGB(140, 128, 114));
         w = text_w(&FONT_XS, OM_VERSION);              /* "DEV", or a release's "0.1.0 BETA" */
-        cv_text((240 - w) / 2, 66, &FONT_XS, OM_VERSION, RGB(170, 152, 130));
+        cv_text((240 - w) / 2, 66, &FONT_XS, OM_VERSION, RGB(110, 100, 90));
     }
     cv_blit(0, 92);
     lcd_sync();
@@ -323,7 +324,7 @@ static void fm1_main(void)
             uint32_t both = (1u << panel.btn[B_OCTDN]) | (1u << panel.btn[B_OCTUP]);
             if ((fm1_in.buttons & both) != both) {
                 if (shown)
-                    ui_say("UPDATE MODE", "CANCELLED");
+                    ui_say("UPDATE MODE", "CANCELED");
                 shown = 0;
                 t0 = fm1_ms;
             } else if (fm1_ms - t0 > 2000u && fm1_ms - t0 <= 5000u) {

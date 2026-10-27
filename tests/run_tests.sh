@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # HP-1 host tests: the maths, the platform pieces kept from Felucca / X0X / FoMni, the instrument
 # (built without libm, as on the device), and the whole firmware app in the simulator
-# (tests/scenarios/*.kal: keys, black-key modes, MIDI, FX, persistence), with screenshots and audio in
-# build/scenarios/ and one WAV per tine material in build/host/materials/.
+# (tests/scenarios/*.kal: the pan, the steel, the duo, MIDI, FX, persistence), with screenshots and audio in
+# build/scenarios/ and one WAV per metal in build/host/materials/.
 #   tests/run_tests.sh
 set -u
 cd "$(dirname "$0")/.."
