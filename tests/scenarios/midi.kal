@@ -2,7 +2,7 @@
 # channel 10 the steel
 # (Sympathy off: each note on its own)
 tap HOME
-spin K3 -40
+spin K3 -50
 expect par6 0
 midi 90 3C 64
 wait 20

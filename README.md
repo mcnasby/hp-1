@@ -177,7 +177,7 @@ show which page you're on.
 | --------- | ------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Size      | 44–62 cm (53)       | The pan's diameter. Bigger: a lower, rounder Gu and shell, and a slightly longer ring                                 |
 | Thickness | 1.0–1.4 mm (1.2)    | The shell's steel. Thicker: a stiffer, brighter shell, a longer sustain, more steel in the strike                    |
-| Sympathy  | 0–100 (40)          | How much the pan rings along: a struck note wakes the fields whose partials it meets ([below](#sympathy))            |
+| Sympathy  | 0–100 (50)          | How much the pan rings along: the fields whose partials a note meets, and the airy halo of harmonics it leaves ([below](#sympathy-and-the-air)) |
 | Port      | 0–100 (50)          | The air inside: how much each strike, the Gu and the thwaps move the cavity                                          |
 
 **ENV → Touch**
@@ -287,7 +287,10 @@ HP-1 models each sounding field as a bank of six resonators, set from measuremen
 
 A strike is a force pulse with a short burst of skin on steel (the first ~10 ms of a real strike are
 broadband): a soft finger pad is a long pulse (1.2 ms) with almost no burst, a firm flick a short one
-(0.2 ms) with a brighter burst. A firm strike also bends the field a few cents sharp for its first
+(0.2 ms) with a brighter burst. The instant of contact also rings **the field's higher modes**, four
+of them, untuned and inharmonic (5.2, 6.8, 8.6 and 11.3 times the note): the bright, metallic "tang"
+at the front of every note, 10 to 20 dB under the fundamental, gone within a fifth of a second.
+A firmer strike rings it more; it's an impulse, so even a soft finger pad keeps some of it. A firm strike also bends the field a few cents sharp for its first
 moments, as a real one does. The ding is coupled to the air inside, which every strike pushes, so it
 sounds faintly under every note (Sympathy). Sixteen fields can ring at once. A new note beyond that
 takes over the quietest, which fades out instead of being cut. Re-striking a ringing field damps it
@@ -315,7 +318,7 @@ Inside is air, a **Helmholtz resonator** tuned by the bottom port: about 92 Hz o
 on a bigger one. Every strike pushes it (the ding most of all), the thwaps boom through it, and the
 Gu is nothing but it. **Port** sets how much.
 
-### Sympathy
+### Sympathy and the air
 
 Strike D4 on a D Kurd and the D3 ding starts to ring with it, because D4 is the ding's octave. Its
 compound fifth (A5) wakes the A4 field the same way. HP-1 checks every struck note's three partials
@@ -323,6 +326,14 @@ against every field's, and a field whose partial lands within 12 cents of one ri
 softly, a few milliseconds later. Sympathy only takes a free voice and never restrikes a ringing
 field, so it can't steal a note you played. The thwaps wake the ding and the fields on their side the
 same way. That's how the whole pan comes alive under your hands.
+
+**The air** is the halo a real pan leaves hanging after each note. A resonator per note of the pan (the
+ding and its fields), each tuned to that note, is fed the pan's sound and rings that note's whole
+harmonic series (1, 2, 3, 4 ... its partials, which a handpan's are), darkening as it goes. Only what's
+in the scale resonates, so the halo is always in tune. Two short diffusers a side spread it into the
+room, each note's resonance on the side its field sits. It rings about 2.3 s at the default Sympathy
+(none at 0, 3.4 s at 100), about 30 dB under the note. A palm mute (REC, or the kit's Mute) silences
+it with the fields.
 
 ### The percussion
 
