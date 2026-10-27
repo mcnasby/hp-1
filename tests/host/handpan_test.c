@@ -237,6 +237,22 @@ static void test_music(void)
             }
         }
     CHECK(!strcmp(km_duo_name(0, 2, 0, b), "D Celtic"), "D Kurd's best second pan: %s", b);
+    /* its keys laid out as the white keys: Pan the ding in the middle (key 3 of 0..6), the fields
+     * alternating outward, left first; Mirror right first; Linear low to high. Each a permutation */
+    {
+        static const int PAN[KM_NDUO] = {5, 3, 1, 0, 2, 4, 6};
+        int lay, seen;
+        for (i = 0; i < KM_NDUO; i++) {
+            CHECK(km_duo_index(LAY_PAN, i) == PAN[i], "duo Pan key %d: %d", i, km_duo_index(LAY_PAN, i));
+            CHECK(km_duo_index(LAY_MIRROR, i) == PAN[KM_NDUO - 1 - i], "duo Mirror key %d", i);
+            CHECK(km_duo_index(LAY_LINEAR, i) == i, "duo Linear key %d", i);
+        }
+        for (lay = 0; lay < LAY_N; lay++) {
+            for (seen = 0, i = 0; i < KM_NDUO; i++)
+                seen |= 1 << km_duo_index(lay, i);
+            CHECK(seen == (1 << KM_NDUO) - 1, "duo layout %d plays every note once (%x)", lay, seen);
+        }
+    }
     km_duo_choice(3, 6, 0, &s, &k);
     CHECK(k == 6, "F# Pygmy's best second pan shares its ding (%s %s)", KM_NOTE_NAME[k], km_scale_name(s));
     for (i = 0; i < P_NPARAMS; i++) {

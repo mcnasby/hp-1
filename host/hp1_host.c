@@ -24,6 +24,7 @@
  *                                (WHAT: view dirty frozen store_writes midi_out voices grains
  *                                 dropped pat pulse ext shellL shellR cavity duocount parN
  *                                 whiteW (cents of white key W) duoI (cents of the second pan's note I)
+ *                                 duokeyB (cents black key B plays as the second pan, -1 not)
  *                                 noteC (level x100 of the note at C cents) lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
  *                                 dimkey (the key whose LED is dim, -1 none) litkeys (bits)
  *                                 peak_db_max peak_db_min)
@@ -396,7 +397,10 @@ static int expect(const char *what, const char *val)
         got = proj.par[atoi(what + 3)];
     else if (!strncmp(what, "white", 5))          /* whiteW: the cents white key W plays now */
         got = white_cents(atoi(what + 5));
-    else if (!strncmp(what, "duo", 3))            /* duoI: the cents of the second pan's note I (0: its ding) */
+    else if (!strncmp(what, "duokey", 6)) {       /* duokeyB: the cents black key B plays as the second pan (-1: not) */
+        int b = atoi(what + 6);
+        got = is_duo_key(b) ? duo_cents(duo_index(b)) : -1;
+    } else if (!strncmp(what, "duo", 3))          /* duoI: the cents of the second pan's note I (0: its ding) */
         got = duo_cents(atoi(what + 3));
     else if (!strncmp(what, "note", 4))           /* noteC: the level x 100 of the note at C cents */
         got = note_lvl(atoi(what + 4));

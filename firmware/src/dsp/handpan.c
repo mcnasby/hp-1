@@ -233,6 +233,16 @@ int km_duo_notes(int s, int key, int octave, int choice, int out[KM_NDUO])
     return KM_NDUO;
 }
 
+int km_duo_index(int layout, int i)
+{
+    i = i < 0 ? 0 : i >= KM_NDUO ? KM_NDUO - 1 : i;
+    if (layout == LAY_LINEAR)
+        return i;
+    if (layout == LAY_MIRROR)
+        i = KM_NDUO - 1 - i;
+    return i == 3 ? 0 : i < 3 ? 2 * (3 - i) - 1 : 2 * (i - 3);
+}
+
 const char *km_duo_name(int s, int key, int choice, char *b)
 {
     int ds, dk, i = 0;
