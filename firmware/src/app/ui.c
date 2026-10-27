@@ -843,6 +843,20 @@ static spot_t field_spot(int i, int32_t cx, int32_t cy, int32_t R)
     return s;
 }
 
+/* the same for a pan of n fields set evenly round its ding (the second pan's six: 60 degrees apart),
+ * still climbing in the zigzag from the bottom: field i at (2p + 1) x 180 / n degrees from straight down,
+ * the odd ones left */
+static spot_t field_spot_even(int i, int n, int32_t cx, int32_t cy, int32_t R)
+{
+    const int p = (i - 1) / 2, ring = R * 68 / 100, side = (i & 1) ? -1 : 1;
+    const float a = (float)(2 * p + 1) * FM_PI / (float)n;
+    spot_t s;
+    s.x = (int16_t)(cx + (int32_t)((float)(side * ring) * fm_sinf(a) + (side < 0 ? -0.5f : 0.5f)));
+    s.y = (int16_t)(cy + (int32_t)((float)ring * fm_cosf(a) + (fm_cosf(a) < 0.0f ? -0.5f : 0.5f)));
+    s.r = (int16_t)(R * (22 - 2 * p) / 100);
+    return s;
+}
+
 static void draw_shell(int32_t cx, int32_t cy, int32_t R, uint16_t dark, uint16_t light, int side_glow[2])
 {
     int32_t r;
@@ -921,7 +935,7 @@ static void draw_pan(void)
         const int32_t dx = 200, dy = 50, dr = 34;
         draw_shell(dx, dy, dr, dark, light, (int[2]){0, 0});
         for (i = 0; i < KM_NDUO; i++) {
-            spot_t s = i ? field_spot(i, dx, dy, dr) : (spot_t){(int16_t)dx, (int16_t)dy, 9};
+            spot_t s = i ? field_spot_even(i, KM_NDUO - 1, dx, dy, dr) : (spot_t){(int16_t)dx, (int16_t)dy, 9};
             int c = duo_cents(i);
             if (i)
                 s.r = (int16_t)(s.r + 1);

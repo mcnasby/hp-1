@@ -62,9 +62,9 @@ static const scale_t SCALES[KM_NSCALE] = {
     {"Akebono", 2, 8, {7, 8, 12, 14, 15, 19, 20, 24}},     /* D / A Bb D E F A Bb D */
     {"Major", 0, 8, {7, 9, 11, 12, 14, 16, 17, 19}},       /* C / G A B C D E F G */
     {"Mixolyd.", 7, 8, {7, 9, 10, 12, 14, 16, 17, 19}},    /* G / D E F G A B C D */
-    {"SaByeD", 4, 8, {5, 7, 9, 11, 12, 14, 16, 19}},       /* E / A B C# D# E F# G# B: major, its fourth
-                                                            * tucked below the octave (Sela's D Sabye,
-                                                            * PanAmor's E Sabye, Isthmus's E SaByeD) */
+    {"SaByeD", 4, 8, {5, 7, 9, 11, 12, 14, 16, 19}},       /* E / A B C# D# E F# G# B: Colin Foulke's
+                                                            * (CFoulke Æther): major, its fourth tucked
+                                                            * below the octave */
 };
 
 static const scale_t *scale_of(int s) { return &SCALES[(unsigned)s < KM_NSCALE ? s : 0]; }

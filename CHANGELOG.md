@@ -9,9 +9,10 @@ taken from its section below. Add the section in the same pull request as the `V
 - **The second pan is laid out like the first.** With Black on Duo, its ding is now on the middle of
   the seven keys (black key 6) and its notes alternate outward, left then right, as on the white keys.
   It follows Layout: Mirror goes right first, Linear runs low to high. Its ding's key glows dimly.
-- **A new scale, SaByeD**, in E by default (E3 / A B C# D# E F# G# B): major, with its fourth tucked
-  below the octave, as on Isthmus's E SaByeD, Sela's D Sabye and PanAmor's E Sabye. It sits after
-  Mixolydian: one step back from Kurd on ALGORITHM.
+- **A new scale, SaByeD**, Colin Foulke's, in E as he builds it (E3 / A B C# D# E F# G# B): major,
+  with its fourth tucked below the octave. It sits after Mixolydian: one step back from Kurd on
+  ALGORITHM.
+- **The second pan's fields sit evenly round its ding** on the screen, as the first pan's do.
 - **Note names spelled as each scale spells them:** an E pan shows G# and D# (not Ab and Eb), a D Kurd
   still shows Bb. On the screen and on the web page's keys.
 

@@ -216,7 +216,7 @@ static void test_music(void)
                   got, SP[i].name);
         }
     }
-    {   /* E SaByeD (Isthmus; Sela's D Sabye and PanAmor's E Sabye the same steps): E3 / A B C# D# E F# G# B */
+    {   /* E SaByeD, Colin Foulke's (his Æther pans): E3 / A B C# D# E F# G# B */
         static const int SABYE[9] = {5200, 5700, 5900, 6100, 6300, 6400, 6600, 6800, 7100};
         own = km_pan_notes(10, km_scale_root(10), 0, n);
         CHECK(!strcmp(km_scale_name(10), "SaByeD") && km_scale_root(10) == 4 && own == 9, "SaByeD in E");
