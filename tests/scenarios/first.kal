@@ -1,27 +1,42 @@
-# a first look and listen: the Tine layout in C, a run up the V, every page
-# (params: 0 Material 1 Hardness 2 Decay 3 Tone 4 Body 5 Buzz 6 Wah 7 Wah rate 8 Reverb 9 Size 10 Delay
-#  11 Time 12 Grains 13 Grain ms 14 Density 15 Pitch 16 Layout 17 Scale 18 Key 19 Black 20 Feedback
-#  21 Spray 22 Strum 23 Release 24 Tune 25 MIDI ch 26 MIDI out 27 Width 28 Octave)
+# a first look and listen: D Kurd in the Pan layout, a run out from the ding, every page
+# (params: 0 Metal 1 Strike 2 Sustain 3 Harmonics 4 Size 5 Thickness 6 Sympathy 7 Port 8 Reverb 9 Room
+#  10 Delay 11 Time 12 Tape 13 Lo-fi 14 Chorus 15 Filter 16 Grains 17 Grain ms 18 Density 19 Pitch
+#  20 Spray 21 Feedback 22 Width 23 Layout 24 Scale 25 Key 26 Black 27 Duo 28 Duo level 29 Percussion
+#  30 Octave 31 Worn 32 Humanize 33 Tuning 34 Release 35 Groove 36 Tempo 37 Tune 38 MIDI ch 39 MIDI out
+#  40 Theme)
 wav first.wav
 wait 300
+shot hello.png
+wait 1500
 shot home.png
 expect view 0
-expect white8 6000
-expect white7 6200
-expect white9 6400
-expect white15 8400
-# the middle out, alternating sides: C D E F G A B C
+expect par24 0
+expect par25 2
+# D Kurd: the ding on both middle keys, the fields zigzag out, left first
+expect white7 5000
+expect white8 5000
+expect white6 5700
+expect white9 5800
+expect white5 6000
+expect white10 6200
+expect white3 6700
+expect white12 6900
+# past the pan's own fields, the scale goes on: the ends
+expect white0 7700
+expect white15 7900
+# the ding, then out and up: D | A Bb C D E F G A
 tapkey w8
-tapkey w7
-tapkey w9
 tapkey w6
-tapkey w10
+tapkey w9
 tapkey w5
-tapkey w11
+tapkey w10
 tapkey w4
+tapkey w11
+tapkey w3
+tapkey w12
 wait 50
 shot ringing.png
-expect tine7200 >10
+expect note6900 >10
 expect voices >5
 leds
 wait 2500
@@ -29,16 +44,16 @@ wavstop
 expect peak_db_max -0.5
 expect peak_db_min -30
 # the pages, by their buttons; a button pressed again shows its next page, and round
-# (0 Tine 1 Character | 2 Body | 3 Space 4 Color | 5 Grain 6 Spread | 7 Keys 8 Play | 9 Pattern | 10 Setup)
+# (0 Pan 1 Shell | 2 Touch | 3 Space 4 Color | 5 Grain 6 Spread | 7 Keys 8 Duo | 9 Groove | 10 Setup)
 tap HOME
 expect view 1
 wait 50
-shot character.png
+shot shell.png
 tap HOME
 expect view 0
 tap ENV
 expect view 2
-shot body.png
+shot touch.png
 tap FX
 expect view 3
 shot space.png
@@ -61,52 +76,56 @@ shot keys.png
 tap SEL
 expect view 8
 wait 50
-shot play.png
+shot duo_page.png
 tap SEQ
 expect view 9
 wait 50
-shot pattern.png
+shot groove.png
 tap GLO
 expect view 10
 shot setup.png
-# EDIT: every page in turn, and round
 tap EDIT
 expect view 0
 tap EDIT
 expect view 1
-# ARP held: the Pattern page, and the pattern left as it was
+# ARP held: the Groove page, and the groove left as it was
 press ARP
 wait 700
 release ARP
 expect view 9
 expect pat 0
 tap GLO
-# the encoders: SELECT material, ALGORITHM scale, PRESETS key
-turn SELECT 2
-expect par0 2
-turn ALGO 2
-expect par17 2
-turn PRESET 3
-expect par18 3
-expect white8 6300
-turn PRESET -4
-expect par18 11
-# B, pentatonic: the middle tine B3 (the octave starts at C4)
-expect white8 5900
+# the encoders: SELECT metal, ALGORITHM scale (in the key it's usually made in), PRESETS key
+turn SELECT 1
+expect par0 1
+turn ALGO 3
+expect par24 3
+# Pygmy comes in F#: F#3 / G# A C# E F# G# A C#
+expect par25 6
+expect white8 5400
+expect white6 5600
+wait 50
+shot pygmy.png
+turn PRESET -1
+expect par25 5
+expect white8 5300
+# Octave: the ding an octave down, and back
 tap OCT-
-expect par28 -1
-expect white8 4700
+expect par30 -1
+expect white8 4100
 tap OCT+
 tap OCT+
-expect par28 1
-# knobs on the Tine page
-tap GLO
+expect par30 1
+expect white8 6500
+tap OCT+
+expect par30 1
+# knobs on the Pan page
 tap HOME
 expect view 0
 spin K2 -20
-expect par1 25
+expect par1 20
 spin K3 30
-expect par2 80
+expect par2 85
 wait 50
 shot knobs.png
 expect dirty 1

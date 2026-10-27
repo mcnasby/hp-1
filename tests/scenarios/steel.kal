@@ -1,0 +1,83 @@
+# the black keys: the steel at both ends (thwap, tak), the kit between (Gu, ghost, ding slap, tak,
+# harmonic, rim, mute); REC mutes too
+# (params: 26 Black 29 Percussion; shellL / shellR / cavity: x 1000)
+wav steel.wav
+wait 1600
+expect par26 0
+key b0 down
+wait 30
+expect shellL >5
+shot thwap.png
+key b0 up
+wait 300
+key b10 down
+wait 20
+expect shellR >5
+key b10 up
+wait 300
+tapkey b1
+wait 300
+tapkey b9
+wait 300
+# the Gu: the air inside
+key b2 down
+wait 25
+expect cavity >5
+shot gu.png
+key b2 up
+wait 400
+tapkey b3
+wait 200
+# the ding slap: it sounds, then the palm closes it
+key b4 down
+wait 20
+expect note5000 >5
+key b4 up
+wait 400
+expect note5000 <3
+tapkey b5
+wait 200
+# the harmonic: the ding again, its octave singing
+tapkey b6
+wait 50
+expect note5000 >1
+wait 400
+tapkey b7
+wait 300
+# mute: everything ringing, damped
+tapkey w8
+tapkey w6
+tapkey w9
+wait 100
+expect note5700 >5
+tapkey b8
+wait 500
+expect note5700 <2
+expect note5000 <2
+# REC: the palm mute too
+tapkey w10
+wait 100
+expect note6200 >5
+tap REC
+wait 500
+expect note6200 <2
+# the keys light while they sound
+tapkey b0
+leds
+# Percussion 0: the steel is silent
+tap SEL
+tap SEL
+expect view 8
+spin K3 -70
+expect par29 0
+wait 1500
+peakreset
+tapkey b0
+tapkey b1
+wait 200
+expect shellL 0
+spin K3 70
+wait 2000
+wavstop
+expect peak_db_max -0.3
+expect dropped 0

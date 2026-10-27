@@ -1,24 +1,24 @@
-# the effects: delay, grains (live and frozen), reverb size, body, buzz, wah
+# the effects: delay, grains (live and frozen), the shell's size and thickness
 wav fx.wav
 tap FX
 spin K3 60
 expect par10 60
 spin K4 -130
-expect par11 200
+expect par11 245
 # Feedback: LFO's second page, Spread
 tap LFO
 tap LFO
 expect view 6
 spin K2 20
-expect par20 65
-tapkey w7
+expect par21 60
+tapkey w6
 wait 1500
 # grains: live, then frozen (PLAY)
 tap LFO
 spin K1 80
-expect par12 80
+expect par16 80
 spin K4 -2
-expect par15 2
+expect par19 2
 tapkey w8
 tapkey w9
 wait 600
@@ -31,24 +31,29 @@ shot grains.png
 tap PLAY
 expect frozen 0
 spin K4 4
-expect par15 6
+expect par19 6
 wait 1000
 spin K4 1
-expect par15 7
+expect par19 7
 wait 1000
-# the body: a gourd, buzzers, the wah LFO
-tap ENV
-spin K1 1
-expect par4 3
-spin K2 80
-spin K4 50
-tapkey w7
-tapkey w6
+# the shell: a big, thick pan, a small thin one
+tap HOME
+tap HOME
+expect view 1
+spin K1 9
+spin K2 2
+expect par4 62
+expect par5 14
+tapkey b2
+tapkey w8
 wait 400
-shot body_wah.png
-spin K1 -3
-expect par4 0
-tapkey w7
+shot shell_big.png
+spin K1 -18
+spin K2 -4
+expect par4 44
+expect par5 10
+tapkey b2
+tapkey w8
 wait 500
 wavstop
 expect peak_db_max -0.1

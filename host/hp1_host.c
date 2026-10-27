@@ -21,14 +21,14 @@
  *   shot FILE.png                save the screen
  *   leds                         print the lit buttons and keys
  *   expect WHAT VALUE            check state: exit 1 on mismatch; VALUE "<N" / ">N" is a bound
- *                                (WHAT: view dirty frozen store_writes midi_out voices grains hole octshift
- *                                 dropped pat pool pulse ext parN whiteW (cents of white key W) keyK (cents of key K, Keyboard
- *                                 layout) tineC (level x100 of the tine at
- *                                 C cents) lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
+ *                                (WHAT: view dirty frozen store_writes midi_out voices grains
+ *                                 dropped pat pulse ext shellL shellR cavity duocount parN
+ *                                 whiteW (cents of white key W) duoI (cents of the second pan's note I)
+ *                                 noteC (level x100 of the note at C cents) lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
  *                                 dimkey (the key whose LED is dim, -1 none) litkeys (bits)
  *                                 peak_db_max peak_db_min)
  *   reboot                       re-run boot from the simulated flash (persistence test)
- *   oldproject                   put a format 1 project (Material 2) in the simulated flash
+ *   oldproject                   put a FiMba-1 project in the simulated flash (it must not load)
  */
 #define OM_HOST 1
 #ifndef _POSIX_C_SOURCE
@@ -349,7 +349,7 @@ static int key_of(const char *s)
     return atoi(s);
 }
 
-static int tine(int cents)
+static int note_lvl(int cents)
 {
     int v;
     float l = 0.0f;
@@ -378,16 +378,16 @@ static int expect(const char *what, const char *val)
             got += km_voice_cents[v] >= 0;
     } else if (!strcmp(what, "grains"))
         got = km_grains_on;
-    else if (!strcmp(what, "hole"))
-        got = (int)(km_hole_open * 100.0f + 0.5f);
-    else if (!strcmp(what, "octshift"))
-        got = ui.oct_shift;
+    else if (!strcmp(what, "shellL") || !strcmp(what, "shellR"))   /* the shell ringing, x 1000 */
+        got = (int)(km_shell_level[what[5] == 'R'] * 1000.0f);
+    else if (!strcmp(what, "cavity"))             /* the air inside (the Gu), x 1000 */
+        got = (int)(km_cavity_level * 1000.0f);
     else if (!strcmp(what, "dropped"))
         got = (int)km_dropped;
-    else if (!strcmp(what, "pat"))                /* the pattern: 3 = the UI and the engine agree it runs */
+    else if (!strcmp(what, "pat"))                /* the groove: 3 = the UI and the engine agree it runs */
         got = ui.pat_on + 2 * km_pat_on;
-    else if (!strcmp(what, "pool"))
-        got = ui.pool_n;
+    else if (!strcmp(what, "duocount"))           /* how many second pans go with this one */
+        got = km_duo_count(proj.par[P_SCALE], proj.par[P_KEY]);
     else if (!strcmp(what, "pulse"))
         got = km_pat_pulse;
     else if (!strcmp(what, "ext"))
@@ -396,10 +396,10 @@ static int expect(const char *what, const char *val)
         got = proj.par[atoi(what + 3)];
     else if (!strncmp(what, "white", 5))          /* whiteW: the cents white key W plays now */
         got = white_cents(atoi(what + 5));
-    else if (!strncmp(what, "key", 3))            /* keyK: the cents key K plays in the Keyboard layout */
-        got = key_cents(atoi(what + 3));
-    else if (!strncmp(what, "tine", 4))           /* tineC: the level x 100 of the tine at C cents */
-        got = tine(atoi(what + 4));
+    else if (!strncmp(what, "duo", 3))            /* duoI: the cents of the second pan's note I (0: its ding) */
+        got = duo_cents(atoi(what + 3));
+    else if (!strncmp(what, "note", 4))           /* noteC: the level x 100 of the note at C cents */
+        got = note_lvl(atoi(what + 4));
     else if (!strcmp(what, "dimkey")) {            /* the key whose LED is dim (-1: none) */
         int q;
         for (got = -1, q = 0; q < NKEYS; q++)
@@ -553,12 +553,11 @@ int main(int argc, char **argv)
             printf("\n");
         } else if (!strcmp(cmd, "expect"))
             fails += expect(a, b);
-        else if (!strcmp(cmd, "oldproject")) {   /* a format 1 project in the store, as 0.1 saved it */
+        else if (!strcmp(cmd, "oldproject")) {   /* a FiMba-1 project in the store (another magic): ignored */
             project_defaults();
-            proj.format = 1u;
-            memset(proj.par + PROJ_NPAR_OF(1u), 0, sizeof proj.par - PROJ_NPAR_OF(1u) * sizeof proj.par[0]);
-            proj.par[P_MATERIAL] = 2;
-            plat_store_save(OBJ_PROJ, &proj, 8u + 2u * PROJ_NPAR_OF(1u) + 32u);
+            proj.magic = 0x41424C4Bu;
+            proj.par[P_METAL] = 2;
+            plat_store_save(OBJ_PROJ, &proj, sizeof proj);
         } else if (!strcmp(cmd, "reboot")) {
             memset(&proj, 0, sizeof proj);
             boot();

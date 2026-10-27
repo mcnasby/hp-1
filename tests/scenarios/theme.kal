@@ -1,38 +1,36 @@
-# the screen's theme (GLO, Setup KNOB 4): Light by default, Dark the near-black, cream and amber; every
-# part of the screen redraws at once, and it's kept over a restart. The header shows the version.
-# (params: 39 Theme; luma: brightness at (2, row): 2 the header, 60 the wood, 200 the knobs)
+# the screen's theme (GLO, Setup KNOB 4): Dark by default, Light sand and ink; every part of the screen
+# redraws at once, and it's kept over a restart. The header shows the version.
+# (params: 40 Theme; luma: brightness at (2, row): 2 the header, 60 beside the pan, 200 the knobs)
+wait 50
 tap GLO
 expect view 10
-expect par39 0
-wait 50
-expect luma2 >200
-expect luma200 >200
-shot setup_light.png
-spin K4 1
-expect par39 1
+expect par40 0
 wait 50
 expect luma2 <40
-expect luma60 <60
 expect luma200 <40
 shot setup_dark.png
-# every page follows
+spin K4 1
+expect par40 1
+wait 50
+expect luma2 >200
+expect luma60 >200
+expect luma200 >200
+shot setup_light.png
 tap HOME
 tapkey w8
-tapkey w7
+tapkey w6
 wait 50
-expect luma2 <40
-shot home_dark.png
+expect luma2 >200
+shot home_light.png
 tap SAVE
 reboot
-expect par39 1
+expect par40 1
 tapkey w8
-tapkey w7
 wait 50
-expect luma2 <40
-shot dark.png
-# and back
+expect luma2 >200
+shot light.png
 tap GLO
 spin K4 -1
-expect par39 0
+expect par40 0
 wait 50
-expect luma60 >120
+expect luma60 <40

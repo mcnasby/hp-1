@@ -1,0 +1,49 @@
+# the grooves (ARP) and the Color page
+# (params: 12 Tape 13 Lo-fi 14 Chorus 15 Filter 35 Groove 36 Tempo)
+wav groove.wav
+wait 1600
+expect pat 0
+tap ARP
+expect pat 3
+wait 1500
+expect voices >1
+# the white keys play over it
+tapkey w10
+wait 20
+expect note6200 >5
+# Groove page: Groove, Tempo, Percussion
+tap SEQ
+expect view 9
+spin K1 3
+expect par35 3
+spin K2 30
+expect par36 114
+wait 1500
+shot groove_running.png
+leds
+# Color on everything
+tap FX
+tap FX
+expect view 4
+spin K1 60
+spin K2 30
+spin K3 50
+spin K4 -40
+expect par12 60
+expect par15 -40
+wait 1500
+shot color_on.png
+spin K4 80
+expect par15 40
+wait 800
+spin K1 -60
+spin K2 -30
+spin K3 -50
+spin K4 -40
+wait 500
+tap ARP
+expect pat 0
+wait 3000
+wavstop
+expect peak_db_max -0.1
+expect dropped 0

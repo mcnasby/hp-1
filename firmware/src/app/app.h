@@ -5,17 +5,17 @@
 #include <stdint.h>
 #include "plat.h"
 #include "../dsp/handpan.h"
-#include "../dsp/fastmath.h"                /* the UI draws with it (tine lengths) */
+#include "../dsp/fastmath.h"                /* the UI draws with it */
 
 #ifndef OM_VERSION                       /* a release build passes its own (tools/build.py --release) */
 #define OM_VERSION "DEV"
 #endif
-#define PROJ_MAGIC 0x41424C4Bu           /* "KLBA": never a FoMni project */
+#define PROJ_MAGIC 0x4E415048u           /* "HPAN": never a FiMba-1 or FoMni project */
 /* The format counts the settings a project holds: a newer version reads an older project's values and
  * gives the settings it lacks their defaults (its spare bytes, zeros, are never taken for settings).
  * Add a setting at the end of P_*, bump the format, and add its count here. */
-#define PROJ_FORMAT 4u                    /* 4: Theme; 3: Worn; 2: Color and Pattern; 1: the first */
-#define PROJ_NPAR_OF(f) ((f) == 1u ? P_TRANSPOSE + 1 : (f) == 2u ? P_TUNING + 1 : (f) == 3u ? P_WORN + 1 : P_NPARAMS)
+#define PROJ_FORMAT 1u                    /* 1: the first */
+#define PROJ_NPAR_OF(f) P_NPARAMS
 
 typedef struct {
     uint32_t magic, format;

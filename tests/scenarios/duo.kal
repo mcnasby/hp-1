@@ -1,0 +1,64 @@
+# Black Duo: a second pan on the seven middle black keys, in a scale that goes with the first
+# (params: 24 Scale 25 Key 26 Black 27 Duo 28 Duo level; duoI: the second pan's note I, 0 its ding)
+wait 1600
+tap SEL
+expect view 7
+# off (Kit): the Duo page's Duo knobs do nothing
+tap SEL
+expect view 8
+spin K1 1
+expect par27 0
+wait 50
+shot duo_off.png
+tap SEL
+spin K4 1
+expect par26 1
+wait 50
+shot duo_keys.png
+# D Kurd's best match: D Celtic, its ding an octave over the first's
+expect duocount >3
+expect duo0 6200
+expect duo1 6900
+expect duo2 7200
+# the end keys stay the steel
+key b0 down
+wait 20
+expect shellL >5
+key b0 up
+# the middle keys play the second pan
+tapkey b2
+wait 30
+expect note6200 >3
+tapkey b4
+wait 30
+expect note7200 >3
+wait 50
+shot duo_play.png
+# another match: the Duo page's first knob steps through them, each in the first pan's notes
+tap SEL
+expect view 8
+spin K1 1
+expect par27 1
+wait 50
+shot duo_next.png
+spin K1 40
+expect par27 >1
+spin K1 -60
+expect par27 0
+# a new scale (or key) starts the match afresh
+spin K1 2
+expect par27 2
+tap SEL
+spin K2 1
+expect par24 1
+expect par27 0
+turn PRESET 1
+expect par27 0
+# Duo level 0: the second pan barely there
+tap SEL
+spin K2 -80
+expect par28 0
+tapkey b3
+wait 30
+expect note6900 <15
+expect dropped 0

@@ -1,0 +1,43 @@
+# the three layouts: Pan (zigzag, left first), Mirror (right first), Linear (low to high); the ding's
+# keys dim-lit; Just tuning over the ding
+# (params: 23 Layout 33 Tuning; keys: 0 F3 .. 26 G5; white 7 is key 12, white 8 key 14, white 0 key 0)
+wait 1600
+expect par23 0
+expect dimkey 14
+tap SEL
+spin K1 1
+expect par23 1
+expect white8 5000
+expect white9 5700
+expect white6 5800
+expect white15 7700
+wait 50
+shot mirror.png
+spin K1 1
+expect par23 2
+expect white0 5000
+expect white1 5700
+expect white8 6900
+expect white15 8100
+wait 30
+expect dimkey 0
+shot linear.png
+tapkey w0
+tapkey w1
+tapkey w2
+wait 50
+expect note5700 >5
+spin K1 -2
+expect par23 0
+# Just: the fifth over the ding pure (A3 two cents sharp of equal), E (9/8) 4 sharp, C (9/5) 18 sharp
+tap ENV
+spin K3 1
+expect par33 1
+expect white6 5702
+expect white4 6404
+expect white5 6018
+tapkey w6
+wait 30
+expect note5702 >5
+spin K3 -1
+expect white6 5700
