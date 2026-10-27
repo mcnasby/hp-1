@@ -175,24 +175,26 @@ static void test_music(void)
 {
     int i, s, k, n[KM_NPAN], own;
     char b[24];
-    /* D Kurd, as the makers build it: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4, then the scale on up */
+    /* D Kurd, as the makers build it (Kurd 10): D3 / A3 Bb3 C4 D4 E4 F4 G4 A4 C5, then the scale on up */
     static const int KURD[KM_NPAN] = {5000, 5700, 5800, 6000, 6200, 6400, 6500, 6700, 6900,
-                                      7000, 7200, 7400, 7600, 7700, 7900, 8100};
+                                      7200, 7400, 7600, 7700, 7900, 8100, 8200};
     own = km_pan_notes(0, 2, 0, n);
-    CHECK(own == 9, "Kurd has a ding and 8 fields (%d)", own);
+    CHECK(own == 10, "Kurd has a ding and 9 fields (%d)", own);
     for (i = 0; i < KM_NPAN; i++)
         CHECK(n[i] == KURD[i], "D Kurd note %d: %d, wanted %d", i, n[i], KURD[i]);
-    /* Pan: the ding on both middle keys, then the fields zigzag outward, left first */
+    /* Pan: the ding on both middle keys, then the fields zigzag outward, the first on the right, as a
+     * maker lays a D Kurd out (A3 right, Bb3 left, C4 right, D4 left ... C5 at the top) */
     CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 7) == 5000 && km_white_cents(LAY_PAN, 0, 2, 0, 8) == 5000, "ding in the middle");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 6) == 5700 && km_white_cents(LAY_PAN, 0, 2, 0, 9) == 5800, "A left, Bb right");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 5) == 6000 && km_white_cents(LAY_PAN, 0, 2, 0, 10) == 6200, "C left, D right");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 0) == 7700 && km_white_cents(LAY_PAN, 0, 2, 0, 15) == 7900, "the ends");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 9) == 5700 && km_white_cents(LAY_PAN, 0, 2, 0, 6) == 5800, "A right, Bb left");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 10) == 6000 && km_white_cents(LAY_PAN, 0, 2, 0, 5) == 6200, "C right, D left");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 3) == 6900 && km_white_cents(LAY_PAN, 0, 2, 0, 13) == 7200, "A4 left, C5 right");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 0) == 8100 && km_white_cents(LAY_PAN, 0, 2, 0, 15) == 7900, "the ends");
     for (i = 1; i < 7; i++) {                    /* each step out from the middle climbs */
         CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 7 - i) > km_white_cents(LAY_PAN, 0, 2, 0, 8 - i), "left climbs %d", i);
         CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 8 + i) > km_white_cents(LAY_PAN, 0, 2, 0, 7 + i), "right climbs %d", i);
     }
     for (i = 0; i < 16; i++) {
-        CHECK(km_white_cents(LAY_MIRROR, 3, 6, 0, i) == km_white_cents(LAY_PAN, 3, 6, 0, 15 - i), "mirror %d", i);
+        CHECK(km_white_cents(LAY_PANREV, 3, 6, 0, i) == km_white_cents(LAY_PAN, 3, 6, 0, 15 - i), "pan rev %d", i);
         CHECK(km_white_cents(LAY_LINEAR, 0, 2, 0, i) == KURD[i], "linear %d", i);
     }
     CHECK(km_white_pos(LAY_PAN, 7) == 0.0f && km_white_pos(LAY_PAN, 2) < -0.5f && km_white_pos(LAY_PAN, 13) > 0.5f, "pan position");
@@ -258,13 +260,13 @@ static void test_music(void)
         }
     CHECK(!strcmp(km_duo_name(0, 2, 0, b), "D Celtic"), "D Kurd's best second pan: %s", b);
     /* its keys laid out as the white keys: Pan the ding in the middle (key 3 of 0..6), the fields
-     * alternating outward, left first; Mirror right first; Linear low to high. Each a permutation */
+     * alternating outward, right first; Pan rev left first; Linear low to high. Each a permutation */
     {
-        static const int PAN[KM_NDUO] = {5, 3, 1, 0, 2, 4, 6};
+        static const int PAN[KM_NDUO] = {6, 4, 2, 0, 1, 3, 5};
         int lay, seen;
         for (i = 0; i < KM_NDUO; i++) {
             CHECK(km_duo_index(LAY_PAN, i) == PAN[i], "duo Pan key %d: %d", i, km_duo_index(LAY_PAN, i));
-            CHECK(km_duo_index(LAY_MIRROR, i) == PAN[KM_NDUO - 1 - i], "duo Mirror key %d", i);
+            CHECK(km_duo_index(LAY_PANREV, i) == PAN[KM_NDUO - 1 - i], "duo Pan rev key %d", i);
             CHECK(km_duo_index(LAY_LINEAR, i) == i, "duo Linear key %d", i);
         }
         for (lay = 0; lay < LAY_N; lay++) {

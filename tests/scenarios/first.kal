@@ -12,28 +12,31 @@ shot home.png
 expect view 0
 expect par24 0
 expect par25 2
-# D Kurd: the ding on both middle keys, the fields zigzag out, left first
+# D Kurd as a maker lays it out: the ding on both middle keys, the fields zigzag out, the first on the
+# right (A3 right, Bb3 left, C4 right, D4 left ... C5)
 expect white7 5000
 expect white8 5000
-expect white6 5700
-expect white9 5800
-expect white5 6000
-expect white10 6200
-expect white3 6700
-expect white12 6900
+expect white9 5700
+expect white6 5800
+expect white10 6000
+expect white5 6200
+expect white12 6700
+expect white3 6900
+expect white13 7200
 # past the pan's own fields, the scale goes on: the ends
-expect white0 7700
+expect white0 8100
 expect white15 7900
-# the ding, then out and up: D | A Bb C D E F G A
+# the ding, then out and up: D | A Bb C D E F G A C
 tapkey w8
-tapkey w6
 tapkey w9
-tapkey w5
+tapkey w6
 tapkey w10
-tapkey w4
+tapkey w5
 tapkey w11
-tapkey w3
+tapkey w4
 tapkey w12
+tapkey w3
+tapkey w13
 wait 50
 shot ringing.png
 expect note6900 >10
@@ -103,7 +106,7 @@ expect par24 3
 # Pygmy comes in F#: F#3 / G# A C# E F# G# A C#
 expect par25 6
 expect white8 5400
-expect white6 5600
+expect white9 5600
 wait 50
 shot pygmy.png
 turn PRESET -1

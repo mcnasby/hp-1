@@ -66,7 +66,7 @@ const km_param_t *km_param_info(int i);
 void km_param_text(int i, int v, char *buf);   /* the value as the screen shows it (12 bytes) */
 
 enum { MET_NITRIDED, MET_STAINLESS, MET_EMBER, MET_RAW, MET_N };
-enum { LAY_PAN, LAY_MIRROR, LAY_LINEAR, LAY_N };
+enum { LAY_PAN, LAY_PANREV, LAY_LINEAR, LAY_N };   /* Pan: the first field on the right, as makers lay them out */
 enum { BLK_KIT, BLK_DUO, BLK_N };
 enum { PAT_HEART, PAT_CASCADE, PAT_HEMIOLA, PAT_BACKBEAT, PAT_N };
 enum { TUNE_EQUAL, TUNE_JUST, TUNE_N };
@@ -110,8 +110,9 @@ int km_ding_cents(int key, int octave);            /* the ding: between A2 and G
 /* the pan's notes, low to high: the ding, its fields, then the scale continued above them (as on the
  * extended "mutant" pans) up to KM_NPAN. Returns how many are the instrument's own (ding + fields) */
 int km_pan_notes(int scale, int key, int octave, int out[KM_NPAN]);
-/* the note white key w (0..15) plays: Pan (the ding on both middle keys, the fields zigzag outward,
- * as they climb around a real pan), Mirror (the same, right for left) or Linear (low to high) */
+/* the note white key w (0..15) plays: Pan (the ding on both middle keys, the fields zigzag outward as
+ * they climb around a real pan, the first on the right), Pan rev (the same, the first on the left) or
+ * Linear (low to high) */
 int km_white_index(int layout, int w);             /* into km_pan_notes */
 int km_white_cents(int layout, int scale, int key, int octave, int w);
 /* where on the instrument a field sits: -1 (left) .. +1 (right), for its pan */
@@ -133,8 +134,8 @@ void km_duo_choice(int scale, int key, int choice, int *duo_scale, int *duo_key)
 /* its notes: its ding (a register above the first pan's) and its first six fields */
 int km_duo_notes(int scale, int key, int octave, int choice, int out[KM_NDUO]);
 /* the note (into km_duo_notes) the second pan's key i (0..6, left to right) plays: laid out as the
- * white keys are (Layout). Pan: its ding on the middle key, its fields alternating outward, left
- * first; Mirror: right first; Linear: low to high */
+ * white keys are (Layout). Pan: its ding on the middle key, its fields alternating outward, right
+ * first; Pan rev: left first; Linear: low to high */
 int km_duo_index(int layout, int i);
 const char *km_duo_name(int scale, int key, int choice, char *buf);   /* "A Kurd" (16 bytes) */
 

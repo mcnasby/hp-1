@@ -26,31 +26,31 @@ wait 20
 expect shellL >5
 key b0 up
 # the middle keys play the second pan, laid out as the white keys are: Pan, its ding in the middle
-# (b5), its fields alternating outward, left first: D Celtic D4 | A4 C5 D5 E5 F5 G5
+# (b5), its fields alternating outward, right first: D Celtic D4 | A4 C5 D5 E5 F5 G5
 expect duokey5 6200
-expect duokey4 6900
-expect duokey6 7200
-expect duokey3 7400
-expect duokey7 7600
-expect duokey2 7700
-expect duokey8 7900
+expect duokey6 6900
+expect duokey4 7200
+expect duokey7 7400
+expect duokey3 7600
+expect duokey8 7700
+expect duokey2 7900
 expect duokey1 -1
 tapkey b5
 wait 30
 expect note6200 >3
-tapkey b6
+tapkey b4
 wait 30
 expect note7200 >3
 wait 50
 shot duo_play.png
-# Mirror: right first; Linear: low to high, the ding on the left
+# Pan rev: left first; Linear: low to high, the ding on the left
 expect view 7
 spin K1 1
 expect par23 1
 expect duokey5 6200
-expect duokey6 6900
-expect duokey4 7200
-expect duokey2 7900
+expect duokey4 6900
+expect duokey6 7200
+expect duokey2 7700
 spin K1 1
 expect par23 2
 expect duokey2 6200
@@ -63,7 +63,7 @@ tap SEL
 expect view 8
 spin K2 -80
 expect par28 0
-tapkey b4
+tapkey b6
 wait 30
 expect note6900 <15
 spin K2 80

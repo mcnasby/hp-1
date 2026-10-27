@@ -8,7 +8,7 @@ expect pat 3
 wait 1500
 expect voices >1
 # the white keys play over it
-tapkey w10
+tapkey w5
 wait 20
 expect note6200 >5
 # Groove page: Groove, Tempo, Percussion

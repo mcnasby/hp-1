@@ -73,21 +73,25 @@ strike a hand's natural variation in strength and brightness. Over MIDI, velocit
 
 **Layout** (SEL → Keys, KNOB 1) sets how the notes lie on the keys:
 
-- **Pan** (the default): the ding on keys 8 and 9, the fields climbing outward in turn.
-- **Mirror**: the same, right for left.
+- **Pan** (the default): the ding on keys 8 and 9, the fields climbing outward in turn, the first on
+  the right, as makers lay a pan out (a D Kurd's A3 on the right, Bb3 on the left, C4 right, D4 left
+  ... C5 at the top).
+- **Pan rev**: the same, left first, for those who play it the other way round.
 - **Linear**: low to high, left to right, the ding on key 1.
 
 In D Kurd (the default pan):
 
 | White key | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8      | 9      | 10  | 11  | 12  | 13  | 14  | 15  | 16  |
 | --------- | --- | --- | --- | --- | --- | --- | --- | ------ | ------ | --- | --- | --- | --- | --- | --- | --- |
-| Pan       | F5  | D5  | Bb4 | G4  | E4  | C4  | A3  | **D3** | **D3** | Bb3 | D4  | F4  | A4  | C5  | E5  | G5  |
-| Mirror    | G5  | E5  | C5  | A4  | F4  | D4  | Bb3 | **D3** | **D3** | A3  | C4  | E4  | G4  | Bb4 | D5  | F5  |
-| Linear    | D3  | A3  | Bb3 | C4  | D4  | E4  | F4  | G4     | A4     | Bb4 | C5  | D5  | E5  | F5  | G5  | A5  |
+| Pan       | A5  | F5  | D5  | A4  | F4  | D4  | Bb3 | **D3** | **D3** | A3  | C4  | E4  | G4  | C5  | E5  | G5  |
+| Pan rev   | G5  | E5  | C5  | G4  | E4  | C4  | A3  | **D3** | **D3** | Bb3 | D4  | F4  | A4  | D5  | F5  | A5  |
+| Linear    | D3  | A3  | Bb3 | C4  | D4  | E4  | F4  | G4     | A4     | C5  | D5  | E5  | F5  | G5  | A5  | Bb5 |
 
-The pan's own notes are the ding and its 7 to 8 fields. The outermost keys carry the scale on up, as
-the extra fields of an extended ("mutant") pan do; the screen draws them as small fields under those
-keys. The ding's keys glow dimly so you can find the center without looking.
+The pan's own notes are the ding and its 7 to 9 fields. The outermost keys carry the scale on up, as
+the extra fields of an extended ("mutant") pan do. The screen shows every note the keys play on the
+pan: the ding in the middle, the pan's own fields evenly round it, and the extra notes in a ring near
+the rim, all climbing in the same zigzag from the player's side. The ding's keys glow dimly so you can
+find the center without looking.
 
 ### Black keys: the steel, the kit, the second pan
 
@@ -117,7 +121,7 @@ Keys, KNOB 4).
 
 **Duo:** the seven middle keys become a **second handpan**, a register above the first, laid out the
 way the white keys are (Layout). In Pan, its ding is on the middle key (black key 6, F#4) and its
-fields alternate outward, left then right; Mirror goes right first; Linear runs low to high from the
+fields alternate outward, right then left; Pan rev goes left first; Linear runs low to high from the
 left. Its ding's key glows dimly, as the first pan's do. Its scale and key are chosen to fit with the first pan: every
 one of its notes is already in the first pan's scale (a pan with very few notes, such as Pygmy, may
 add one, never a semitone off its ding). **Duo** (SEL → Duo, KNOB 1) steps through the matches, best
@@ -251,7 +255,7 @@ any key: PRESETS moves the whole pan.
 
 | Scale      | Usual key | Ding / tone fields                | Steps over the ding         | Character                                      |
 | ---------- | --------- | --------------------------------- | --------------------------- | ---------------------------------------------- |
-| Kurd       | D         | D3 / A Bb C D E F G A             | 7 8 10 12 14 15 17 19       | The best known: natural minor, warm, versatile |
+| Kurd       | D         | D3 / A Bb C D E F G A C           | 7 8 10 12 14 15 17 19 22    | The best known (Kurd 10): natural minor, warm, versatile |
 | Celtic     | D         | D3 / A C D E F G A C              | 7 10 12 14 15 17 19 22      | Celtic minor (Amara): open, folky              |
 | Integral   | D         | D3 / A Bb C D E F A               | 7 8 10 12 14 15 19          | Minor, meditative                              |
 | Pygmy      | F#        | F#3 / G# A C# E F# G# A C#        | 2 3 7 10 12 14 15 19        | Pentatonic, earthy, hypnotic                   |

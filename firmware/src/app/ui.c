@@ -4,8 +4,8 @@
  * FiMba-1.)
  *
  *   white keys     the pan's notes: Pan (the ding on both middle keys, the fields zigzag outward as
- *                  they climb around the pan), Mirror (right for left) or Linear (low to high); past
- *                  the pan's own fields the scale goes on up, as on an extended pan
+ *                  they climb around the pan, the first on the right), Pan rev (left first) or Linear
+ *                  (low to high); past the pan's own fields the scale goes on up, as on an extended pan
  *   black keys     the two at each end are always the steel: a palm thwap and a fingertip tak a side.
  *                  The seven between follow Black: Kit (Gu, ghost, ding slap, tak, ding harmonic, rim,
  *                  mute) or Duo (a second pan whose scale coordinates with the first)
@@ -830,30 +830,18 @@ typedef struct {
     int16_t x, y, r;
 } spot_t;
 
-/* where field i (1..8) sits on a pan of radius R at (cx, cy) */
-static spot_t field_spot(int i, int32_t cx, int32_t cy, int32_t R)
+/* where a field sits: q-th (0..m-1) of the m fields of a ring of radius `ring` round (cx, cy), set evenly
+ * and climbing in the zigzag from the player's side (the bottom) to the top, the first on side `first`
+ * (+1 right, as makers lay them out; -1 left, Pan rev): q at (2 (q / 2) + 1) x 180 / m degrees from
+ * straight down. With an odd m the last sits at the top. */
+static spot_t ring_spot(int q, int m, int first, int32_t cx, int32_t cy, int32_t ring, int r)
 {
-    static const int8_t SX[8] = {-1, 1, -1, 1, -1, 1, -1, 1};
-    static const int16_t SIN[4] = {500, 940, 940, 500}, COS[4] = {866, 342, -342, -866};   /* 30 70 110 150 deg, x1000 */
-    const int p = ((i - 1) / 2) & 3, ring = R * 68 / 100;
+    const int side = (q & 1) ? -first : first;
+    const float a = (float)(2 * (q / 2) + 1) * FM_PI / (float)m, sx = (float)ring * fm_sinf(a), sy = (float)ring * fm_cosf(a);
     spot_t s;
-    s.x = (int16_t)(cx + SX[(i - 1) & 7] * ring * SIN[p] / 1000);
-    s.y = (int16_t)(cy + ring * COS[p] / 1000);
-    s.r = (int16_t)(R * (21 - 2 * p) / 100);
-    return s;
-}
-
-/* the same for a pan of n fields set evenly round its ding (the second pan's six: 60 degrees apart),
- * still climbing in the zigzag from the bottom: field i at (2p + 1) x 180 / n degrees from straight down,
- * the odd ones left */
-static spot_t field_spot_even(int i, int n, int32_t cx, int32_t cy, int32_t R)
-{
-    const int p = (i - 1) / 2, ring = R * 68 / 100, side = (i & 1) ? -1 : 1;
-    const float a = (float)(2 * p + 1) * FM_PI / (float)n;
-    spot_t s;
-    s.x = (int16_t)(cx + (int32_t)((float)(side * ring) * fm_sinf(a) + (side < 0 ? -0.5f : 0.5f)));
-    s.y = (int16_t)(cy + (int32_t)((float)ring * fm_cosf(a) + (fm_cosf(a) < 0.0f ? -0.5f : 0.5f)));
-    s.r = (int16_t)(R * (22 - 2 * p) / 100);
+    s.x = (int16_t)(cx + (int32_t)((float)side * sx + (side < 0 ? -0.5f : 0.5f)));
+    s.y = (int16_t)(cy + (int32_t)(sy + (sy < 0.0f ? -0.5f : 0.5f)));
+    s.r = (int16_t)r;
     return s;
 }
 
@@ -888,18 +876,17 @@ static void draw_field(spot_t s, int cents, int age, float lv, int ding, uint16_
         int32_t rr = s.r + 2 + age * 3 / 2;
         cv_ring(s.x, s.y, rr - 1, rr, 0, mix(K_GLOW, base, age * 16 / (int)RIPPLE_FR));
     }
-    if (label) {
+    if (label) {                                      /* (2: an extra field's, a little quieter) */
         const char *nm = note_name(cents);
-        text_c(s.x, s.y - 8, &FONT_XS, nm, t > 8 ? mix(ink, dark, 12) : ink);
+        text_c(s.x, s.y - 8, &FONT_XS, nm, t > 8 ? mix(ink, dark, 12) : label == 2 ? mix(ink, dark, 5) : ink);
     }
 }
 
 static void draw_pan(void)
 {
-    int n[KM_NPAN], own = pan_notes(n), i, w;
-    const int duo = proj.par[P_BLACK] == BLK_DUO;
-    /* (with the second pan, or Linear's extra notes all on the right, the pan moves over) */
-    const int32_t R = 52, cx = duo ? 90 : proj.par[P_LAYOUT] == LAY_LINEAR ? 92 : 120, cy = 55;
+    int n[KM_NPAN], own = pan_notes(n), i;
+    const int duo = proj.par[P_BLACK] == BLK_DUO, first = proj.par[P_LAYOUT] == LAY_PANREV ? -1 : 1;
+    const int32_t R = duo ? 52 : 55, cx = duo ? 90 : 120, cy = 56;   /* (the second pan beside it: over) */
     const uint16_t dark = METAL->dark, light = METAL->light, ink = METAL->ink;
     int glow[2];
     for (i = 0; i < 2; i++)                           /* the rim, where a thwap or a tak just landed */
@@ -908,37 +895,28 @@ static void draw_pan(void)
     {   /* the Gu: the air inside, breathing round the ding */
         int g = ui.rim[2];
         if (g > 1)
-            cv_ring(cx, cy, 17 + g / 4, 18 + g / 4, 0, mix(mix(dark, light, 8), K_GLOW, g));
+            cv_ring(cx, cy, 15 + g / 4, 16 + g / 4, 0, mix(mix(dark, light, 8), K_GLOW, g));
     }
-    for (i = 0; i < own && i < 9; i++) {              /* the ding and its fields */
-        spot_t s = i ? field_spot(i, cx, cy, R) : (spot_t){(int16_t)cx, (int16_t)cy, 14};
+    /* every note the keys play: the ding; round it the pan's own fields, the low ones the biggest; and
+     * near the rim, smaller, the notes past them (an extended pan's), the zigzag going on */
+    for (i = 0; i < KM_NPAN; i++) {
         int c = tune(n[i]);
-        draw_field(s, c, (int)ripple_age(ui.ripple[i]), note_level(c), i == 0, dark, light, ink, 1);
+        spot_t s;
+        if (!i)
+            s = (spot_t){(int16_t)cx, (int16_t)cy, 13};
+        else if (i < own)
+            s = ring_spot(i - 1, own - 1, first, cx, cy, R * 53 / 100, 9 - (i - 1) / 4);
+        else
+            s = ring_spot(i - own, KM_NPAN - own, first, cx, cy, R * 83 / 100, 7);
+        draw_field(s, c, (int)ripple_age(ui.ripple[i]), note_level(c), i == 0, dark, light, ink, i < own ? 1 : 2);
     }
-    /* the notes past the pan's own fields (the white keys at the ends): small extra fields, under the keys
-     * that play them */
-    for (w = 0; w < NWHITE; w++) {
-        int idx = white_index(w);
-        if (idx >= own) {
-            spot_t s = {(int16_t)(9 + w * 15), 104, 6};
-            int c = tune(n[idx]);
-            if (duo && w >= 11)                       /* (the second pan stands there) */
-                continue;
-            draw_field(s, c, (int)ripple_age(ui.ripple[idx]), note_level(c), 0, dark, light, ink, 0);
-            {
-                const char *nm = note_name(c);
-                text_c(s.x, s.y - ((w & 1) ? 29 : 20), &FONT_XS, nm, K_DIM);   /* (staggered: "D#" "F#" side by side) */
-            }
-        }
-    }
-    if (duo) {   /* the second pan, smaller, to the right: its ding and six fields */
+    if (duo) {   /* the second pan, smaller, to the right: its ding and six fields, evenly round it */
         const int32_t dx = 200, dy = 50, dr = 34;
         draw_shell(dx, dy, dr, dark, light, (int[2]){0, 0});
         for (i = 0; i < KM_NDUO; i++) {
-            spot_t s = i ? field_spot_even(i, KM_NDUO - 1, dx, dy, dr) : (spot_t){(int16_t)dx, (int16_t)dy, 9};
+            spot_t s = i ? ring_spot(i - 1, KM_NDUO - 1, first, dx, dy, dr * 64 / 100, 8 - (i - 1) / 3)
+                         : (spot_t){(int16_t)dx, (int16_t)dy, 9};
             int c = duo_cents(i);
-            if (i)
-                s.r = (int16_t)(s.r + 1);
             draw_field(s, c, (int)ripple_age(ui.ripple[KM_NPAN + i]), note_level(c), i == 0, dark, light, ink, 0);
         }
         {
@@ -1086,7 +1064,7 @@ static void draw_knobs(void)
     cv_blit(0, KNB_Y);
 }
 
-/* the ding's keys, marked by a dim LED (Pan, Mirror: the middle two; Linear: the first), and with Duo
+/* the ding's keys, marked by a dim LED (Pan, Pan rev: the middle two; Linear: the first), and with Duo
  * the second pan's ding */
 static uint32_t ding_keys(void)
 {

@@ -52,7 +52,7 @@ typedef struct {
     uint8_t s[10];
 } scale_t;
 static const scale_t SCALES[KM_NSCALE] = {
-    {"Kurd", 2, 8, {7, 8, 10, 12, 14, 15, 17, 19}},        /* D3 / A Bb C D E F G A: the best known */
+    {"Kurd", 2, 9, {7, 8, 10, 12, 14, 15, 17, 19, 22}},    /* D3 / A Bb C D E F G A C: the best known (Kurd 10) */
     {"Celtic", 2, 8, {7, 10, 12, 14, 15, 17, 19, 22}},     /* Celtic minor (Amara): D / A C D E F G A C */
     {"Integral", 2, 7, {7, 8, 10, 12, 14, 15, 19}},        /* D / A Bb C D E F A */
     {"Pygmy", 6, 8, {2, 3, 7, 10, 12, 14, 15, 19}},        /* F# / G# A C# E F# G# A C# */
@@ -104,16 +104,17 @@ int km_pan_notes(int s, int key, int octave, int out[KM_NPAN])
 }
 
 /* Pan: the ding on both middle keys (either thumb finds it), then the fields climbing outward in turn,
- * left, right, left, right, as they zigzag up around a real pan:
+ * right, left, right, left, as they zigzag up around a real pan from the player's side (a D Kurd's A3 on
+ * the right, Bb3 on the left, C4 right ...):
  *   w:      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
- *   note   13  11   9   7   5   3   1   0   0   2   4   6   8  10  12  14
- * Mirror: the same right for left. Linear: the ding on the left, then up the keys. */
+ *   note   14  12  10   8   6   4   2   0   0   1   3   5   7   9  11  13
+ * Pan rev: the same, left first. Linear: the ding on the left, then up the keys. */
 int km_white_index(int layout, int w)
 {
     w &= 15;
     if (layout == LAY_LINEAR)
         return w;
-    if (layout == LAY_MIRROR)
+    if (layout == LAY_PAN)
         w = 15 - w;
     if (w == 7 || w == 8)
         return 0;
@@ -270,7 +271,7 @@ int km_duo_index(int layout, int i)
     i = i < 0 ? 0 : i >= KM_NDUO ? KM_NDUO - 1 : i;
     if (layout == LAY_LINEAR)
         return i;
-    if (layout == LAY_MIRROR)
+    if (layout == LAY_PAN)
         i = KM_NDUO - 1 - i;
     return i == 3 ? 0 : i < 3 ? 2 * (3 - i) - 1 : 2 * (i - 3);
 }
@@ -320,7 +321,7 @@ static void copy_s(char *b, const char *s)
 void km_param_text(int i, int v, char *b)
 {
     static const char *const ONOFF[2] = {"Off", "On"};
-    static const char *const LAY[LAY_N] = {"Pan", "Mirror", "Linear"};
+    static const char *const LAY[LAY_N] = {"Pan", "Pan rev", "Linear"};
     static const char *const BLK[BLK_N] = {"Kit", "Duo"};
     static const char *const GP[GP_N] = {"-12", "-7", "0", "+7", "+12", "+19", "Shimmer", "Reverse"};
     static const char *const REL[2] = {"Ring", "Damp"};
@@ -834,9 +835,9 @@ static void symp_ring(int cents, int vel, int emph)
         return;
     {
         int i, pan = 0;
-        for (i = 1; i < pan_n && i < KM_NPAN; i++)      /* where it sits: odd fields left, even right */
+        for (i = 1; i < pan_n && i < KM_NPAN; i++)      /* where it sits: odd fields right, even left */
             if (pan_c[i] == cents)
-                pan = (i & 1) ? -35 : 35;
+                pan = (i & 1) ? 35 : -35;
         strike(v, cents, vel, pan, 0.0f, emph);
         v->ex_inc *= 0.25f;                             /* it builds up, slower than a strike */
         v->ex_amp *= 0.25f;
@@ -993,12 +994,12 @@ static void hit(int kind, int vel)
         air_mute = 0.25f * KM_SR;
     }
     if (h->sym > 0.0f && pan_n) {                       /* the pan rings along: the ding, and the fields
-                                                         * nearest the hand (odd fields left, even right) */
+                                                         * nearest the hand (odd fields right, even left) */
         int i, sv = (int)((float)vel * h->sym * (0.4f + 0.6f * sym_amt) * 0.45f);
         if (sv >= 4) {
             symp_ring(ding, sv, kind == HIT_GU ? EMPH_ALL : EMPH_FUND);
             for (i = 1; i < pan_n && i < 5; i++)
-                if (h->side == 0 || (h->side < 0) == (i & 1))
+                if (h->side == 0 || (h->side > 0) == (i & 1))
                     pend_add(PD_SYMP, pan_c[i], sv * 2 / 3, 0, EMPH_FUND, (uint32_t)(0.004f * KM_SR) + (rnd() & 127u));
         }
     }
@@ -1474,7 +1475,7 @@ static void pat_fire(void)
             hit(HIT_THWAP_L, vel - 22);
         else if (pan_n) {
             int i = r == RD || !tops ? 0 : 1 + (r - RF1) % tops;
-            pluck(pan_c[i], r == RD ? vel + 6 : vel, i ? ((i & 1) ? -40 : 40) : 0);
+            pluck(pan_c[i], r == RD ? vel + 6 : vel, i ? ((i & 1) ? 40 : -40) : 0);
         }
     }
     km_pat_pulse = (uint8_t)pulse;

@@ -4,6 +4,18 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.3.0
+
+- **The Pan layout now matches a real pan.** The first field after the ding is on the right, then the
+  left, right, left, as makers lay them out: a D Kurd's A3 is just right of the ding, Bb3 just left,
+  C4 right, D4 left, up to C5. It was the other way round. The second pan's keys follow.
+- **Pan rev** (Layout) keeps the old way, left first, for those who play it that way. (Mirror is gone:
+  Pan rev is what it was, and Pan is now the maker's layout.)
+- **Kurd has its ninth field**, C5: D3 / A Bb C D E F G A C, the usual Kurd 10.
+- **Every note on the pan:** the screen draws all sixteen notes the white keys play on the pan, the
+  pan's own fields evenly round the ding and the extra ones in a ring near the rim. The drawing
+  follows the layout. The row of extra notes under the pan is gone.
+
 ## 0.2.1
 
 - **The second pan is laid out like the first.** With Black on Duo, its ding is now on the middle of

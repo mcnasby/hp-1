@@ -1,4 +1,5 @@
-# the three layouts: Pan (zigzag, left first), Mirror (right first), Linear (low to high); the ding's
+# the three layouts: Pan (zigzag, right first, as makers lay a pan out), Pan rev (left first), Linear (low
+# to high); the ding's
 # keys dim-lit; Just tuning over the ding
 # (params: 23 Layout 33 Tuning; keys: 0 F3 .. 26 G5; white 7 is key 12, white 8 key 14, white 0 key 0)
 wait 1600
@@ -8,17 +9,17 @@ tap SEL
 spin K1 1
 expect par23 1
 expect white8 5000
-expect white9 5700
-expect white6 5800
-expect white15 7700
+expect white6 5700
+expect white9 5800
+expect white15 8100
 wait 50
-shot mirror.png
+shot pan_rev.png
 spin K1 1
 expect par23 2
 expect white0 5000
 expect white1 5700
 expect white8 6900
-expect white15 8100
+expect white15 8200
 wait 30
 expect dimkey 0
 shot linear.png
@@ -33,22 +34,22 @@ expect par23 0
 tap ENV
 spin K3 1
 expect par33 1
-expect white6 5702
-expect white4 6404
-expect white5 6018
-tapkey w6
+expect white9 5702
+expect white11 6404
+expect white10 6018
+tapkey w9
 wait 30
 expect note5702 >5
 spin K3 -1
-expect white6 5700
+expect white9 5700
 # the scales wrap round: one back from Kurd is SaByeD, in E: E3 / A3 B3 C#4 ... (its G# and D# named so)
 tap SEL
 turn ALGO -1
 expect par24 10
 expect par25 4
 expect white8 5200
-expect white6 5700
-expect white9 5900
-expect white5 6100
+expect white9 5700
+expect white6 5900
+expect white10 6100
 wait 50
 shot sabyed.png
