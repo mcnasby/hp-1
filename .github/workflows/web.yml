@@ -1,0 +1,248 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Test HP-1, build the firmware and the browser version, publish them.
+#
+#   pull request      the full test suite; the firmware package built and checked; both kept with the
+#                     run as downloads ("hp1-firmware", "HP-1-web")
+#   push to main      the same, then the browser version published to
+#                     https://mcnasby.github.io/hp-1/, with the latest release's firmware
+#                     beside it for the page's installer (firmware/latest.json)
+#   a new VERSION     a push to main whose VERSION has no tag yet is a release: a release build
+#                     (identity FM-1_8XXYYZZ, version on the splash and the Setup page), the commit
+#                     tagged vX.Y.Z and published as a GitHub Release with the .fwsc, the one-file web
+#                     app and its CHANGELOG.md section, and the site published with that firmware in its
+#                     installer, all in this one run. (A tag pushed by a run starts no other run, and
+#                     Pages keeps only the first deployment of a commit: the release can't be a
+#                     second run.)
+name: Test, build and publish
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  # a run on main may be releasing: let it finish
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      # X.Y.Z when this run releases (main, VERSION not yet tagged), else empty
+      release: ${{ steps.v.outputs.release }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: VERSION, its tag and its CHANGELOG section
+        id: v
+        run: |
+          ver=$(tr -d ' \r\n' < VERSION)
+          echo "$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::VERSION is '$ver', not X.Y.Z"; exit 1; }
+          if git ls-remote --exit-code --tags origin "refs/tags/v$ver" >/dev/null; then
+            echo "v$ver is released: nothing to release"
+            exit 0
+          fi
+          # a new version: it needs its notes (checked on pull requests too, before it's merged)
+          awk -v v="$ver" '$0 == "## " v {f = 1; next} /^## / {f = 0} f' CHANGELOG.md | grep -q . ||
+            { echo "::error::CHANGELOG.md has no '## $ver' section"; exit 1; }
+          if [ "$GITHUB_REF" = refs/heads/main ] && [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            echo "releasing $ver"
+            echo "release=$ver" >> "$GITHUB_OUTPUT"
+          else
+            echo "$ver will be released when this is on main"
+          fi
+
+  web:
+    name: Tests and the web app
+    needs: version
+    runs-on: ubuntu-latest
+    # the Emscripten version the web app is built and tested with locally
+    container: emscripten/emsdk:6.0.10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Python packages (Pillow renders the screen's fonts)
+        run: python3 -m pip install --quiet --break-system-packages Pillow
+
+      - name: Tests (engine, platform, the whole app in the simulator, the WebAssembly build)
+        run: sh tests/run_tests.sh
+
+      - name: Build the web app
+        env:
+          RELEASE: ${{ needs.version.outputs.release }}
+        run: |
+          [ -n "$RELEASE" ] && export OM_VERSION="$RELEASE"
+          sh web/emu/build.sh
+          mkdir -p site
+          cp build/emu/HP-1.html site/index.html
+          touch site/.nojekyll
+
+      - name: Keep the web app with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: HP-1-web
+          path: build/emu/HP-1.html
+
+      - name: Keep the scenario screenshots and audio
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: scenarios
+          path: build/scenarios/
+          if-no-files-found: ignore
+
+      - name: Keep the site for the Pages job
+        uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: site/
+          include-hidden-files: true
+
+  firmware:
+    name: Firmware package
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      AC79_SDK: ${{ github.workspace }}/../sdk
+      JIELI_TOOLCHAIN: ${{ github.workspace }}/../jieli/toolchain
+      JIELI_DOCKER: '1'          # the toolchain runs in a Debian container, as on a Mac
+      # the FoMni commit the package is compared with (its update loader and boot head must match)
+      FOMNI_REF: 405ef41aef75f7e70afd6decc01505df07c708e9
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Python packages
+        run: python3 -m pip install --quiet -r requirements.txt
+
+      - name: JieLi toolchain (JieLi's server, else the same package from a Docker image)
+        run: sh tools/get_toolchain.sh "$(dirname "$JIELI_TOOLCHAIN")"
+
+      - name: AC79 SDK files (three, SHA-256 checked)
+        run: sh tools/get_sdk.sh "$AC79_SDK"
+
+      - name: Build the firmware package
+        env:
+          RELEASE: ${{ needs.version.outputs.release }}
+        run: |
+          if [ -n "$RELEASE" ]; then python3 tools/build.py --release "$RELEASE"; else python3 tools/build.py; fi
+          ls -l build/*.fwsc
+
+      - name: Build FoMni's package, to compare with
+        run: |
+          git clone --quiet https://github.com/charlesvestal/fm1-fomni build/fomni-ref
+          git -C build/fomni-ref checkout --quiet "$FOMNI_REF"
+          cp tools/gen_font.py build/fomni-ref/tools/      # (the font only changes the app; works without raqm)
+          (cd build/fomni-ref && python3 tools/build.py)
+
+      - name: Check the package (every CRC; all but the app byte-identical to FoMni's)
+        run: |
+          pkg=$(ls build/hp1*.fwsc | head -1)
+          python3 tools/check_fwsc.py "$pkg" --app build/hp1.bin --ref build/fomni-ref/build/omni.fwsc
+
+      - name: Update-path and install tests against the package
+        run: |
+          [ -f build/hp1.fwsc ] || cp build/hp1-*.fwsc build/hp1.fwsc   # (the tests look for this name)
+          sh tests/run_tests.sh
+
+      - name: Keep the package with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: hp1-firmware
+          path: |
+            build/hp1*.fwsc
+            build/hp1.bin
+
+  pages:
+    name: Publish the web app (and its installer's firmware) to GitHub Pages
+    # main: the latest release's firmware goes beside the page; on a release, this run's, once it's out
+    # (a release that failed publishes nothing: its rerun will)
+    if: >-
+      always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
+      needs.web.result == 'success' &&
+      (needs.release.result == 'success' || (needs.version.outputs.release == '' && needs.release.result == 'skipped'))
+    needs: [version, web, release]
+    runs-on: ubuntu-latest
+    # one publish at a time, whole
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: site
+          path: site
+
+      - name: The latest release's firmware, for the installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # the highest version among the published releases (not the newest-dated: a release is dated
+          # by its commit, so v0.2.0 tagged on v0.1.0's commit sorts as older)
+          tag=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft \
+                  --jq '.[] | select(.isDraft | not) | .tagName' | grep -E '^v[0-9]+\.[0-9]+' | sort -V | tail -1)
+          if [ -z "$tag" ]; then echo "no release yet: the installer offers a file chooser only"; exit 0; fi
+          mkdir -p site/firmware
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'hp1-*.fwsc' --dir site/firmware
+          file=$(cd site/firmware && ls hp1-*.fwsc | head -1)
+          python3 - "$tag" "$file" <<'PY'
+          import json, sys
+          sys.path.insert(0, "tools")
+          from fm1_install import product_of
+          tag, f = sys.argv[1], sys.argv[2]
+          raw = open("site/firmware/" + f, "rb").read()
+          meta = {"version": tag.lstrip("v"), "product": product_of(raw), "file": f}
+          open("site/firmware/latest.json", "w").write(json.dumps(meta))
+          print("installer:", meta)
+          PY
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  release:
+    name: GitHub Release
+    if: needs.version.outputs.release != ''
+    needs: [version, web, firmware]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+
+      - name: Tag this commit and create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VER: ${{ needs.version.outputs.release }}
+        run: |
+          { echo "### What's new in $VER"; echo
+            awk -v v="$VER" '$0 == "## " v {f = 1; next} /^## / {f = 0} f' CHANGELOG.md | sed '/./,$!d'
+            echo; sed "s/VERSION/$VER/g" .github/release-notes.md; } > notes.md
+          gh release create "v$VER" --target "$GITHUB_SHA" --title "HP-1 $VER (beta)" --notes-file notes.md \
+            --prerelease dist/hp1-firmware/hp1-"$VER".fwsc dist/HP-1-web/HP-1.html
