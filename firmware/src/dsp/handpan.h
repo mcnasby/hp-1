@@ -2,12 +2,13 @@
 /* The instrument: a handpan by modal synthesis. Five parts:
  *
  *   FIELDS  KM_NVOICE voices, one per sounding tone field (or the ding). A tone field is a dimpled,
- *           hammered membrane tuned so its first three modes sit at 1 : 2 : 3, the fundamental, the
- *           octave and the compound fifth. Each voice is a bank of KM_NMODE two-pole resonators: those
- *           three, a twin of the fundamental a hair away (the field is never quite round: its two
- *           degenerate modes beat), and a weak inharmonic steel partial that lends the strike its edge.
- *           A strike is a half-sine force pulse: soft fingertips are long pulses that hardly reach the
- *           upper modes, a firm tap is short. The metal sets the partials' levels and decays.
+ *           hammered membrane tuned so its first modes sit at 1 : 2 : 3 (: 4), the fundamental, the
+ *           octave, the compound fifth and a faint double octave. Measured pans (Alon, York 2015) ring
+ *           ~3 s, the octave nearly as loud as the fundamental and often outlasting it, the fifth 10-20
+ *           dB down, and the octave and fifth beating at 3-9 Hz: each is split in two (the field's
+ *           near-twin modes, and its neighbors a hair off tune), and the two pulse against each other.
+ *           That pulse is the handpan's shimmer. The fundamental doesn't split. A strike is a half-sine
+ *           force pulse with a short burst of skin on steel; the metal sets the levels and the decays.
  *   SHELL   the instrument around the fields: a 1.2 mm steel shell (its own inharmonic modes, a bank a
  *           side, which the thwaps ring and the notes brush) and the air inside, a Helmholtz cavity
  *           tuned by the bottom port (the "Gu"). Size and Thickness move both. Sympathy: a struck note
@@ -30,7 +31,7 @@
 
 #define KM_SR 44100.0f
 #define KM_NVOICE 16                   /* fields sounding at once */
-#define KM_NMODE 5                     /* resonators per field: fundamental, its twin, octave, fifth, steel */
+#define KM_NMODE 6                     /* resonators per field: fundamental, octave + twin, fifth + twin, 2 oct */
 #define KM_NWHITE 16                   /* the white keys: one field each (the middle two both the ding) */
 #define KM_NBLACK 11
 #define KM_NPAN 16                     /* a pan's notes: the ding and up to 15 above it */
@@ -85,12 +86,13 @@ enum {
     HIT_N
 };
 
-/* a metal: the fundamental's T60 at D3 (shorter up the scale by (f / D3)^-pitch_k), the octave's and
- * the fifth's levels, how much faster the upper partials die (loss), the twin's detuning, the steel
- * partial's level, and the shell's brightness (how much its upper modes ring) and its T60 */
+/* a metal: the fundamental's T60 at D3 (shorter up the scale by (f / D3)^-pitch_k); the octave's, the
+ * fifth's and the double octave's levels; the octave's and the fifth's T60 against the fundamental's;
+ * the beat (Hz, the mean: each field its own, 0.7 to 1.3 times it) and how deep it pulses (the twin's
+ * level against its partner's); the skin on the steel; the shell's brightness and its T60 */
 typedef struct {
     const char *name;
-    float t60, pitch_k, oct, fifth, loss, beat, steel, shell_bright, shell_t60;
+    float t60, pitch_k, oct, fifth, dbl, oct_t, fifth_t, beat, depth, touch, shell_bright, shell_t60;
 } km_metal_t;
 const km_metal_t *km_metal(int i);
 

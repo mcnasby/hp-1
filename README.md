@@ -165,9 +165,9 @@ show which page you're on.
 | Knob      | Range (default)                        | What it does                                                                                       |
 | --------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Metal     | Nitrided, Stainless, Ember, Raw (Nitrided) | The shell's steel and finish ([below](#the-metals))                                            |
-| Strike    | 0–100 (40)                             | How the field is struck: 0 the soft pad of a finger (round), 100 a firm flick (bright, a skin tick) |
+| Strike    | 0–100 (40)                             | How the field is struck: 0 the soft pad of a finger (round, no skin noise), 100 a firm flick (bright, a burst of skin on steel) |
 | Sustain   | 0–100 (55)                             | How long the fields ring, a quarter to four times the metal's own sustain                          |
-| Harmonics | 0–100 (60)                             | How loud each field's octave and compound fifth are, against its fundamental                       |
+| Harmonics | 0–100 (60)                             | How loud each field's octave, compound fifth and double octave are, against its fundamental        |
 
 **HOME → Shell** (press HOME again)
 
@@ -184,7 +184,7 @@ show which page you're on.
 
 | Knob     | Range (default) | What it does                                                                                                       |
 | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Worn     | 0–100 (0)       | A played-in pan: each field a little out of tune (up to ±10 cents), its octave a little off true, its own sustain   |
+| Worn     | 0–100 (0)       | A played-in pan: each field a little out of tune (up to ±10 cents), its octave a little off true, its own sustain, a wider shimmer |
 | Humanize | 0–100 (35)      | Each strike's strength varies, as a hand's does; above 50, a hair of timing too                                    |
 | Tuning   | Equal, Just     | Just: pure intervals over the ding                                                                                 |
 | Release  | Ring, Damp      | Ring: a field keeps ringing after you let go, as on a real pan. Damp: letting go puts a hand on it                 |
@@ -272,27 +272,35 @@ fall at **1 : 2 : 3**: the fundamental, the octave and the compound fifth (an oc
 up). That's why every note sounds like a small chord of itself, full and singing, where a kalimba's
 tine has inharmonic overtones that give it a "ping."
 
-HP-1 models each sounding field as a bank of five resonators:
+HP-1 models each sounding field as a bank of six resonators, set from measurements of real pans
+(Eyal Alon, [*Analysis and Synthesis of the Handpan Sound*](https://etheses.whiterose.ac.uk/12260/), MSc by Research, University of York, 2015):
 
-- **the fundamental**, and **a twin** a hair above it: a field is never perfectly round, its two
-  near-identical modes beat slowly, the shimmer of a real pan;
-- **the octave** and **the compound fifth**, tuned exactly (Worn can pull the octave off true);
-- **a steel partial**, inharmonic and quick to die, which gives the strike its edge.
+- **the fundamental**, steady. Measured pans ring about 3 s on average (0.9 to 5.9 s), low notes
+  longer: here the D3 ding rings ~4–6 s, the high fields 2–3 s.
+- **the octave**, nearly as loud as the fundamental, and often outlasting it;
+- **the compound fifth**, 10 to 20 dB down;
+- a twin of the octave and one of the fifth, a few hertz away. The pair pulses against each other at
+  **3 to 9 Hz**, as measured: the field's two near-identical modes, and its neighbors a hair off
+  tune. That pulse is the handpan's shimmer, and without it a field sounds like an electric piano's
+  tine. Each field has its own rate, the same every time it's struck;
+- **the double octave**, faint, about 20 dB down.
 
-A strike is a force pulse: a soft finger is a long one (1.2 ms) that rounds off the top, a firm flick
-a short one (0.2 ms) that rings everything and adds the skin's tick. A firm strike also bends the
-field a few cents sharp for its first moments, as a real one does. Sixteen fields can ring at once. A
-new note beyond that takes over the quietest, which fades out instead of being cut. Re-striking a
-ringing field damps it under the fingertip first, through its own decay, so it never clicks.
+A strike is a force pulse with a short burst of skin on steel (the first ~10 ms of a real strike are
+broadband): a soft finger pad is a long pulse (1.2 ms) with almost no burst, a firm flick a short one
+(0.2 ms) with a brighter burst. A firm strike also bends the field a few cents sharp for its first
+moments, as a real one does. The ding is coupled to the air inside, which every strike pushes, so it
+sounds faintly under every note (Sympathy). Sixteen fields can ring at once. A new note beyond that
+takes over the quietest, which fades out instead of being cut. Re-striking a ringing field damps it
+under the fingertip first, through its own decay, so it never clicks.
 
 ### The metals
 
-| Metal     | Fundamental's ring (D3) | Character                                                                 |
-| --------- | ----------------------- | ------------------------------------------------------------------------- |
-| Nitrided  | ~9 s                    | Carbon steel hardened in nitrogen: the classic dark pan, warm, clear octave |
-| Stainless | ~12 s                   | Brighter, the longest ring; its upper partials and shell ring more         |
-| Ember     | ~10 s                   | A softer nitrided alloy: mellow, the fifth tucked in, little steel         |
-| Raw       | ~6 s                    | Plain cold-rolled steel (DC04): earthy, drier, a shorter ring              |
+| Metal     | The ding's ring (T60) | Shimmer   | Character                                                              |
+| --------- | --------------------- | --------- | ---------------------------------------------------------------------- |
+| Nitrided  | ~4.4 s                | ~4.5 Hz   | Carbon steel hardened in nitrogen: the classic dark pan, warm, strong octave |
+| Stainless | ~5.7 s                | ~4 Hz     | Brighter, the longest ring; the fifth and the shell ring more          |
+| Ember     | ~4.9 s                | ~3.6 Hz   | A softer nitrided alloy: mellow, the fifth tucked in, a gentle pulse   |
+| Raw       | ~3.2 s                | ~6 Hz     | Plain cold-rolled steel (DC04): earthy, drier, a quicker pulse         |
 
 Higher fields ring shorter than low ones. Sustain, Size and Thickness scale it all.
 
@@ -399,7 +407,7 @@ python3 tools/fm1_install.py build/hp1.fwsc
 
 - **The engine test** (`tests/host/handpan_test.c`, built without libm as on the device) checks the
   scales and layouts, every second-pan match against every pan in every key, each metal's pitch,
-  octave and fifth, the decays, damping, sympathy, every hit (its side, the Gu's pitch against the
+  octave and fifth, the shimmer (3–9 Hz) and the decays measured pans have, damping, sympathy, every hit (its side, the Gu's pitch against the
   size, the mute, the slap, the harmonic), the effects, that nothing clicks, the grooves and MIDI
   clock, and a 20-minute run. It writes one WAV per metal to `build/host/materials/`.
 - **The host simulator** (`build/host/hp1_host SCRIPT OUTDIR`) runs the whole firmware from a

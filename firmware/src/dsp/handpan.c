@@ -31,14 +31,15 @@ const km_param_t *km_param_info(int i) { return (i >= 0 && i < P_NPARAMS) ? &PAR
 
 /* ------------------------------------------------------------- metals --- */
 /* What the shell is made of and how it was finished. Nitrided: carbon steel case-hardened in nitrogen
- * (the classic dark pan): warm, a long sustain, a clear octave. Stainless: brighter, the longest
- * sustain, its upper partials and the shell ring more. Ember: a softer, nitrided alloy: mellow, the
- * fifth tucked in, little steel. Raw: cold-rolled DC04 left plain: earthy, drier, a shorter ring. */
+ * (the classic dark pan): warm, the octave strong, a lively shimmer. Stainless: brighter, the longest
+ * ring, a slower, wider shimmer. Ember: a softer, nitrided alloy: mellow, the fifth tucked in, a gentle
+ * pulse. Raw: cold-rolled DC04 left plain: earthy, drier, the shortest ring, a quicker pulse. Levels and
+ * decays after the measured pans (handpan.h); the D3 ding rings ~4-6 s, the high fields 2-3 s. */
 static const km_metal_t METALS[MET_N] = {
-    {"Nitrided", 9.0f, 0.55f, 0.62f, 0.34f, 0.35f, 0.0011f, 0.050f, 0.55f, 0.55f},
-    {"Stainless", 12.0f, 0.50f, 0.74f, 0.48f, 0.22f, 0.0008f, 0.085f, 0.95f, 0.95f},
-    {"Ember", 10.5f, 0.60f, 0.50f, 0.22f, 0.45f, 0.0010f, 0.030f, 0.38f, 0.45f},
-    {"Raw", 6.0f, 0.62f, 0.56f, 0.38f, 0.55f, 0.0019f, 0.065f, 0.65f, 0.35f},
+    {"Nitrided", 3.8f, 0.45f, 0.82f, 0.30f, 0.10f, 1.25f, 0.85f, 4.5f, 0.55f, 1.0f, 0.55f, 0.55f},
+    {"Stainless", 5.0f, 0.40f, 0.90f, 0.40f, 0.14f, 1.30f, 0.95f, 4.0f, 0.50f, 1.2f, 0.95f, 0.95f},
+    {"Ember", 4.3f, 0.45f, 0.72f, 0.20f, 0.06f, 1.20f, 0.80f, 3.6f, 0.42f, 0.8f, 0.38f, 0.45f},
+    {"Raw", 2.8f, 0.50f, 0.76f, 0.32f, 0.10f, 1.10f, 0.75f, 6.0f, 0.60f, 1.3f, 0.65f, 0.35f},
 };
 const km_metal_t *km_metal(int i) { return &METALS[(unsigned)i < MET_N ? i : 0]; }
 
@@ -422,7 +423,8 @@ typedef struct {
     float y1[KM_NMODE], y2[KM_NMODE];
     float pl, pr, level, damp;                        /* damp: < 1 while a hand is on it (folded into b1, b2) */
     float ex_amp, ex_ph, ex_inc;                      /* the strike: a half-sine pulse, ex_ph 0..0.5 turns */
-    float click, click_dec;                           /* the fingertip's skin on the steel */
+    float click, click_dec, click_a, click_lp, click_hp;   /* the fingertip's skin on the steel: a burst,
+                                                       * band-passed (low-pass click_a, high-pass ~300 Hz) */
     int16_t cents;
     float fade, fade_step;                            /* a stolen voice, fading out (fade slots only) */
     float w0[KM_NMODE], rr[KM_NMODE], amp[KM_NMODE];  /* each mode at rest: frequency (rad), radius, level */
@@ -450,9 +452,9 @@ static voice_t vc[KM_NVOICE + KM_NFADE];
 #define FINGER_D 0.99978f                             /* a hand left on it (Release Damp, palm mute) */
 #define SLAP_D 0.99870f                               /* the ding slap: the palm stays, ~0.12 s */
 
-/* the modes: the fundamental, its twin, the octave and the compound fifth (the tuner's 1 : 2 : 3), and
- * the steel's own partial, inharmonic, which dies in a moment */
-#define STEEL_RATIO 5.43f
+/* the modes: the fundamental; the octave and its twin; the compound fifth and its twin; the double
+ * octave (the tuner's 1 : 2 : 3 : 4) */
+enum { M_FUND, M_OCT, M_OCT2, M_FIFTH, M_FIFTH2, M_DBL };
 
 static float cents_hz(int c) { return 8.17579892f * fm_exp2f((float)c * (1.0f / 1200.0f)) * tunefac * bendfac; }
 
@@ -507,37 +509,43 @@ static void voice_coefs(voice_t *v)
           /* Sustain: a quarter to four times the metal's own; a thicker shell rings on longer, a bigger
            * pan's fields are bigger and ring a little longer too */
           dscale = fm_exp2f((float)(par[P_SUSTAIN] - 50) * 0.04f) * fm_powf(th, 0.8f) * fm_powf(size_f(), -0.5f), t1,
-          lvl = 1.0f, spread = 1.0f, ostretch = 0.0f, ratio[KM_NMODE], amp[KM_NMODE];
+          lvl = 1.0f, spread = 1.0f, ostretch = 0.0f, ratio[KM_NMODE], amp[KM_NMODE], tk[KM_NMODE], bo, bf;
     int k, nm = 0;
     if (worn > 0.0f) {                                  /* this field's quirks */
         f0 *= fm_exp2f(worn * 10.0f * wear(v->cents, 0) * (1.0f / 1200.0f));
         dscale *= 1.0f + 0.35f * worn * wear(v->cents, 1);
-        spread = 1.0f + 1.5f * worn * wear(v->cents, 2);
+        spread = 1.0f + 0.8f * worn;                    /* its neighbors further off: a wider beat */
         ostretch = 0.006f * worn * wear(v->cents, 3);  /* the octave off true by up to ~10 cents */
         lvl = 1.0f + 0.2f * worn * wear(v->cents, 4);
     }
-    ratio[0] = 1.0f;
-    amp[0] = 1.0f;
-    ratio[1] = 1.0f + m->beat * spread;                 /* the twin: the slow beat of an oval field */
-    amp[1] = 0.32f;
-    ratio[2] = 2.0f * (1.0f + ostretch);
-    amp[2] = m->oct * harm;
-    ratio[3] = 3.0f * (1.0f + 0.5f * ostretch);
-    amp[3] = m->fifth * harm;
-    ratio[4] = STEEL_RATIO * fm_powf(th, 0.25f);
-    amp[4] = m->steel * th * th;
+    /* each field's own shimmer, the same every time it's struck (from its pitch): the octave's and the
+     * fifth's beats, 0.7 to 1.6 times the metal's, in Hz (as measured: a beat in Hz, not a ratio) */
+    bo = m->beat * spread * (1.0f + 0.3f * wear(v->cents, 6));
+    bf = m->beat * spread * (1.25f + 0.35f * wear(v->cents, 7));
     t1 = m->t60 * dscale * fm_powf(f0 * (1.0f / 146.83f), -m->pitch_k);
+    ratio[M_FUND] = 1.0f;
+    amp[M_FUND] = 1.0f;
+    tk[M_FUND] = t1;
+    ratio[M_OCT] = 2.0f * (1.0f + ostretch);
+    amp[M_OCT] = m->oct * harm;
+    tk[M_OCT] = t1 * m->oct_t;                          /* the octave often outlasts the fundamental */
+    ratio[M_OCT2] = ratio[M_OCT] + bo / f0;
+    amp[M_OCT2] = amp[M_OCT] * m->depth;
+    tk[M_OCT2] = tk[M_OCT];
+    ratio[M_FIFTH] = 3.0f * (1.0f + 0.5f * ostretch);
+    amp[M_FIFTH] = m->fifth * harm;
+    tk[M_FIFTH] = t1 * m->fifth_t;
+    ratio[M_FIFTH2] = ratio[M_FIFTH] - bf / f0;
+    amp[M_FIFTH2] = amp[M_FIFTH] * m->depth;
+    tk[M_FIFTH2] = tk[M_FIFTH];
+    ratio[M_DBL] = 4.0f * (1.0f + ostretch);
+    amp[M_DBL] = m->dbl * harm * th;
+    tk[M_DBL] = t1 * 0.5f;
     for (k = 0; k < KM_NMODE; k++) {
-        float f = f0 * ratio[k], t60, r, a = amp[k] * lvl;
+        float f = f0 * ratio[k], t60 = tk[k], r, a = amp[k] * lvl;
         v->amp[k] = 0.0f;
         if (f > 0.45f * KM_SR || a <= 0.0f)
             continue;
-        if (k <= 1)
-            t60 = t1;
-        else if (k == 4)
-            t60 = 0.22f * th;                           /* the steel: a moment */
-        else
-            t60 = t1 / (1.0f + m->loss * (ratio[k] - 1.0f));
         if (t60 < 0.01f)
             t60 = 0.01f;
         r = fm_expf(-6.9077553f / (t60 * KM_SR)) * v->damp;
@@ -625,18 +633,19 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
 {
     const km_metal_t *m = km_metal(par[P_METAL]);
     /* a fingertip leaves the steel in tp: soft fingers (1.2 ms) round off the top, a firm flick
-     * (0.2 ms) rings everything and adds the skin's tick */
+     * (0.2 ms) rings everything. The skin on the steel: a short, soft burst (the first ~10 ms of a real
+     * strike are broadband), brighter and shorter the firmer the strike */
     float tp = 0.0012f * fm_exp2f(-2.6f * hard), vg = (float)vel * (1.0f / 127.0f), a, n;
     int k, again = v->on;
     if (!again)
         for (k = 0; k < KM_NMODE; k++)
             v->y1[k] = v->y2[k] = 0.0f;
     for (k = 0; k < KM_NMODE; k++) {
-        static const float E[5][KM_NMODE] = {{1, 1, 1, 1, 1},
-                                             {0.06f, 0.0f, 1.6f, 1.3f, 0.6f},   /* a finger on the center */
-                                             {1, 1, 0.12f, 0.08f, 0},           /* sympathy: one partial */
-                                             {0.12f, 0.0f, 1, 0.1f, 0},
-                                             {0.10f, 0.0f, 0.1f, 1, 0}};
+        static const float E[5][KM_NMODE] = {{1, 1, 1, 1, 1, 1},
+                                             {0.06f, 1.4f, 1.4f, 1.3f, 1.3f, 0.8f},   /* a finger on the center */
+                                             {1, 0.1f, 0.05f, 0.06f, 0.03f, 0},       /* sympathy: one partial */
+                                             {0.1f, 1, 1, 0.08f, 0.04f, 0},
+                                             {0.08f, 0.08f, 0.04f, 1, 1, 0}};
         v->emph[k] = E[emph][k];
     }
     v->cents = (int16_t)cents;
@@ -664,8 +673,9 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->ex_inc = 0.5f / n;                               /* half a turn over the contact */
     v->ex_ph = again ? -(float)(CONTACT_N * 64u) * v->ex_inc : 0.0f;
     v->ex_amp = a * (FM_PI * 0.5f) / n;                 /* area a: the first mode rings at ~a */
-    v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * (0.25f + m->steel * 3.0f) * hard * hard * 0.10f : 0.0f;
-    v->click_dec = fm_expf(-1.0f / (0.0012f * KM_SR));
+    v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * m->touch * hard * (0.5f + 0.5f * hard) * 1.6f : 0.0f;
+    v->click_dec = fm_expf(-1.0f / ((0.007f - 0.004f * hard) * KM_SR));
+    v->click_a = 0.12f + 0.4f * hard;                   /* its low-pass: ~0.9 to ~4 kHz */
     a = ((float)pan * 0.01f * width + 1.0f) * (FM_PI * 0.25f);   /* pan: equal power */
     v->pl = fm_cosf(a);
     v->pr = fm_sinf(a);
@@ -732,6 +742,11 @@ static void sympathy(int cents, int vel, float scale)
                     best = b;
                 }
             }
+        if (best < 0 && i == 0) {                       /* the ding is coupled to the air inside, which every
+                                                         * strike pushes: it sounds faintly under every note */
+            best = 0;
+            w = 0.35f;
+        }
         if (best < 0)
             continue;
         {
@@ -1711,13 +1726,18 @@ static void render_voices(uint32_t n)
                 }
             }
         }
-        if (v->click > 1e-6f && v->ex_ph >= 0.0f) {     /* the skin's tick, as the fingertip leaves */
-            float c = v->click;
+        if (v->click > 1e-6f && v->ex_ph >= 0.0f) {     /* the skin on the steel, as the fingertip leaves */
+            float c = v->click, lp = v->click_lp, hp = v->click_hp;
+            const float ca = v->click_a;
             for (j = 0; j < n; j++) {
-                vb[j] += c * rnds();
+                lp += ca * (c * rnds() - lp);
+                hp += 0.043f * (lp - hp);              /* (~300 Hz) */
+                vb[j] += (lp - hp) * 2.0f;
                 c *= v->click_dec;
             }
             v->click = c;
+            v->click_lp = fm_flush(lp);
+            v->click_hp = fm_flush(hp);
         }
         if (i >= KM_NVOICE) {                           /* a stolen voice: out in FADE_S, smoothly */
             float g = v->fade;
@@ -1786,7 +1806,7 @@ static void render_shell(uint32_t n)
         return;                                         /* silent, nothing coming: (the device's CPU) */
     }
     for (j = 0; j < n; j++) {
-        float el = knock[j] * 0.012f, er = el, ec = knock[j] * knock_amt * 0.5f, sl = 0.0f, sr = 0.0f, c;
+        float el = knock[j] * 0.005f, er = el, ec = knock[j] * knock_amt * 0.5f, sl = 0.0f, sr = 0.0f, c;
         if (tail_ph < 0.5f) {                           /* a hit's pulse */
             float s = fm_sin_turns(tail_ph);
             el += tail_l * s;
