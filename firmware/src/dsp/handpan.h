@@ -72,7 +72,7 @@ enum { PAT_HEART, PAT_CASCADE, PAT_HEMIOLA, PAT_BACKBEAT, PAT_N };
 enum { TUNE_EQUAL, TUNE_JUST, TUNE_N };
 enum { THEME_DARK, THEME_LIGHT, THEME_N };
 enum { GP_DOWN12, GP_DOWN7, GP_UNISON, GP_UP7, GP_UP12, GP_UP19, GP_SHIMMER, GP_REVERSE, GP_N };
-#define KM_NSCALE 10
+#define KM_NSCALE 11
 extern const char *const KM_NOTE_NAME[12];
 
 /* the percussion (km_hit): where on the instrument, and with what */
@@ -116,6 +116,11 @@ int km_white_index(int layout, int w);             /* into km_pan_notes */
 int km_white_cents(int layout, int scale, int key, int octave, int w);
 /* where on the instrument a field sits: -1 (left) .. +1 (right), for its pan */
 float km_white_pos(int layout, int w);
+/* a pan's accidentals spelled as its scale spells them: bit p set, pitch class p is a sharp (C#), else
+ * a flat (Db). Each is named after the letter its scale doesn't already use (E SaByeD's G# and D#, D
+ * Kurd's Bb); when both or neither are used, C# Eb F# Ab Bb */
+uint16_t km_sharps(int scale, int key);
+const char *km_note_name(int cents, uint16_t sharps);   /* "G#", "Bb", "E" */
 /* just intonation: a note on the 12-step grid, retuned to the pure ratio of its interval over the
  * tonic (5-limit: 16/15 9/8 6/5 5/4 4/3 45/32 3/2 8/5 5/3 9/5 15/8) */
 int km_just_cents(int cents, int tonic_cents);

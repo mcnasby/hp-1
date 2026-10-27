@@ -84,6 +84,9 @@ __attribute__((used, visibility("default"))) uint32_t web_store_writes(void) { r
 __attribute__((used, visibility("default"))) uint32_t web_nobj(void) { return OBJ_NOBJ; }
 __attribute__((used, visibility("default"))) uint32_t web_store_max(void) { return PLAT_STORE_MAX; }
 
+/* how the pan spells its accidentals (km_sharps: bit p, pitch class p a sharp), for the page's labels */
+__attribute__((used, visibility("default"))) uint32_t web_sharps(void) { return km_sharps(proj.par[P_SCALE], proj.par[P_KEY]); }
+
 /* what each key plays now, for the page's labels: a white key or a second-pan key its note (cents),
  * a black key of the steel or the kit -(1 + its HIT_*) */
 __attribute__((used, visibility("default"))) int32_t web_key_label(uint32_t k)

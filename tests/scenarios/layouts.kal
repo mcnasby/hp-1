@@ -41,3 +41,14 @@ wait 30
 expect note5702 >5
 spin K3 -1
 expect white6 5700
+# the scales wrap round: one back from Kurd is SaByeD, in E: E3 / A3 B3 C#4 ... (its G# and D# named so)
+tap SEL
+turn ALGO -1
+expect par24 10
+expect par25 4
+expect white8 5200
+expect white6 5700
+expect white9 5900
+expect white5 6100
+wait 50
+shot sabyed.png
