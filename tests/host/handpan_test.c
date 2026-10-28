@@ -176,8 +176,7 @@ static void test_music(void)
     int i, s, k, n[KM_NPAN], own;
     char b[24];
     /* D Kurd, as the makers build it (Kurd 10): D3 / A3 Bb3 C4 D4 E4 F4 G4 A4 C5, then the scale on up */
-    static const int KURD[KM_NPAN] = {5000, 5700, 5800, 6000, 6200, 6400, 6500, 6700, 6900,
-                                      7200, 7400, 7600, 7700, 7900, 8100, 8200};
+    static const int KURD[KM_NPAN] = {5000, 5700, 5800, 6000, 6200, 6400, 6500, 6700, 6900, 7200, 7400, 7600};
     own = km_pan_notes(0, 2, 0, n);
     CHECK(own == 10, "Kurd has a ding and 9 fields (%d)", own);
     for (i = 0; i < KM_NPAN; i++)
@@ -188,16 +187,27 @@ static void test_music(void)
     CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 9) == 5700 && km_white_cents(LAY_PAN, 0, 2, 0, 6) == 5800, "A right, Bb left");
     CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 10) == 6000 && km_white_cents(LAY_PAN, 0, 2, 0, 5) == 6200, "C right, D left");
     CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 3) == 6900 && km_white_cents(LAY_PAN, 0, 2, 0, 13) == 7200, "A4 left, C5 right");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 0) == 8100 && km_white_cents(LAY_PAN, 0, 2, 0, 15) == 7900, "the ends");
-    for (i = 1; i < 7; i++) {                    /* each step out from the middle climbs */
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 2) == 7400 && km_white_cents(LAY_PAN, 0, 2, 0, 12) == 6700, "the outer notes");
+    for (i = 1; i < 6; i++) {                    /* each step out from the middle climbs */
         CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 7 - i) > km_white_cents(LAY_PAN, 0, 2, 0, 8 - i), "left climbs %d", i);
         CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 8 + i) > km_white_cents(LAY_PAN, 0, 2, 0, 7 + i), "right climbs %d", i);
     }
-    for (i = 0; i < 16; i++) {
+    /* the two keys at each end are the steel, in every layout: a thwap outside, a tak inside */
+    for (k = 0; k < LAY_N; k++)
+        for (i = 0; i < 16; i++) {
+            const int steel = i < 2 || i > 13;
+            CHECK((km_white_index(k, i) < 0) == steel && (km_white_cents(k, 0, 2, 0, i) < 0) == steel,
+                  "layout %d key %d: %s", k, i, steel ? "the steel" : "a note");
+            CHECK((km_white_hit(i) >= 0) == steel, "key %d hit %d", i, km_white_hit(i));
+        }
+    CHECK(km_white_hit(0) == HIT_THWAP_L && km_white_hit(1) == HIT_TAK_L && km_white_hit(14) == HIT_TAK_R &&
+          km_white_hit(15) == HIT_THWAP_R, "thwap, tak ... tak, thwap");
+    for (i = 2; i < 14; i++) {
         CHECK(km_white_cents(LAY_PANREV, 3, 6, 0, i) == km_white_cents(LAY_PAN, 3, 6, 0, 15 - i), "pan rev %d", i);
-        CHECK(km_white_cents(LAY_LINEAR, 0, 2, 0, i) == KURD[i], "linear %d", i);
+        CHECK(km_white_cents(LAY_LINEAR, 0, 2, 0, i) == KURD[i - 2], "linear %d", i);
     }
     CHECK(km_white_pos(LAY_PAN, 7) == 0.0f && km_white_pos(LAY_PAN, 2) < -0.5f && km_white_pos(LAY_PAN, 13) > 0.5f, "pan position");
+    CHECK(km_white_pos(LAY_PAN, 0) < -0.9f && km_white_pos(LAY_PAN, 15) > 0.9f, "the steel at the sides");
     /* the ding between A2 and G#3, as the makers have it; the octave moves it */
     for (k = 0; k < 12; k++) {
         int d = km_ding_cents(k, 0);
@@ -235,7 +245,7 @@ static void test_music(void)
         CHECK(n[KM_NPAN - 1] - n[0] <= 4200, "%s spans %d cents", km_scale_name(s), n[KM_NPAN - 1] - n[0]);
     }
     /* the second pan: for every pan in every key, at least one; all of its notes in the first pan's (or,
-     * for a pan of few notes, all but one); never the same pan; its ding a register above */
+     * for a pan of few notes, all but one); never the same pan; its ding in the first pan's register */
     for (s = 0; s < KM_NSCALE; s++)
         for (k = 0; k < 12; k++) {
             int cnt = km_duo_count(s, k), c;
@@ -253,16 +263,25 @@ static void test_music(void)
                 CHECK(outside <= 1, "%s %s with %s %s: %d notes outside", KM_NOTE_NAME[k], km_scale_name(s),
                       KM_NOTE_NAME[dk], km_scale_name(ds), outside);
                 km_duo_notes(s, k, 0, c, dn);
-                CHECK(dn[0] >= km_ding_cents(k, 0) + 300 && dn[0] <= km_ding_cents(k, 0) + 1400, "duo ding %d", dn[0]);
+                CHECK(dn[0] == km_ding_cents(dk, 0), "duo ding %d", dn[0]);
                 for (i = 1; i < KM_NDUO; i++)
                     CHECK(dn[i] > dn[i - 1], "duo climbs");
             }
         }
     CHECK(!strcmp(km_duo_name(0, 2, 0, b), "D Celtic"), "D Kurd's best second pan: %s", b);
-    /* its keys laid out as the white keys: Pan the ding in the middle (key 3 of 0..6), the fields
+    {   /* D Kurd's: D Celtic, D3 / A3 C4 D4 E4 F4 G4 A4 C5, beside it */
+        static const int CELTIC[KM_NDUO] = {5000, 5700, 6000, 6200, 6400, 6500, 6700, 6900, 7200};
+        int dn[KM_NDUO];
+        km_duo_notes(0, 2, 0, 0, dn);
+        for (i = 0; i < KM_NDUO; i++)
+            CHECK(dn[i] == CELTIC[i], "D Celtic note %d: %d, wanted %d", i, dn[i], CELTIC[i]);
+        km_duo_notes(0, 2, 1, 0, dn);
+        CHECK(dn[0] == 6200, "the second pan follows Octave (%d)", dn[0]);
+    }
+    /* its keys laid out as the white keys: Pan the ding in the middle (key 4 of 0..8), the fields
      * alternating outward, right first; Pan rev left first; Linear low to high. Each a permutation */
     {
-        static const int PAN[KM_NDUO] = {6, 4, 2, 0, 1, 3, 5};
+        static const int PAN[KM_NDUO] = {8, 6, 4, 2, 0, 1, 3, 5, 7};
         int lay, seen;
         for (i = 0; i < KM_NDUO; i++) {
             CHECK(km_duo_index(LAY_PAN, i) == PAN[i], "duo Pan key %d: %d", i, km_duo_index(LAY_PAN, i));
@@ -305,10 +324,10 @@ static void test_partials(void)
             off = cents_off(find_pitch(4096, 8192, f), f);
             CHECK(off > -3.0f && off < 3.0f, "%s %d: %.1f cents off", km_metal(m)->name, NOTES[i], (double)off);
             a1 = mag(4096, 8192, f);
-            a2 = mag(4096, 8192, 2.0f * f);
-            a3 = mag(4096, 8192, 3.0f * f);
-            a25 = mag(4096, 8192, 2.5f * f);
-            CHECK(db(a2 / a1) > -18.0f && db(a3 / a1) > -26.0f, "%s %d: octave %.1f dB, fifth %.1f dB", km_metal(m)->name,
+            a2 = mag(4096, 8192, find_pitch(4096, 8192, 2.0f * f));
+            a3 = mag(4096, 8192, find_pitch(4096, 8192, 3.0f * f));   /* (up top, a little off true) */
+            a25 = mag(4096, 8192, 2.25f * f);
+            CHECK(db(a2 / a1) > -18.0f && db(a3 / a1) > -30.0f, "%s %d: octave %.1f dB, fifth %.1f dB", km_metal(m)->name,
                   NOTES[i], (double)db(a2 / a1), (double)db(a3 / a1));
             CHECK(db(a25 / a1) < -30.0f, "%s %d: between the partials %.1f dB", km_metal(m)->name, NOTES[i],
                   (double)db(a25 / a1));
@@ -333,6 +352,60 @@ static void test_partials(void)
 /* the shimmer: a field's octave pulses at a few Hz, as measured pans' do (3 to 9 Hz), its fundamental
  * holds steady. (Without it a field is an electric piano's tine.) The level of each, in 2048-sample
  * windows 0.2 to 1.6 s in, the decay taken out; the pulse's depth and its rate by its zero crossings */
+/* the high fields, rougher than the low (as measured, handpan.h): their fifth weaker against the
+ * fundamental and off true, an untuned mode of their own ~2.5 times them; the low fields clean. Every
+ * metal, Stainless the roughest up top and Ember the tamest */
+static float stray_db(float f)                    /* the strongest thing 2.4 to 2.6 times f, against f */
+{
+    float m = 0.0f, r;
+    for (r = 2.40f; r <= 2.601f; r += 0.004f)
+        m = fm_maxf(m, mag(4096, 8192, r * f));
+    return db(m / mag(4096, 8192, f));
+}
+
+static void test_high(void)
+{
+    static const int LOW[2] = {5000, 5700}, HIGH[3] = {7200, 7400, 7600};
+    float rough[MET_N];
+    int m, i;
+    for (m = 0; m < MET_N; m++) {
+        float lo_off = 0.0f, hi_off = 0.0f, lo_fifth = 0.0f, hi_fifth = 0.0f, lo_stray = -999.0f, hi_stray = 999.0f;
+        for (i = 0; i < 5; i++) {
+            const int c = i < 2 ? LOW[i] : HIGH[i - 2];
+            const float f = hz(c);
+            float off, fifth, st;
+            fresh();
+            km_set(P_METAL, m);
+            km_set(P_PORT, 0);
+            km_pluck(c, 100, 0, 0);
+            render(0, 16384);
+            off = fm_fabsf(cents_off(find_pitch(4096, 8192, 3.0f * f), 3.0f * f));
+            fifth = db(mag(4096, 8192, find_pitch(4096, 8192, 3.0f * f)) / mag(4096, 8192, f));
+            st = stray_db(f);
+            if (i < 2) {
+                lo_off += off * 0.5f;
+                lo_fifth += fifth * 0.5f;
+                lo_stray = fm_maxf(lo_stray, st);
+            } else {
+                hi_off += off * (1.0f / 3.0f);
+                hi_fifth += fifth * (1.0f / 3.0f);
+                hi_stray = fm_minf(hi_stray, st);
+            }
+        }
+        /* (the fifth's twin, a few Hz under it, pulls a low field's peak a little too) */
+        CHECK(lo_off < 6.0f && hi_off > lo_off + 4.0f, "%s: the fifth off true by %.1f cents low, %.1f high", km_metal(m)->name,
+              (double)lo_off, (double)hi_off);
+        CHECK(hi_fifth < lo_fifth - 2.0f, "%s: the fifth %.1f dB low, %.1f high", km_metal(m)->name, (double)lo_fifth,
+              (double)hi_fifth);
+        CHECK(lo_stray < -40.0f && hi_stray > -38.0f, "%s: the stray mode %.1f dB low, %.1f high", km_metal(m)->name,
+              (double)lo_stray, (double)hi_stray);
+        rough[m] = hi_stray;
+    }
+    CHECK(rough[MET_STAINLESS] > rough[MET_NITRIDED] && rough[MET_NITRIDED] > rough[MET_EMBER],
+          "Stainless roughest up top, Ember tamest (%.1f %.1f %.1f dB)", (double)rough[MET_STAINLESS],
+          (double)rough[MET_NITRIDED], (double)rough[MET_EMBER]);
+}
+
 static void pulse_of(float f, float *depth, float *rate)
 {
     float e[140], sx = 0.0f, sy = 0.0f, sxx = 0.0f, sxy = 0.0f, sd = 0.0f, k, b;
@@ -1170,6 +1243,7 @@ int main(int argc, char **argv)
 {
     test_music();
     test_partials();
+    test_high();
     test_shimmer();
     test_ping();
     test_air();

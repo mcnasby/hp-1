@@ -87,16 +87,16 @@ __attribute__((used, visibility("default"))) uint32_t web_store_max(void) { retu
 /* how the pan spells its accidentals (km_sharps: bit p, pitch class p a sharp), for the page's labels */
 __attribute__((used, visibility("default"))) uint32_t web_sharps(void) { return km_sharps(proj.par[P_SCALE], proj.par[P_KEY]); }
 
-/* what each key plays now, for the page's labels: a white key or a second-pan key its note (cents),
- * a black key of the steel or the kit -(1 + its HIT_*) */
+/* what each key plays now, for the page's labels: a note's key its note (cents), a key of the steel
+ * or the kit -(1 + its HIT_*) */
 __attribute__((used, visibility("default"))) int32_t web_key_label(uint32_t k)
 {
     int i;
     for (i = 0; i < NWHITE; i++)
         if (WHITE_K[i] == k)
-            return white_cents(i);
+            return km_white_hit(i) >= 0 ? -(1 + km_white_hit(i)) : white_cents(i);
     for (i = 0; i < NBLACK; i++)
         if (BLACK_K[i] == k)
-            return is_duo_key(i) ? duo_cents(duo_index(i)) : -(1 + (int32_t)HIT_OF[i]);
+            return is_duo_key(i) ? duo_cents(duo_index(i)) : -(1 + (int32_t)black_hit(i));
     return 0;
 }

@@ -23,9 +23,13 @@ expect white5 6200
 expect white12 6700
 expect white3 6900
 expect white13 7200
-# past the pan's own fields, the scale goes on: the ends
-expect white0 8100
-expect white15 7900
+# past the pan's own fields, the scale goes on (D Kurd: one more, D5); the two keys at each end are the
+# steel
+expect white2 7400
+expect white0 -1
+expect white1 -1
+expect white14 -1
+expect white15 -1
 # the ding, then out and up: D | A Bb C D E F G A C
 tapkey w8
 tapkey w9

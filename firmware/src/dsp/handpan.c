@@ -34,12 +34,13 @@ const km_param_t *km_param_info(int i) { return (i >= 0 && i < P_NPARAMS) ? &PAR
  * (the classic dark pan): warm, the octave strong, a lively shimmer. Stainless: brighter, the longest
  * ring, a slower, wider shimmer. Ember: a softer, nitrided alloy: mellow, the fifth tucked in, a gentle
  * pulse. Raw: cold-rolled DC04 left plain: earthy, drier, the shortest ring, a quicker pulse. Levels and
- * decays after the measured pans (handpan.h); the D3 ding rings ~4-6 s, the high fields 2-3 s. */
+ * decays after the measured pans (handpan.h); the D3 ding rings ~4-6 s, the high fields 2-3 s. Up top,
+ * stainless is the wildest (hard and bright), Raw a little rough, Ember the most tamed. */
 static const km_metal_t METALS[MET_N] = {
-    {"Nitrided", 3.8f, 0.45f, 0.82f, 0.30f, 0.10f, 1.25f, 0.85f, 4.5f, 0.55f, 1.0f, 0.85f, 0.55f, 0.55f},
-    {"Stainless", 5.0f, 0.40f, 0.90f, 0.40f, 0.14f, 1.30f, 0.95f, 4.0f, 0.50f, 1.2f, 1.10f, 0.95f, 0.95f},
-    {"Ember", 4.3f, 0.45f, 0.72f, 0.20f, 0.06f, 1.20f, 0.80f, 3.6f, 0.42f, 0.8f, 0.55f, 0.38f, 0.45f},
-    {"Raw", 2.8f, 0.50f, 0.76f, 0.32f, 0.10f, 1.10f, 0.75f, 6.0f, 0.60f, 1.3f, 0.95f, 0.65f, 0.35f},
+    {"Nitrided", 3.8f, 0.45f, 0.82f, 0.30f, 0.10f, 1.25f, 0.85f, 4.5f, 0.55f, 1.0f, 0.85f, 0.55f, 0.55f, 1.0f},
+    {"Stainless", 5.0f, 0.40f, 0.90f, 0.40f, 0.14f, 1.30f, 0.95f, 4.0f, 0.50f, 1.2f, 1.10f, 0.95f, 0.95f, 1.2f},
+    {"Ember", 4.3f, 0.45f, 0.72f, 0.20f, 0.06f, 1.20f, 0.80f, 3.6f, 0.42f, 0.8f, 0.55f, 0.38f, 0.45f, 0.7f},
+    {"Raw", 2.8f, 0.50f, 0.76f, 0.32f, 0.10f, 1.10f, 0.75f, 6.0f, 0.60f, 1.3f, 0.95f, 0.65f, 0.35f, 1.1f},
 };
 const km_metal_t *km_metal(int i) { return &METALS[(unsigned)i < MET_N ? i : 0]; }
 
@@ -105,15 +106,17 @@ int km_pan_notes(int s, int key, int octave, int out[KM_NPAN])
 
 /* Pan: the ding on both middle keys (either thumb finds it), then the fields climbing outward in turn,
  * right, left, right, left, as they zigzag up around a real pan from the player's side (a D Kurd's A3 on
- * the right, Bb3 on the left, C4 right ...):
+ * the right, Bb3 on the left, C4 right ...). The two keys at each end are the steel (S):
  *   w:      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
- *   note   14  12  10   8   6   4   2   0   0   1   3   5   7   9  11  13
+ *   note    S   S  10   8   6   4   2   0   0   1   3   5   7   9   S   S
  * Pan rev: the same, left first. Linear: the ding on the left, then up the keys. */
 int km_white_index(int layout, int w)
 {
     w &= 15;
+    if (w < KM_WSTEEL || w >= KM_NWHITE - KM_WSTEEL)
+        return -1;
     if (layout == LAY_LINEAR)
-        return w;
+        return w - KM_WSTEEL;
     if (layout == LAY_PAN)
         w = 15 - w;
     if (w == 7 || w == 8)
@@ -123,19 +126,30 @@ int km_white_index(int layout, int w)
 
 int km_white_cents(int layout, int s, int key, int octave, int w)
 {
-    int n[KM_NPAN];
+    int n[KM_NPAN], i = km_white_index(layout, w);
+    if (i < 0)
+        return -1;
     km_pan_notes(s, key, octave, n);
-    return n[km_white_index(layout, w)];
+    return n[i];
+}
+
+/* the steel on the white keys: a palm thwap on each end key, a fingertip tak inside it */
+int km_white_hit(int w)
+{
+    static const int8_t HIT[2 * KM_WSTEEL] = {HIT_THWAP_L, HIT_TAK_L, HIT_TAK_R, HIT_THWAP_R};
+    w &= 15;
+    return w < KM_WSTEEL ? HIT[w] : w >= KM_NWHITE - KM_WSTEEL ? HIT[w - (KM_NWHITE - 2 * KM_WSTEEL)] : -1;
 }
 
 float km_white_pos(int layout, int w)
 {
+    int i = km_white_index(layout, w);
+    if (i < 0)
+        return (w & 15) < 8 ? -1.0f : 1.0f;
     if (layout == LAY_LINEAR)
-        return ((float)(w & 15) - 7.5f) * (1.0f / 7.5f);
-    {   /* as it sits on the pan: the ding in the middle, the fields to their side, the high ones wider */
-        int i = km_white_index(layout, w), side = (w & 15) < 8 ? -1 : 1;
-        return i ? (float)side * (0.25f + 0.05f * (float)(i < 15 ? i : 15)) : 0.0f;
-    }
+        return ((float)i - 5.5f) * (1.0f / 5.5f);
+    /* as it sits on the pan: the ding in the middle, the fields to their side, the high ones wider */
+    return i ? ((w & 15) < 8 ? -1.0f : 1.0f) * (0.25f + 0.06f * (float)i) : 0.0f;
 }
 
 uint16_t km_sharps(int s, int key)
@@ -249,31 +263,28 @@ void km_duo_choice(int s, int key, int choice, int *ds, int *dk)
     *dk = lk[choice];
 }
 
-/* the second pan stands a register above the first: its ding 3 to 14 semitones over the first's */
+/* the second pan in the first's register: its ding where a pan in its key has it (an A pan's A2, beside
+ * a D pan's D3), as a player's second pan would be */
 int km_duo_notes(int s, int key, int octave, int choice, int out[KM_NDUO])
 {
-    int ds, dk, n[KM_NPAN], d0 = km_ding_cents(key, octave), i;
+    int ds, dk, n[KM_NPAN], i;
     km_duo_choice(s, key, choice, &ds, &dk);
     km_pan_notes(ds, dk, octave, n);
-    while (n[0] < d0 + 300)
-        for (i = 0; i < KM_NPAN; i++)
-            n[i] += 1200;
-    while (n[0] > d0 + 1400)
-        for (i = 0; i < KM_NPAN; i++)
-            n[i] -= 1200;
     for (i = 0; i < KM_NDUO; i++)
         out[i] = n[i];
     return KM_NDUO;
 }
 
+/* its keys as the white keys: its ding on the middle one, its fields alternating outward */
 int km_duo_index(int layout, int i)
 {
+    const int mid = KM_NDUO / 2;
     i = i < 0 ? 0 : i >= KM_NDUO ? KM_NDUO - 1 : i;
     if (layout == LAY_LINEAR)
         return i;
     if (layout == LAY_PAN)
         i = KM_NDUO - 1 - i;
-    return i == 3 ? 0 : i < 3 ? 2 * (3 - i) - 1 : 2 * (i - 3);
+    return i == mid ? 0 : i < mid ? 2 * (mid - i) - 1 : 2 * (i - mid);
 }
 
 const char *km_duo_name(int s, int key, int choice, char *b)
@@ -482,6 +493,7 @@ typedef struct {
                                                        * come, and how much more each chunk */
     uint8_t on, nm, quiet, released, contact, rise_n;
     uint16_t live;                                    /* the modes still sounding (bit k): the rest are skipped */
+    float hx;                                         /* how high and small the field is (high_x) */
 } voice_t;
 /* Two spare slots where a stolen voice fades out over a few milliseconds while its slot takes the new
  * field: cutting it dead was a pop (as loud as the field was) */
@@ -501,8 +513,9 @@ static voice_t vc[KM_NVOICE + KM_NFADE];
 /* the modes: the fundamental; the octave and its twin; the compound fifth and its twin; the double
  * octave (the tuner's 1 : 2 : 3 : 4); then the ping: four of the field's higher modes, untuned and
  * inharmonic (the dimple's and the field's edge's), which only a strike reaches and which die in a
- * moment: the bright, metallic "tang" at the front of every note */
-enum { M_FUND, M_OCT, M_OCT2, M_FIFTH, M_FIFTH2, M_DBL, M_PING };
+ * moment: the bright, metallic "tang" at the front of every note; and the stray: a high field's own
+ * untuned mode, ~2.5 times it, which the tuner can't reach on so small a field (Alon's B4s and C5s) */
+enum { M_FUND, M_OCT, M_OCT2, M_FIFTH, M_FIFTH2, M_DBL, M_PING, M_STRAY = M_PING + 4 };
 static const float PING_RATIO[4] = {5.21f, 6.83f, 8.62f, 11.27f}, PING_AMP[4] = {1.0f, 0.75f, 0.55f, 0.38f},
                    PING_T60[4] = {0.22f, 0.16f, 0.12f, 0.09f};
 
@@ -548,6 +561,16 @@ static void voice_freq(voice_t *v)
     }
 }
 
+/* How high and small a field is: 0 to C4, 1 by F5, times the metal's roughness. The small fields are
+ * rougher (Alon's high notes, and recordings): struck harder, their octave as loud as the fundamental
+ * or louder, their fifth weaker, shorter and off true by 5 to 25 cents, an untuned mode of their own,
+ * their neighbors ringing along. The low fields are as the tuner leaves them. */
+static float high_x(float hz)
+{
+    const float x = fm_log2f(hz * (1.0f / 261.63f)) * (1.0f / 1.5f);
+    return fm_clampf(x, 0.0f, 1.0f) * km_metal(par[P_METAL])->rough;
+}
+
 static float thick_f(void) { return (float)par[P_THICK] * (1.0f / 12.0f); }
 static float size_f(void) { return 53.0f / (float)par[P_SIZE]; }   /* > 1 smaller, < 1 bigger */
 
@@ -559,7 +582,7 @@ static void voice_coefs(voice_t *v)
           /* Sustain: a quarter to four times the metal's own; a thicker shell rings on longer, a bigger
            * pan's fields are bigger and ring a little longer too */
           dscale = fm_exp2f((float)(par[P_SUSTAIN] - 50) * 0.04f) * fm_powf(th, 0.8f) * fm_powf(size_f(), -0.5f), t1,
-          lvl = 1.0f, spread = 1.0f, ostretch = 0.0f, ratio[KM_NMODE], amp[KM_NMODE], tk[KM_NMODE], bo, bf;
+          lvl = 1.0f, spread = 1.0f, ostretch = 0.0f, ratio[KM_NMODE], amp[KM_NMODE], tk[KM_NMODE], bo, bf, hx;
     int k, nm = 0;
     if (worn > 0.0f) {                                  /* this field's quirks */
         f0 *= fm_exp2f(worn * 10.0f * wear(v->cents, 0) * (1.0f / 1200.0f));
@@ -573,29 +596,35 @@ static void voice_coefs(voice_t *v)
     bo = m->beat * spread * (1.0f + 0.3f * wear(v->cents, 6));
     bf = m->beat * spread * (1.25f + 0.35f * wear(v->cents, 7));
     t1 = m->t60 * dscale * fm_powf(f0 * (1.0f / 146.83f), -m->pitch_k);
+    hx = v->hx = high_x(f0);
     ratio[M_FUND] = 1.0f;
     amp[M_FUND] = 1.0f;
     tk[M_FUND] = t1;
-    ratio[M_OCT] = 2.0f * (1.0f + ostretch);
-    amp[M_OCT] = m->oct * harm;
-    tk[M_OCT] = t1 * m->oct_t;                          /* the octave often outlasts the fundamental */
+    /* (up top: the octave louder, a little shorter, 2 to 10 cents flat; the fifth weaker, shorter, 5 to
+     * 25 cents flat; the double octave fading) */
+    ratio[M_OCT] = 2.0f * (1.0f + ostretch) * (1.0f - hx * (0.0035f + 0.0023f * wear(v->cents, 8)));
+    amp[M_OCT] = m->oct * harm * (1.0f + 0.25f * hx);
+    tk[M_OCT] = t1 * m->oct_t * (1.0f - 0.2f * hx);    /* the octave often outlasts the fundamental */
     ratio[M_OCT2] = ratio[M_OCT] + bo / f0;
     amp[M_OCT2] = amp[M_OCT] * m->depth;
     tk[M_OCT2] = tk[M_OCT];
-    ratio[M_FIFTH] = 3.0f * (1.0f + 0.5f * ostretch);
-    amp[M_FIFTH] = m->fifth * harm;
-    tk[M_FIFTH] = t1 * m->fifth_t;
+    ratio[M_FIFTH] = 3.0f * (1.0f + 0.5f * ostretch) * (1.0f - hx * (0.0087f + 0.0058f * wear(v->cents, 9)));
+    amp[M_FIFTH] = m->fifth * harm * (1.0f - 0.45f * fm_minf(hx, 1.0f));
+    tk[M_FIFTH] = t1 * m->fifth_t * (1.0f - 0.4f * fm_minf(hx, 1.0f));
     ratio[M_FIFTH2] = ratio[M_FIFTH] - bf / f0;
     amp[M_FIFTH2] = amp[M_FIFTH] * m->depth;
     tk[M_FIFTH2] = tk[M_FIFTH];
     ratio[M_DBL] = 4.0f * (1.0f + ostretch);
-    amp[M_DBL] = m->dbl * harm * th;
+    amp[M_DBL] = m->dbl * harm * th * (1.0f - 0.5f * fm_minf(hx, 1.0f));
     tk[M_DBL] = t1 * 0.5f;
     for (k = 0; k < 4; k++) {                           /* (thicker steel: a higher, longer ping) */
         ratio[M_PING + k] = PING_RATIO[k] * fm_powf(th, 0.15f);
         amp[M_PING + k] = m->ping * PING_AMP[k] * th;
         tk[M_PING + k] = PING_T60[k] * th;
     }
+    ratio[M_STRAY] = 2.5f + 0.08f * wear(v->cents, 10);
+    amp[M_STRAY] = 0.16f * harm * hx;                   /* (~-16 dB at the top; none below C4) */
+    tk[M_STRAY] = t1 * 0.3f;
     for (k = 0; k < KM_NMODE; k++) {
         float f = f0 * ratio[k], t60 = tk[k], r, a = amp[k] * lvl;
         v->amp[k] = 0.0f;
@@ -697,11 +726,11 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
             v->y1[k] = v->y2[k] = 0.0f;
     for (k = 0; k < KM_NMODE; k++) {
         /* (the ping's modes take no part in the pulse: the contact's impulse rings them, below) */
-        static const float E[5][KM_NMODE] = {{1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
-                                             {0.06f, 1.4f, 1.4f, 1.3f, 1.3f, 0.8f, 0, 0, 0, 0},   /* a finger on the center */
-                                             {1, 0.1f, 0.05f, 0.06f, 0.03f, 0, 0, 0, 0, 0},       /* sympathy: one partial */
-                                             {0.1f, 1, 1, 0.08f, 0.04f, 0, 0, 0, 0, 0},
-                                             {0.08f, 0.08f, 0.04f, 1, 1, 0, 0, 0, 0, 0}};
+        static const float E[5][KM_NMODE] = {{1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1},
+                                             {0.06f, 1.4f, 1.4f, 1.3f, 1.3f, 0.8f, 0, 0, 0, 0, 0.5f},   /* a finger on the center */
+                                             {1, 0.1f, 0.05f, 0.06f, 0.03f, 0, 0, 0, 0, 0, 0},       /* sympathy: one partial */
+                                             {0.1f, 1, 1, 0.08f, 0.04f, 0, 0, 0, 0, 0, 0},
+                                             {0.08f, 0.08f, 0.04f, 1, 1, 0, 0, 0, 0, 0, 0}};
         v->emph[k] = E[emph][k];
     }
     v->cents = (int16_t)cents;
@@ -710,6 +739,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->contact = again ? (uint8_t)CONTACT_N : 0u;
     v->released = 0;
     voice_coefs(v);
+    tp *= 1.0f - 0.4f * fm_minf(v->hx, 1.0f);           /* a small field is stiffer: a harder contact */
     n = tp * KM_SR;                                     /* pulse samples */
     if (n < 1.0f)
         n = 1.0f;
@@ -735,9 +765,10 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->ex_inc = 0.5f / n;                               /* half a turn over the contact */
     v->ex_ph = again ? -(float)(CONTACT_N * 64u) * v->ex_inc : 0.0f;
     v->ex_amp = a * (FM_PI * 0.5f) / n;                 /* area a: the first mode rings at ~a */
-    v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * m->touch * hard * (0.5f + 0.5f * hard) * 0.9f : 0.0f;
+    v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * m->touch * hard * (0.5f + 0.5f * hard) * 0.9f *
+                                                               (1.0f + 0.5f * v->hx) : 0.0f;
     v->click_dec = fm_expf(-1.0f / ((0.007f - 0.004f * hard) * KM_SR));
-    v->click_a = 0.12f + 0.4f * hard;                   /* its low-pass: ~0.9 to ~4 kHz */
+    v->click_a = fm_minf(0.12f + 0.4f * hard + 0.2f * v->hx, 0.8f);   /* its low-pass: ~0.9 to ~4 kHz (more up top) */
     a = ((float)pan * 0.01f * width + 1.0f) * (FM_PI * 0.25f);   /* pan: equal power */
     v->pl = fm_cosf(a);
     v->pr = fm_sinf(a);
@@ -780,15 +811,20 @@ static void pend_add(int type, int cents, int vel, int pan, int emph, uint32_t s
 
 /* Sympathy: a struck note's partials (1, 2, 3 times it) meet other fields' partials, and those fields
  * start to sing. Each field whose fundamental, octave or fifth lands on one of them (within 12 cents)
- * rings that partial softly, a few milliseconds on. Only on a free voice and a field at rest: sympathy
- * never takes a sounding note's place, and a ringing field isn't struck again. */
+ * rings that partial softly, a few milliseconds on. A high field, small and close to its neighbors,
+ * shakes the notes either side of it too. Only on a free voice and a field at rest: sympathy never takes
+ * a sounding note's place, and a ringing field isn't struck again. */
 static float sym_amt = 0.4f;
 static void sympathy(int cents, int vel, float scale)
 {
     static const int16_t P[3] = {0, 1200, 1902};     /* a field's partials, in cents over it */
-    int i, a, b;
+    const float hx = fm_minf(high_x(cents_hz(cents)), 1.0f);
+    int i, a, b, me = -1;
     if (sym_amt <= 0.0f || vel < 20)
         return;
+    for (i = 0; i < pan_n && i < KM_NPAN; i++)          /* where it sits in the pan, low to high */
+        if (pan_c[i] == cents)
+            me = i;
     for (i = 0; i < pan_n; i++) {
         const int p = pan_c[i];
         int best = -1;
@@ -808,6 +844,10 @@ static void sympathy(int cents, int vel, float scale)
                                                          * strike pushes: it sounds faintly under every note */
             best = 0;
             w = 0.35f;
+        }
+        if (best < 0 && hx > 0.0f && me > 0 && i > 0 && i < KM_NPAN && (i == me - 1 || i == me + 1)) {
+            best = 0;                                   /* (a high field's neighbors) */
+            w = 0.5f * hx;
         }
         if (best < 0)
             continue;
@@ -942,6 +982,208 @@ static void pulse(float l, float r, float c, float ms)
     tail_ph = 0.0f;
 }
 
+/* ---------------------------------------------------------------- kit --- */
+/* The little kit beside the pan: its own sounds, not the steel's (no shell, no air, no halo).
+ *   splash     a small, thin cymbal: a bright crash of noise that darkens as it fades (the highs go
+ *              first, ~1.3 s), its clangy low modes under it for a moment; each side its own noise (a
+ *              wide wash), leaning right, where its key is
+ *   cabasa     steel beads round a cylinder, a stroke each way (Cook's PhISEM): the stroke's energy,
+ *              swelling and fading, sets beads colliding at random, each collision a tick of noise
+ *              through the beads' broad ring (~4 kHz). Pushed (left) a little lower and longer, pulled
+ *              back (right) brighter and quicker
+ *   castanets  two hardwood shells clacked: a click into their shells' short ring (~2.3, ~3.6 kHz) and
+ *              the cup's (~1.2 kHz), leaning left */
+static float kit_pole(float hz) { return 1.0f - fm_expf(-FM_TWO_PI * hz / KM_SR); }
+static void zero(void *p, uint32_t n)
+{
+    uint8_t *b = (uint8_t *)p;
+    while (n--)
+        *b++ = 0;
+}
+
+#define SPL_NM 6
+static const float SPL_HZ[SPL_NM] = {587.0f, 1023.0f, 1478.0f, 2213.0f, 3171.0f, 4429.0f},
+                   SPL_T60[SPL_NM] = {0.55f, 0.45f, 0.40f, 0.32f, 0.28f, 0.22f};
+static struct {
+    float env, e0, dec, atk, atk_dec;                    /* the wash (and how loud it began), the crash */
+    float hl[2], hr[2], ll, lr, ha;                      /* the noise high-passed (two poles a side), low-passed */
+    float b1[SPL_NM], b2[SPL_NM], g[SPL_NM], y1[SPL_NM], y2[SPL_NM];
+} spl;
+typedef struct {
+    float slow, fast, sdec, fdec, lvl, b1, b2, x1, x2, y1, y2, gain, pl, pr;
+    uint32_t odds;                                       /* collisions a sample, of 65536 */
+} shake_t;
+static shake_t shk[2];
+#define CAS_NM 3
+static const float CAS_HZ[CAS_NM] = {1210.0f, 2330.0f, 3640.0f}, CAS_T60[CAS_NM] = {0.050f, 0.034f, 0.024f},
+                   CAS_L[CAS_NM] = {0.45f, 1.0f, 0.7f};
+static struct {
+    float b1[CAS_NM], b2[CAS_NM], y1[CAS_NM], y2[CAS_NM], click, cdec, chp;
+} cas;
+static uint8_t kit_on;                                   /* bit 0 splash, 1-2 the cabasa, 3 castanets */
+
+static void splash(float a)
+{
+    int k;
+    spl.env = spl.env * 0.3f + a;                       /* (struck again: the old wash under the new) */
+    spl.e0 = spl.env;
+    spl.dec = fm_expf(-6.9077553f / (1.35f * KM_SR));
+    spl.atk = a * 1.6f;
+    spl.atk_dec = fm_expf(-6.9077553f / (0.09f * KM_SR));
+    spl.ha = kit_pole(2600.0f);
+    for (k = 0; k < SPL_NM; k++) {
+        float sn;
+        reso(SPL_HZ[k] * (1.0f + 0.03f * rnds()), SPL_T60[k], &spl.b1[k], &spl.b2[k], &sn);
+        spl.g[k] = sn * a * 0.05f;
+    }
+    kit_on |= 1u;
+}
+
+static void shake(int side, float a)
+{
+    shake_t *s = &shk[side];
+    float sn;
+    s->slow = a * (side ? 0.85f : 1.0f);                /* the stroke: swells in ~6 ms, fades over ~40-60 */
+    s->fast = s->slow;
+    s->sdec = fm_expf(-1.0f / ((side ? 0.032f : 0.048f) * KM_SR));
+    s->fdec = fm_expf(-1.0f / (0.006f * KM_SR));
+    s->odds = side ? 9000u : 7000u;
+    s->gain = side ? 0.21f : 0.19f;
+    reso((side ? 4600.0f : 3700.0f) * (1.0f + 0.04f * rnds()), 0.004f, &s->b1, &s->b2, &sn);
+    s->pl = side ? 0.45f : 1.0f;
+    s->pr = side ? 1.0f : 0.45f;
+    kit_on |= (uint8_t)(2u << side);
+}
+
+static void castanet(float a)
+{
+    int k;
+    for (k = 0; k < CAS_NM; k++) {
+        float sn;
+        reso(CAS_HZ[k] * (1.0f + 0.04f * rnds()), CAS_T60[k], &cas.b1[k], &cas.b2[k], &sn);
+        cas.y1[k] += CAS_L[k] * a * sn * 0.9f;          /* (an impulse: it rings at about that) */
+    }
+    cas.click = a * 0.5f;
+    cas.cdec = fm_expf(-1.0f / (0.0012f * KM_SR));
+    kit_on |= 8u;
+}
+
+static void render_kit(float *ol, float *orr, uint32_t n)
+{
+    uint32_t j;
+    int k;
+    if (!kit_on)
+        return;
+    if (kit_on & 1u) {
+        /* the wash darkens as it fades: its low-pass from ~15 kHz down to ~4 kHz */
+        const float lpa = kit_pole(3500.0f + 12000.0f * spl.env / (spl.e0 + 1e-9f)), ha = spl.ha;
+        float env = spl.env, atk = spl.atk, pk = 0.0f;
+        for (j = 0; j < n; j++) {
+            float nl = rnds(), nr = rnds(), m = 0.0f, l, r;
+            spl.hl[0] += ha * (nl - spl.hl[0]);
+            spl.hl[1] += ha * ((nl - spl.hl[0]) - spl.hl[1]);
+            spl.hr[0] += ha * (nr - spl.hr[0]);
+            spl.hr[1] += ha * ((nr - spl.hr[0]) - spl.hr[1]);
+            l = (nl - spl.hl[0]) - spl.hl[1];
+            r = (nr - spl.hr[0]) - spl.hr[1];
+            spl.ll += lpa * (l * env - spl.ll);
+            spl.lr += lpa * (r * env - spl.lr);
+            for (k = 0; k < SPL_NM; k++) {
+                float y = spl.b1[k] * spl.y1[k] + spl.b2[k] * spl.y2[k] + spl.g[k] * (nl + nr) * (atk + env * 0.04f);
+                spl.y2[k] = spl.y1[k];
+                spl.y1[k] = y;
+                m += y;
+            }
+            l = spl.ll * 0.9f + (nl - spl.hl[0]) * atk * 0.25f + m;
+            r = spl.lr * 0.9f + (nr - spl.hr[0]) * atk * 0.25f + m;
+            ol[j] += l * 0.28f;
+            orr[j] += r * 0.4f;
+            env *= spl.dec;
+            atk *= spl.atk_dec;
+            pk = fm_maxf(pk, env);
+        }
+        spl.env = env;
+        spl.atk = atk;
+        spl.ll = fm_flush(spl.ll);
+        spl.lr = fm_flush(spl.lr);
+        for (k = 0; k < SPL_NM; k++) {
+            spl.y1[k] = fm_flush(spl.y1[k]);
+            spl.y2[k] = fm_flush(spl.y2[k]);
+        }
+        if (pk < 1e-5f) {
+            spl.env = spl.atk = 0.0f;
+            kit_on &= (uint8_t)~1u;
+        }
+    }
+    for (k = 0; k < 2; k++) {
+        shake_t *s = &shk[k];
+        float pk = 0.0f;
+        if (!(kit_on >> (k + 1) & 1u))
+            continue;
+        for (j = 0; j < n; j++) {
+            const float e = s->slow - s->fast;          /* the stroke's energy: up fast, down slower */
+            float x, y;
+            if ((rnd() & 0xFFFFu) < s->odds)           /* a bead strikes the steel */
+                s->lvl += e * s->gain * (0.5f + rndf());
+            x = s->lvl * rnds();
+            s->lvl *= 0.94f;                            /* (each tick ~0.4 ms) */
+            y = s->b1 * s->y1 + s->b2 * s->y2 + (x - s->x2) * 0.5f;   /* the beads' ring (zeros at DC and Nyquist) */
+            s->x2 = s->x1;
+            s->x1 = x;
+            s->y2 = s->y1;
+            s->y1 = y;
+            ol[j] += y * s->pl;
+            orr[j] += y * s->pr;
+            s->slow *= s->sdec;
+            s->fast *= s->fdec;
+            pk = fm_maxf(pk, s->slow);
+        }
+        s->lvl = fm_flush(s->lvl);
+        s->y1 = fm_flush(s->y1);
+        s->y2 = fm_flush(s->y2);
+        if (pk < 1e-5f) {
+            s->slow = s->fast = s->lvl = s->y1 = s->y2 = s->x1 = s->x2 = 0.0f;
+            kit_on &= (uint8_t)~(2u << k);
+        }
+    }
+    if (kit_on & 8u) {
+        float pk = 0.0f;
+        for (j = 0; j < n; j++) {
+            float o = 0.0f, c = cas.click * rnds();
+            cas.chp += 0.25f * (c - cas.chp);
+            o = (c - cas.chp) * 0.6f;                    /* the click: its lows out */
+            for (k = 0; k < CAS_NM; k++) {
+                float y = cas.b1[k] * cas.y1[k] + cas.b2[k] * cas.y2[k];
+                cas.y2[k] = cas.y1[k];
+                cas.y1[k] = y;
+                o += y;
+            }
+            cas.click *= cas.cdec;
+            ol[j] += o * 0.8f;
+            orr[j] += o * 0.5f;
+            pk = fm_maxf(pk, fm_fabsf(o));
+        }
+        for (k = 0; k < CAS_NM; k++) {
+            cas.y1[k] = fm_flush(cas.y1[k]);
+            cas.y2[k] = fm_flush(cas.y2[k]);
+        }
+        if (pk < 1e-6f && cas.click < 1e-6f) {
+            for (k = 0; k < CAS_NM; k++)
+                cas.y1[k] = cas.y2[k] = 0.0f;
+            cas.click = cas.chp = 0.0f;
+            kit_on &= (uint8_t)~8u;
+        }
+    }
+}
+
+static void kit_quiet(void)
+{
+    zero(&spl, sizeof spl);
+    zero(shk, sizeof shk);
+    zero(&cas, sizeof cas);
+    kit_on = 0;
+}
+
 /* The percussion: per hit, where it lands (-1 left, 0 middle, 1 right), the contact (ms: a flat palm is
  * long and deep, a fingertip short and bright), how much reaches the shell and the air, the skin's
  * burst (level, center Hz, q, decay ms), and how much the fields around it ring along. */
@@ -961,6 +1203,7 @@ static const hit_t HITS[HIT_N] = {
     {0, 2.5f, 0.0f, 0.15f, 0.10f, 600.0f, 0.7f, 30.0f, 0.0f},        /* mute: a palm landing */
     {1, 0.35f, 0.55f, 0.12f, 0.55f, 4100.0f, 1.3f, 8.0f, 0.15f},     /* tak, right edge */
     {1, 3.2f, 1.00f, 0.75f, 0.38f, 1850.0f, 0.8f, 26.0f, 0.55f},     /* thwap, right */
+    {0}, {0}, {0}, {0},                                              /* the kit (above) */
 };
 
 static void hit(int kind, int vel)
@@ -969,6 +1212,13 @@ static void hit(int kind, int vel)
     float vg = (float)vel * (1.0f / 127.0f), a = vg * vg * perc_lvl,
           l = h->side < 0 ? 1.0f : h->side > 0 ? 0.15f : 0.7f, r = h->side > 0 ? 1.0f : h->side < 0 ? 0.15f : 0.7f;
     int ding = pan_n ? pan_c[0] : 5000;
+    switch (kind) {                                     /* the kit: its own sounds */
+    case HIT_SPLASH: splash(a); return;
+    case HIT_SHAKE_L: shake(0, a); return;
+    case HIT_SHAKE_R: shake(1, a); return;
+    case HIT_CASTANET: castanet(a); return;
+    default: break;
+    }
     pulse(a * h->shell * l * 0.55f, a * h->shell * r * 0.55f, a * h->cav * port_lvl * 1.6f, h->ms);
     if (h->noise > 0.0f) {
         float jit = 1.0f + 0.12f * rnds();                /* never quite the same hand twice */
@@ -995,7 +1245,7 @@ static void hit(int kind, int vel)
     }
     if (h->sym > 0.0f && pan_n) {                       /* the pan rings along: the ding, and the fields
                                                          * nearest the hand (odd fields right, even left) */
-        int i, sv = (int)((float)vel * h->sym * (0.4f + 0.6f * sym_amt) * 0.45f);
+        int i, sv = (int)((float)vel * h->sym * (0.4f + 0.6f * sym_amt) * 0.45f * fm_minf(perc_lvl * 1.43f, 1.0f));
         if (sv >= 4) {
             symp_ring(ding, sv, kind == HIT_GU ? EMPH_ALL : EMPH_FUND);
             for (i = 1; i < pan_n && i < 5; i++)
@@ -1596,6 +1846,7 @@ static void quiet(void)
     lf_l = lf_r = hiss_env = 0.0f;
     shell_quiet();
     air_quiet_all();
+    kit_quiet();
     d_lp = d_cur_l = d_cur_r = d_prev_l = d_prev_r = 0.0f;
     plate_init();
 }
@@ -1976,7 +2227,7 @@ static void air_coefs(void)
         air_d[c] = d;
         air_g[c] = fm_exp2f(-9.9657843f * d / (t60 * KM_SR));   /* 10^(-3 d / (t60 sr)): -60 dB in t60 */
         air_in[c] = 1.0f - air_g[c];
-        p = c ? ((c & 1) ? -0.55f : 0.55f) * width : 0.0f;
+        p = c ? ((c & 1) ? 0.55f : -0.55f) * width : 0.0f;   /* (odd fields on the right) */
         air_pl[c] = fm_sqrtf(0.5f - 0.5f * p);
         air_pr[c] = fm_sqrtf(0.5f + 0.5f * p);
     }
@@ -2077,6 +2328,7 @@ static void render_chunk(int32_t *out, uint32_t n, float gain)
     render_voices(n);
     render_shell(n);
     render_air(n);
+    render_kit(mixl, mixr, n);
     fx_chunk(n);
     for (j = 0; j < n; j++)                             /* the chorus, on the instrument */
         fx_chorus(&mixl[j], &mixr[j]);

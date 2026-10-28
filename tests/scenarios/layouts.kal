@@ -1,7 +1,8 @@
 # the three layouts: Pan (zigzag, right first, as makers lay a pan out), Pan rev (left first), Linear (low
 # to high); the ding's
 # keys dim-lit; Just tuning over the ding
-# (params: 23 Layout 33 Tuning; keys: 0 F3 .. 26 G5; white 7 is key 12, white 8 key 14, white 0 key 0)
+# (params: 23 Layout 33 Tuning; keys: 0 F3 .. 26 G5; white 7 is key 12, white 8 key 14, white 2 key 4;
+# the two white keys at each end: the steel, in every layout)
 wait 1600
 expect par23 0
 expect dimkey 14
@@ -11,21 +12,24 @@ expect par23 1
 expect white8 5000
 expect white6 5700
 expect white9 5800
-expect white15 8100
+expect white2 7200
+expect white13 7400
+expect white15 -1
 wait 50
 shot pan_rev.png
 spin K1 1
 expect par23 2
-expect white0 5000
-expect white1 5700
-expect white8 6900
-expect white15 8200
+expect white0 -1
+expect white2 5000
+expect white3 5700
+expect white8 6500
+expect white13 7600
 wait 30
-expect dimkey 0
+expect dimkey 4
 shot linear.png
-tapkey w0
-tapkey w1
 tapkey w2
+tapkey w3
+tapkey w4
 wait 50
 expect note5700 >5
 spin K1 -2

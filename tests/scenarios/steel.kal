@@ -1,23 +1,51 @@
-# the black keys: the steel at both ends (thwap, tak), the kit between (Gu, ghost, ding slap, tak,
-# harmonic, rim, mute); REC mutes too
+# the steel on the white keys at both ends (thwap outside, tak inside); the black keys the kit:
+# castanets, the cabasa pushed, the steel's Gu, ghost, ding slap, tak, harmonic, rim, mute, the cabasa
+# pulled, a splash cymbal; REC mutes too
 # (params: 26 Black 29 Percussion; shellL / shellR / cavity: x 1000)
 wav steel.wav
 wait 1600
 expect par26 0
-key b0 down
+key w0 down
 wait 30
 expect shellL >5
 shot thwap.png
-key b0 up
+key w0 up
 wait 300
-key b10 down
+key w15 down
 wait 20
 expect shellR >5
+key w15 up
+wait 300
+tapkey w1
+wait 300
+tapkey w14
+wait 300
+# the kit's own sounds: not the steel (the shell stays still), but heard
+wait 1500
+peakreset
+key b10 down
+wait 60
+expect peak_db_min -30
+expect shellL 0
+expect shellR 0
+shot kit.png
 key b10 up
-wait 300
+wait 1500
+peakreset
 tapkey b1
-wait 300
+wait 120
+expect peak_db_min -30
+wait 400
+peakreset
 tapkey b9
+wait 120
+expect peak_db_min -30
+wait 400
+peakreset
+tapkey b0
+wait 40
+expect peak_db_min -30
+expect shellL 0
 wait 300
 # the Gu: the air inside
 key b2 down
@@ -62,20 +90,24 @@ tap REC
 wait 500
 expect note6200 <2
 # the keys light while they sound
-tapkey b0
+tapkey w0
+tapkey b10
 leds
-# Percussion 0: the steel is silent
+# Percussion 0: the steel and the kit are silent
 tap SEL
 tap SEL
 expect view 8
 spin K3 -70
 expect par29 0
-wait 1500
+wait 2000
 peakreset
+tapkey w0
+tapkey w1
+tapkey b10
 tapkey b0
-tapkey b1
 wait 200
 expect shellL 0
+expect peak_db_max -58
 spin K3 70
 wait 2000
 wavstop
