@@ -4,6 +4,15 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.4.1
+
+- **The splash sounds like a cymbal slapped by hand.** It's now a soft wash from 500 Hz to 16 kHz that
+  blooms over a few tens of milliseconds, with no stick click and no ringing "rod" tones. The highs fade
+  first and the mids carry the tail, with a dull pat of the palm underneath.
+- **The shakers are egg shakers.** They're high and airy, nearly all 6 to 16 kHz. The left key is the
+  push stroke, which swells a little slower and lasts longer; the right is the pull, a quicker snap.
+- Both are shaped against recordings of real cymbals and egg shakers.
+
 ## 0.4.0
 
 - **Thwap and tak moved to the white keys.** The end white key on each side is a palm thwap and the
