@@ -4,6 +4,11 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.4.2
+
+- **With Duo, the key strip shows only the castanets and the Gu.** The second pan's notes are on the
+  second pan itself, so their place in the strip is left empty.
+
 ## 0.4.1
 
 - **The splash sounds like a cymbal slapped by hand.** It's now a soft wash from 500 Hz to 16 kHz that
