@@ -450,6 +450,47 @@ static void test_kit(void)
     }
 }
 
+/* the ding: a softer, rounder strike than a field (less above 2 kHz at the attack, against its own
+ * note), and struck again and again it builds, where a field is stopped under the fingertip first */
+static float attack_bright(int cents)
+{
+    fresh();
+    km_set(P_PORT, 0);
+    give_pan(0, 2);
+    render(0, 256);
+    km_pluck(cents, 100, 0, 0);
+    render(256, 22050);
+    return db(band_e(256, 1024, 2000.0f, 9000.0f) / band_e(256 + 4410, 4096, hz(cents) * 0.98f, hz(cents) * 1.02f));
+}
+
+static float after_strikes(int cents, int n)          /* the note's level at 1.4 s, struck n times 0.3 s apart, the last at 0.9 s */
+{
+    int i;
+    fresh();
+    km_set(P_PORT, 0);
+    give_pan(0, 2);
+    render(0, 256);
+    for (i = 0; i < 4; i++) {
+        if (i >= 4 - n)                                 /* (the last n: the last always at 0.9 s) */
+            km_pluck(cents, 100, 0, 0);
+        render((uint32_t)i * 13230u, 13230);
+    }
+    render(52920, 8820);
+    return mag(52920 + 8820 - 8192, 8192, hz(cents));
+}
+
+static void test_ding(void)
+{
+    const float ding = attack_bright(5000), field = attack_bright(5700);
+    const float ding_build = db(after_strikes(5000, 4) / after_strikes(5000, 1)),
+                field_build = db(after_strikes(5700, 4) / after_strikes(5700, 1));
+    printf("  ding: attack %.1f vs field %.1f, build %.1f vs %.1f\n", (double)ding, (double)field, (double)ding_build, (double)field_build);
+    CHECK(ding < field - 6.0f, "the ding's attack softer: %.1f dB above 2 kHz, a field's %.1f", (double)ding, (double)field);
+    CHECK(ding_build > 3.0f && ding_build > field_build + 2.0f, "the ding builds: %.1f dB after four strikes (a field %.1f)",
+          (double)ding_build, (double)field_build);
+    CHECK(!nan_seen && peak < 0.95f, "the ding struck four times: peak %.3f", (double)peak);
+}
+
 static void pulse_of(float f, float *depth, float *rate)
 {
     float e[140], sx = 0.0f, sy = 0.0f, sxx = 0.0f, sxy = 0.0f, sd = 0.0f, k, b;
@@ -1289,6 +1330,7 @@ int main(int argc, char **argv)
     test_partials();
     test_high();
     test_kit();
+    test_ding();
     test_shimmer();
     test_ping();
     test_air();

@@ -296,6 +296,14 @@ HP-1 models each sounding field as a bank of resonators, set from measurements o
   tine. Each field has its own rate, the same every time it's struck;
 - **the double octave**, faint, about 20 dB down.
 
+**The ding is a different kind of field.** It's the biggest, domed up rather than dimpled, sitting in
+the middle over the port, and you strike it with a thumb or a palm. So it sounds big, full and round:
+a soft, longer contact with little click or metallic ping, a fuller fundamental that rings about 30%
+longer, the fifth and double octave tucked in, and it moves the air inside the most. Strike it again
+while it rings and nothing stops it, so each strike adds to what's ringing and the ding builds the
+more you play it (about 4 dB over four strikes). An ordinary field is stopped under the fingertip
+first. The second pan's ding works the same way.
+
 **The high fields are rougher**, as on a real pan. They're small and stiff, and the tuner can't
 control them as tightly: in Alon's measurements and in recordings, from about F4 up the octave is as
 loud as the fundamental or louder, the fifth is weaker, shorter and 5 to 25 cents off true, the
