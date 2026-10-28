@@ -91,8 +91,8 @@ on the next one in, each on its own side of the shell. In D Kurd (the default pa
 
 The pan's own notes are the ding and its 7 to 9 fields. The outer note keys carry the scale on up, as
 the extra fields of an extended ("mutant") pan do. The screen shows every note the keys play on the
-pan: the ding in the middle, the pan's own fields evenly round it, and the extra notes in a ring near
-the rim, all climbing in the same zigzag from the player's side. The ding's keys glow dimly so you can
+pan: the ding in the middle and every other note in one ring round it, evenly spaced, climbing in the
+same zigzag from the player's side (the extra notes' labels a little quieter). The ding's keys glow dimly so you can
 find the center without looking.
 
 ### Black keys: the kit, the second pan
@@ -246,8 +246,8 @@ of nothing, keeps everything. The Setup page is kept either way.
 - **The pan from above**, shaded in its metal. Each field shows its note, glows as it rings, and
   sends a ripple out when struck. A thwap or tak lights the rim on that side; the Gu breathes in a
   ring round the ding. With Duo, the second pan stands to the right.
-- **The black-key strip:** what each black key does now, under the pan. With Duo it moves above the
-  pans, as the black keys sit above the white. The hand percussion (castanets, shakers, splash) is
+- **The black-key strip:** what each black key does now, above the pan, as the black keys sit above
+  the white. The hand percussion (castanets, shakers, splash) is
   amber, the steel's kit or the second pan's notes teal, and each lights as it sounds.
 - **The knobs:** the page's four values. The one you turned is highlighted for a moment.
 
