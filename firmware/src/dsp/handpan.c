@@ -494,6 +494,7 @@ typedef struct {
     uint8_t on, nm, quiet, released, contact, rise_n;
     uint16_t live;                                    /* the modes still sounding (bit k): the rest are skipped */
     float hx;                                         /* how high and small the field is (high_x) */
+    uint8_t ding;                                     /* it's a ding (the pan's, or the second pan's) */
 } voice_t;
 /* Two spare slots where a stolen voice fades out over a few milliseconds while its slot takes the new
  * field: cutting it dead was a pop (as loud as the field was) */
@@ -571,6 +572,17 @@ static float high_x(float hz)
     return fm_clampf(x, 0.0f, 1.0f) * km_metal(par[P_METAL])->rough;
 }
 
+/* The ding is another kind of field: the biggest, domed up rather than dimpled, in the middle over
+ * the port, struck with a thumb or a palm. So its sound is big, full and round: a soft contact and a
+ * quiet skin, little ping, the fundamental fuller and longer, the fifth and the double octave tucked
+ * in, and it moves the air inside the most. And struck again while it rings, nothing stops it (a
+ * thumb lands and lifts, the big field rings on): each strike adds to what's ringing, so the ding
+ * builds the more you play it. The second pan's ding is one too. */
+static int is_ding(int cents)
+{
+    return pan_n && (cents == pan_c[0] || (pan_n > KM_NPAN && cents == pan_c[KM_NPAN]));
+}
+
 static float thick_f(void) { return (float)par[P_THICK] * (1.0f / 12.0f); }
 static float size_f(void) { return 53.0f / (float)par[P_SIZE]; }   /* > 1 smaller, < 1 bigger */
 
@@ -595,31 +607,31 @@ static void voice_coefs(voice_t *v)
      * fifth's beats, 0.7 to 1.6 times the metal's, in Hz (as measured: a beat in Hz, not a ratio) */
     bo = m->beat * spread * (1.0f + 0.3f * wear(v->cents, 6));
     bf = m->beat * spread * (1.25f + 0.35f * wear(v->cents, 7));
-    t1 = m->t60 * dscale * fm_powf(f0 * (1.0f / 146.83f), -m->pitch_k);
-    hx = v->hx = high_x(f0);
+    t1 = m->t60 * dscale * fm_powf(f0 * (1.0f / 146.83f), -m->pitch_k) * (v->ding ? 1.3f : 1.0f);
+    hx = v->hx = v->ding ? 0.0f : high_x(f0);
     ratio[M_FUND] = 1.0f;
     amp[M_FUND] = 1.0f;
     tk[M_FUND] = t1;
     /* (up top: the octave louder, a little shorter, 2 to 10 cents flat; the fifth weaker, shorter, 5 to
      * 25 cents flat; the double octave fading) */
     ratio[M_OCT] = 2.0f * (1.0f + ostretch) * (1.0f - hx * (0.0035f + 0.0023f * wear(v->cents, 8)));
-    amp[M_OCT] = m->oct * harm * (1.0f + 0.25f * hx);
+    amp[M_OCT] = m->oct * harm * (1.0f + 0.25f * hx) * (v->ding ? 0.9f : 1.0f);
     tk[M_OCT] = t1 * m->oct_t * (1.0f - 0.2f * hx);    /* the octave often outlasts the fundamental */
     ratio[M_OCT2] = ratio[M_OCT] + bo / f0;
     amp[M_OCT2] = amp[M_OCT] * m->depth;
     tk[M_OCT2] = tk[M_OCT];
     ratio[M_FIFTH] = 3.0f * (1.0f + 0.5f * ostretch) * (1.0f - hx * (0.0087f + 0.0058f * wear(v->cents, 9)));
-    amp[M_FIFTH] = m->fifth * harm * (1.0f - 0.45f * fm_minf(hx, 1.0f));
+    amp[M_FIFTH] = m->fifth * harm * (1.0f - 0.45f * fm_minf(hx, 1.0f)) * (v->ding ? 0.75f : 1.0f);
     tk[M_FIFTH] = t1 * m->fifth_t * (1.0f - 0.4f * fm_minf(hx, 1.0f));
     ratio[M_FIFTH2] = ratio[M_FIFTH] - bf / f0;
     amp[M_FIFTH2] = amp[M_FIFTH] * m->depth;
     tk[M_FIFTH2] = tk[M_FIFTH];
     ratio[M_DBL] = 4.0f * (1.0f + ostretch);
-    amp[M_DBL] = m->dbl * harm * th * (1.0f - 0.5f * fm_minf(hx, 1.0f));
+    amp[M_DBL] = m->dbl * harm * th * (1.0f - 0.5f * fm_minf(hx, 1.0f)) * (v->ding ? 0.6f : 1.0f);
     tk[M_DBL] = t1 * 0.5f;
     for (k = 0; k < 4; k++) {                           /* (thicker steel: a higher, longer ping) */
         ratio[M_PING + k] = PING_RATIO[k] * fm_powf(th, 0.15f);
-        amp[M_PING + k] = m->ping * PING_AMP[k] * th;
+        amp[M_PING + k] = m->ping * PING_AMP[k] * th * (v->ding ? 0.3f : 1.0f);
         tk[M_PING + k] = PING_T60[k] * th;
     }
     ratio[M_STRAY] = 2.5f + 0.08f * wear(v->cents, 10);
@@ -721,7 +733,12 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
      * strike are broadband), brighter and shorter the firmer the strike */
     float tp = 0.0012f * fm_exp2f(-2.6f * hard), vg = (float)vel * (1.0f / 127.0f), a, n;
     int k, again = v->on;
-    if (!again)
+    v->ding = (uint8_t)is_ding(cents);
+    if (v->ding) {                                      /* a thumb or a palm: a soft, long contact */
+        tp = 0.0024f * fm_exp2f(-1.0f * hard);
+        again = 0;                                      /* (and nothing stops what rings: below) */
+    }
+    if (!v->on)
         for (k = 0; k < KM_NMODE; k++)
             v->y1[k] = v->y2[k] = 0.0f;
     for (k = 0; k < KM_NMODE; k++) {
@@ -745,7 +762,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
         n = 1.0f;
     a = vg * vg * 0.55f;
     {
-        float gl = GLIDE_MAX * vg * vg * (0.3f + 0.7f * hard) * (emph == EMPH_ALL ? 1.0f : 0.0f);
+        float gl = GLIDE_MAX * vg * vg * (0.3f + 0.7f * hard) * (emph == EMPH_ALL ? 1.0f : 0.0f) * (v->ding ? 0.5f : 1.0f);
         v->glide_rise = 0.0f;
         v->rise_n = 0;
         if (again) {
@@ -766,7 +783,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->ex_ph = again ? -(float)(CONTACT_N * 64u) * v->ex_inc : 0.0f;
     v->ex_amp = a * (FM_PI * 0.5f) / n;                 /* area a: the first mode rings at ~a */
     v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * m->touch * hard * (0.5f + 0.5f * hard) * 0.9f *
-                                                               (1.0f + 0.5f * v->hx) : 0.0f;
+                                                               (1.0f + 0.5f * v->hx) * (v->ding ? 0.35f : 1.0f) : 0.0f;
     v->click_dec = fm_expf(-1.0f / ((0.007f - 0.004f * hard) * KM_SR));
     v->click_a = fm_minf(0.12f + 0.4f * hard + 0.2f * v->hx, 0.8f);   /* its low-pass: ~0.9 to ~4 kHz (more up top) */
     a = ((float)pan * 0.01f * width + 1.0f) * (FM_PI * 0.25f);   /* pan: equal power */
@@ -2034,7 +2051,7 @@ static void render_voices(uint32_t n)
         if (!v->on)
             continue;
         if (excite) {                                   /* the pulse (ex_ph < 0: the fingertip still on it) */
-            float ph = v->ex_ph, kg = v->cents == ding ? 2.2f : 1.0f;   /* the ding moves the most air */
+            float ph = v->ex_ph, kg = v->cents == ding ? 3.0f : 1.0f;   /* the ding moves the most air */
             for (j = 0; j < n; j++) {
                 xb[j] = ph >= 0.0f && ph < 0.5f ? v->ex_amp * fm_sin_turns(ph) : 0.0f;
                 knock[j] += xb[j] * kg;

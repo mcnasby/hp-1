@@ -4,6 +4,13 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.4.3
+
+- **The ding sounds like a ding.** Its attack is softer and rounder: it's struck with a thumb or palm,
+  so there's less click and metallic ping. It rings longer and fuller and moves more air. It also
+  builds the more times you hit it in a row: a new strike adds to what's still ringing instead of
+  stopping it. The second pan's ding works the same way.
+
 ## 0.4.2
 
 - **With Duo, the key strip shows only the castanets and the Gu.** The second pan's notes are on the
