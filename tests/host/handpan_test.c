@@ -489,6 +489,21 @@ static void test_ding(void)
     CHECK(ding_build > 3.0f && ding_build > field_build + 2.0f, "the ding builds: %.1f dB after four strikes (a field %.1f)",
           (double)ding_build, (double)field_build);
     CHECK(!nan_seen && peak < 0.95f, "the ding struck four times: peak %.3f", (double)peak);
+    {   /* struck again while it rings, its attack softer still (the hand meets steel already moving) */
+        float first, again;
+        fresh();
+        km_set(P_PORT, 0);
+        give_pan(0, 2);
+        render(0, 256);
+        km_pluck(5000, 100, 0, 0);
+        render(256, 13230);
+        km_pluck(5000, 100, 0, 0);
+        render(256 + 13230, 13230);
+        first = band_e(256, 1024, 2000.0f, 9000.0f);
+        again = band_e(256 + 13230, 1024, 2000.0f, 9000.0f);
+        printf("  ding: attack above 2 kHz, struck again %.1f dB against the first\n", (double)db(again / first));
+        CHECK(db(again / first) < -4.0f, "the ding struck again: its attack %.1f dB against the first", (double)db(again / first));
+    }
 }
 
 static void pulse_of(float f, float *depth, float *rate)
