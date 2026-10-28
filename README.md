@@ -105,9 +105,9 @@ The black keys follow **Black** (SEL → Keys, KNOB 4).
 | **Duo**   | Castanets | Pan 2  | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Gu     |
 
 - **Castanets:** two hardwood shells clacked.
-- **Shaker:** a cabasa, steel beads round a cylinder: pushed on key 2 (left, a little lower and
-  longer), pulled back on key 10 (right, brighter and quicker). Alternate them for a shuffle.
-- **Splash:** a small, thin cymbal: a bright crash that darkens as it fades.
+- **Shaker:** an egg shaker: pushed on key 2 (left, swelling a little slower and longer), pulled back
+  on key 10 (right, a quicker snap). Alternate them for a shuffle.
+- **Splash:** a small cymbal slapped with a hand: a soft wash that blooms, its highs fading first.
 - **Thwap** (white keys 1 and 16): a flat palm on the shoulder, the hard steel between the fields. The shell's own modes
   ring on that side, the air inside booms, and the nearby fields ring along.
 - **Tak** (white keys 2 and 15, and black key 6 by the ding): fingertips on the steel: bright and short.
@@ -361,11 +361,15 @@ noise for skin on steel, each shaped for what it imitates: a palm thwap is long,
 short and bright, the Gu nearly all air. The ding slap strikes the ding and lays a palm on it 30 ms
 later; the harmonic strikes it with the fundamental damped.
 
-The kit beside the pan has sounds of its own (no shell, no air): the **splash** is noise darkening as
-it fades (its highs go first, over ~1.3 s), its clangy low modes under it for a moment, each side its
-own noise for a wide wash; the **shakers** are Perry Cook's PhISEM, the stroke's energy swelling and
-fading, beads colliding at random, each collision a tick of noise through the beads' broad ring;
-the **castanets** a click into the shells' short ring. **Percussion** sets the level of them all.
+The kit beside the pan has sounds of its own (no shell, no air), shaped against recordings (the
+Versilian Community Sample Library). A cymbal has so many modes, so close together, that it rings as a
+wash from 500 Hz up: the **splash** is noise in six octave bands, each with its own envelope. A palm
+is soft, so nothing clicks: the wash blooms, the low bands in a few milliseconds and the top in about
+30 (the energy climbing into the high modes), then the highs die first (~0.5 s) and the mids carry the
+tail (~2 s), with a dull pat of the palm under it. The **shakers** are an egg shaker by Perry Cook's
+PhISEM: the stroke's energy swells and fades, seeds hit the shell at random, and each hit is a tick of
+noise through the shell's high ring (nearly all of it 6 to 16 kHz, a stroke lasting 0.15 to 0.3 s).
+The **castanets** are a click into the shells' short ring. **Percussion** sets the level of them all.
 
 ### The signal path
 

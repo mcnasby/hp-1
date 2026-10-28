@@ -984,16 +984,19 @@ static void pulse(float l, float r, float c, float ms)
 
 /* ---------------------------------------------------------------- kit --- */
 /* The little kit beside the pan: its own sounds, not the steel's (no shell, no air, no halo).
- *   splash     a small, thin cymbal: a bright crash of noise that darkens as it fades (the highs go
- *              first, ~1.3 s), its clangy low modes under it for a moment; each side its own noise (a
- *              wide wash), leaning right, where its key is
- *   cabasa     steel beads round a cylinder, a stroke each way (Cook's PhISEM): the stroke's energy,
- *              swelling and fading, sets beads colliding at random, each collision a tick of noise
- *              through the beads' broad ring (~4 kHz). Pushed (left) a little lower and longer, pulled
- *              back (right) brighter and quicker
+ *   splash     a small cymbal slapped with a hand. A cymbal's modes are so many and so close that it
+ *              rings as a wash, 500 Hz to 16 kHz (recorded cymbals: VCSL), so: noise in six octave
+ *              bands, each its own envelope. The palm is soft, so nothing clicks: the wash blooms, the
+ *              low bands in a few ms, the top in ~30 (the energy climbing into the high modes), then
+ *              the highs die first (~0.6 s) and the mids carry the tail (~2 s). A dull pat of the
+ *              palm on the metal under it. Each side its own noise (a wide wash), leaning right
+ *   shaker     an egg: seeds in a shell, a stroke each way (Cook's PhISEM): the stroke's energy,
+ *              swelling and fading, sets seeds hitting the shell at random, each hit a tick of noise
+ *              through the shell's ring, high (recorded egg shakers: nearly all of it 6-16 kHz, a
+ *              stroke ~0.15-0.25 s). Pushed (left) swells slower and lasts longer, pulled back (right)
+ *              snaps
  *   castanets  two hardwood shells clacked: a click into their shells' short ring (~2.3, ~3.6 kHz) and
  *              the cup's (~1.2 kHz), leaning left */
-static float kit_pole(float hz) { return 1.0f - fm_expf(-FM_TWO_PI * hz / KM_SR); }
 static void zero(void *p, uint32_t n)
 {
     uint8_t *b = (uint8_t *)p;
@@ -1001,17 +1004,42 @@ static void zero(void *p, uint32_t n)
         *b++ = 0;
 }
 
-#define SPL_NM 6
-static const float SPL_HZ[SPL_NM] = {587.0f, 1023.0f, 1478.0f, 2213.0f, 3171.0f, 4429.0f},
-                   SPL_T60[SPL_NM] = {0.55f, 0.45f, 0.40f, 0.32f, 0.28f, 0.22f};
+/* a band-pass (Simper's state-variable filter): its coefficients, and a side's state */
+typedef struct {
+    float a1, a2, a3, k;
+} bp_t;
+static void bp_set(bp_t *f, float hz, float q)
+{
+    const float g = fm_tanf(FM_PI * hz / KM_SR);
+    f->k = 1.0f / q;
+    f->a1 = 1.0f / (1.0f + g * (g + f->k));
+    f->a2 = g * f->a1;
+    f->a3 = g * f->a2;
+}
+static inline float bp_run(const bp_t *f, float *s1, float *s2, float x)   /* unity at its center */
+{
+    const float v3 = x - *s2, v1 = f->a1 * *s1 + f->a2 * v3, v2 = *s2 + f->a2 * *s1 + f->a3 * v3;
+    *s1 = 2.0f * v1 - *s1;
+    *s2 = 2.0f * v2 - *s2;
+    return v1 * f->k;
+}
+
+/* the splash's bands: their centers, levels, how long each takes to bloom and to ring out (T60) */
+#define SPL_NB 6
+static const float SPL_HZ[SPL_NB] = {480.0f, 1000.0f, 2000.0f, 4000.0f, 7600.0f, 13000.0f},
+                   SPL_LV[SPL_NB] = {0.9f, 0.6f, 0.8f, 1.0f, 0.7f, 0.35f},
+                   SPL_RISE[SPL_NB] = {0.006f, 0.008f, 0.011f, 0.016f, 0.022f, 0.030f},
+                   SPL_T60[SPL_NB] = {2.1f, 1.9f, 1.6f, 1.1f, 0.7f, 0.4f};
 static struct {
-    float env, e0, dec, atk, atk_dec;                    /* the wash (and how loud it began), the crash */
-    float hl[2], hr[2], ll, lr, ha;                      /* the noise high-passed (two poles a side), low-passed */
-    float b1[SPL_NM], b2[SPL_NM], g[SPL_NM], y1[SPL_NM], y2[SPL_NM];
+    bp_t f[SPL_NB];
+    float s1[2][SPL_NB], s2[2][SPL_NB];
+    float env[SPL_NB], dec[SPL_NB], rise[SPL_NB], rdec[SPL_NB];
+    float pat, pdec, prise, prdec, pl, pr;               /* the palm on the metal: a low, dull pat */
 } spl;
 typedef struct {
-    float slow, fast, sdec, fdec, lvl, b1, b2, x1, x2, y1, y2, gain, pl, pr;
-    uint32_t odds;                                       /* collisions a sample, of 65536 */
+    float slow, fast, sdec, fdec, lvl, s1, s2, hp, gain, pl, pr;
+    bp_t f;
+    uint32_t odds;                                       /* seeds hitting the shell a sample, of 65536 */
 } shake_t;
 static shake_t shk[2];
 #define CAS_NM 3
@@ -1020,36 +1048,37 @@ static const float CAS_HZ[CAS_NM] = {1210.0f, 2330.0f, 3640.0f}, CAS_T60[CAS_NM]
 static struct {
     float b1[CAS_NM], b2[CAS_NM], y1[CAS_NM], y2[CAS_NM], click, cdec, chp;
 } cas;
-static uint8_t kit_on;                                   /* bit 0 splash, 1-2 the cabasa, 3 castanets */
+static uint8_t kit_on;                                   /* bit 0 splash, 1-2 the shaker, 3 castanets */
 
 static void splash(float a)
 {
     int k;
-    spl.env = spl.env * 0.3f + a;                       /* (struck again: the old wash under the new) */
-    spl.e0 = spl.env;
-    spl.dec = fm_expf(-6.9077553f / (1.35f * KM_SR));
-    spl.atk = a * 1.6f;
-    spl.atk_dec = fm_expf(-6.9077553f / (0.09f * KM_SR));
-    spl.ha = kit_pole(2600.0f);
-    for (k = 0; k < SPL_NM; k++) {
-        float sn;
-        reso(SPL_HZ[k] * (1.0f + 0.03f * rnds()), SPL_T60[k], &spl.b1[k], &spl.b2[k], &sn);
-        spl.g[k] = sn * a * 0.05f;
+    for (k = 0; k < SPL_NB; k++) {
+        const float old = spl.env[k] * (1.0f - spl.rise[k]) * 0.5f;   /* (struck again: the old wash under the new) */
+        bp_set(&spl.f[k], SPL_HZ[k] * (1.0f + 0.04f * rnds()), 1.1f);
+        spl.env[k] = a * SPL_LV[k] + old;
+        spl.rise[k] = a * SPL_LV[k] / (spl.env[k] + 1e-9f);
+        spl.rdec[k] = fm_expf(-1.0f / (SPL_RISE[k] * KM_SR));
+        spl.dec[k] = fm_expf(-6.9077553f / (SPL_T60[k] * KM_SR));
     }
+    spl.pat = a * 0.5f;
+    spl.pdec = fm_expf(-1.0f / (0.035f * KM_SR));
+    spl.prise = 1.0f;                                   /* (a palm lands over a few ms) */
+    spl.prdec = fm_expf(-1.0f / (0.004f * KM_SR));
     kit_on |= 1u;
 }
 
 static void shake(int side, float a)
 {
     shake_t *s = &shk[side];
-    float sn;
-    s->slow = a * (side ? 0.85f : 1.0f);                /* the stroke: swells in ~6 ms, fades over ~40-60 */
-    s->fast = s->slow;
-    s->sdec = fm_expf(-1.0f / ((side ? 0.032f : 0.048f) * KM_SR));
-    s->fdec = fm_expf(-1.0f / (0.006f * KM_SR));
-    s->odds = side ? 9000u : 7000u;
-    s->gain = side ? 0.21f : 0.19f;
-    reso((side ? 4600.0f : 3700.0f) * (1.0f + 0.04f * rnds()), 0.004f, &s->b1, &s->b2, &sn);
+    /* the stroke's energy: A (e^-t/slow - e^-t/fast), its peak at ~38 ms pushed, ~12 ms pulled; scaled so
+     * the peak is a */
+    s->slow = s->fast = a * (side ? 1.87f : 5.4f);
+    s->sdec = fm_expf(-1.0f / ((side ? 0.030f : 0.050f) * KM_SR));
+    s->fdec = fm_expf(-1.0f / ((side ? 0.006f : 0.030f) * KM_SR));
+    s->odds = 30000u;
+    s->gain = side ? 0.7f : 0.63f;
+    bp_set(&s->f, (side ? 11000.0f : 9000.0f) * (1.0f + 0.05f * rnds()), 0.9f);
     s->pl = side ? 0.45f : 1.0f;
     s->pr = side ? 1.0f : 0.45f;
     kit_on |= (uint8_t)(2u << side);
@@ -1075,43 +1104,36 @@ static void render_kit(float *ol, float *orr, uint32_t n)
     if (!kit_on)
         return;
     if (kit_on & 1u) {
-        /* the wash darkens as it fades: its low-pass from ~15 kHz down to ~4 kHz */
-        const float lpa = kit_pole(3500.0f + 12000.0f * spl.env / (spl.e0 + 1e-9f)), ha = spl.ha;
-        float env = spl.env, atk = spl.atk, pk = 0.0f;
+        float pk = 0.0f;
         for (j = 0; j < n; j++) {
-            float nl = rnds(), nr = rnds(), m = 0.0f, l, r;
-            spl.hl[0] += ha * (nl - spl.hl[0]);
-            spl.hl[1] += ha * ((nl - spl.hl[0]) - spl.hl[1]);
-            spl.hr[0] += ha * (nr - spl.hr[0]);
-            spl.hr[1] += ha * ((nr - spl.hr[0]) - spl.hr[1]);
-            l = (nl - spl.hl[0]) - spl.hl[1];
-            r = (nr - spl.hr[0]) - spl.hr[1];
-            spl.ll += lpa * (l * env - spl.ll);
-            spl.lr += lpa * (r * env - spl.lr);
-            for (k = 0; k < SPL_NM; k++) {
-                float y = spl.b1[k] * spl.y1[k] + spl.b2[k] * spl.y2[k] + spl.g[k] * (nl + nr) * (atk + env * 0.04f);
-                spl.y2[k] = spl.y1[k];
-                spl.y1[k] = y;
-                m += y;
+            const float nl = rnds(), nr = rnds();
+            float l = 0.0f, r = 0.0f, p;
+            for (k = 0; k < SPL_NB; k++) {             /* each band blooms, then rings out */
+                const float g = spl.env[k] * (1.0f - spl.rise[k]);
+                l += g * bp_run(&spl.f[k], &spl.s1[0][k], &spl.s2[0][k], nl);
+                r += g * bp_run(&spl.f[k], &spl.s1[1][k], &spl.s2[1][k], nr);
+                spl.env[k] *= spl.dec[k];
+                spl.rise[k] *= spl.rdec[k];
             }
-            l = spl.ll * 0.9f + (nl - spl.hl[0]) * atk * 0.25f + m;
-            r = spl.lr * 0.9f + (nr - spl.hr[0]) * atk * 0.25f + m;
-            ol[j] += l * 0.28f;
-            orr[j] += r * 0.4f;
-            env *= spl.dec;
-            atk *= spl.atk_dec;
-            pk = fm_maxf(pk, env);
+            spl.pl += 0.04f * ((nl + nr) * spl.pat * (1.0f - spl.prise) - spl.pl);   /* (~280 Hz) */
+            spl.pr += 0.04f * (spl.pl - spl.pr);
+            p = spl.pr * 3.0f;
+            spl.pat *= spl.pdec;
+            spl.prise *= spl.prdec;
+            ol[j] += (l + p) * 0.3f;
+            orr[j] += (r + p) * 0.44f;
         }
-        spl.env = env;
-        spl.atk = atk;
-        spl.ll = fm_flush(spl.ll);
-        spl.lr = fm_flush(spl.lr);
-        for (k = 0; k < SPL_NM; k++) {
-            spl.y1[k] = fm_flush(spl.y1[k]);
-            spl.y2[k] = fm_flush(spl.y2[k]);
+        for (k = 0; k < SPL_NB; k++) {
+            spl.s1[0][k] = fm_flush(spl.s1[0][k]);
+            spl.s2[0][k] = fm_flush(spl.s2[0][k]);
+            spl.s1[1][k] = fm_flush(spl.s1[1][k]);
+            spl.s2[1][k] = fm_flush(spl.s2[1][k]);
+            pk = fm_maxf(pk, spl.env[k]);
         }
+        spl.pl = fm_flush(spl.pl);
+        spl.pr = fm_flush(spl.pr);
         if (pk < 1e-5f) {
-            spl.env = spl.atk = 0.0f;
+            zero(&spl, sizeof spl);
             kit_on &= (uint8_t)~1u;
         }
     }
@@ -1121,17 +1143,15 @@ static void render_kit(float *ol, float *orr, uint32_t n)
         if (!(kit_on >> (k + 1) & 1u))
             continue;
         for (j = 0; j < n; j++) {
-            const float e = s->slow - s->fast;          /* the stroke's energy: up fast, down slower */
+            const float e = s->slow - s->fast;          /* the stroke's energy: up, then down slower */
             float x, y;
-            if ((rnd() & 0xFFFFu) < s->odds)           /* a bead strikes the steel */
-                s->lvl += e * s->gain * (0.5f + rndf());
+            if ((rnd() & 0xFFFFu) < s->odds)           /* a seed hits the shell */
+                s->lvl += e * s->gain * (0.3f + rndf());
             x = s->lvl * rnds();
-            s->lvl *= 0.94f;                            /* (each tick ~0.4 ms) */
-            y = s->b1 * s->y1 + s->b2 * s->y2 + (x - s->x2) * 0.5f;   /* the beads' ring (zeros at DC and Nyquist) */
-            s->x2 = s->x1;
-            s->x1 = x;
-            s->y2 = s->y1;
-            s->y1 = y;
+            s->lvl *= 0.6f;                             /* (each tick a few samples) */
+            s->hp += 0.58f * (x - s->hp);               /* (the lows out: ~6 kHz) */
+            x -= s->hp;
+            y = bp_run(&s->f, &s->s1, &s->s2, x) + 0.15f * x;   /* the shell's ring, and the air round it */
             ol[j] += y * s->pl;
             orr[j] += y * s->pr;
             s->slow *= s->sdec;
@@ -1139,10 +1159,11 @@ static void render_kit(float *ol, float *orr, uint32_t n)
             pk = fm_maxf(pk, s->slow);
         }
         s->lvl = fm_flush(s->lvl);
-        s->y1 = fm_flush(s->y1);
-        s->y2 = fm_flush(s->y2);
+        s->s1 = fm_flush(s->s1);
+        s->s2 = fm_flush(s->s2);
+        s->hp = fm_flush(s->hp);
         if (pk < 1e-5f) {
-            s->slow = s->fast = s->lvl = s->y1 = s->y2 = s->x1 = s->x2 = 0.0f;
+            s->slow = s->fast = s->lvl = s->s1 = s->s2 = s->hp = 0.0f;
             kit_on &= (uint8_t)~(2u << k);
         }
     }

@@ -406,6 +406,50 @@ static void test_high(void)
           (double)rough[MET_NITRIDED], (double)rough[MET_EMBER]);
 }
 
+/* the kit, against recordings (VCSL): an egg shaker nearly all above 4 kHz, swelling over tens of ms;
+ * a hand-slapped splash a wash from 500 Hz up that blooms (no stick's click) and keeps its mids longest */
+static float band_e(uint32_t a, uint32_t n, float lo, float hi)   /* energy lo..hi Hz (a few points) */
+{
+    float e = 0.0f, f;
+    for (f = lo; f < hi; f *= 1.06f)
+        e += mag(a, n, f) * mag(a, n, f);
+    return e + 1e-20f;
+}
+
+static void test_kit(void)
+{
+    int side;
+    for (side = 0; side < 2; side++) {
+        float hi, lo, early, top;
+        fresh();
+        km_hit(side ? HIT_SHAKE_R : HIT_SHAKE_L, 104, 0);
+        render(0, 22050);
+        hi = band_e(0, 8192, 6000.0f, 16000.0f);
+        lo = band_e(0, 8192, 200.0f, 3000.0f);
+        early = rms(bufl, 0, 88) + rms(bufr, 0, 88);
+        top = fm_maxf(rms(bufl, 441, 441) + rms(bufr, 441, 441), rms(bufl, 1323, 441) + rms(bufr, 1323, 441));
+        CHECK(db(hi / lo) > 25.0f, "shaker %d: high against low %.1f dB", side, (double)db(hi / lo));
+        CHECK(top > 4.0f * early, "shaker %d swells (%.4f at 1 ms, %.4f by 30 ms)", side, (double)early, (double)top);
+        CHECK(rms(bufl, 13230, 4410) + rms(bufr, 13230, 4410) < 0.01f * top, "shaker %d over by 0.3 s", side);
+    }
+    {
+        float early, bloom, mids, highs_early, highs_late, mids_late;
+        fresh();
+        km_hit(HIT_SPLASH, 104, 0);
+        render(0, 44100 * 2);
+        early = rms(bufr, 0, 88);
+        bloom = rms(bufr, 1102, 441);
+        CHECK(bloom > 3.0f * early, "the splash blooms, no click (%.4f at 1 ms, %.4f at 25 ms)", (double)early, (double)bloom);
+        mids = band_e(4410, 8192, 400.0f, 2500.0f);
+        highs_early = band_e(4410, 8192, 6000.0f, 16000.0f);
+        mids_late = band_e(44100, 8192, 400.0f, 2500.0f);
+        highs_late = band_e(44100, 8192, 6000.0f, 16000.0f);
+        CHECK(db(mids / highs_early) > -12.0f, "the splash's mids %.1f dB against its highs", (double)db(mids / highs_early));
+        CHECK(db(highs_late / mids_late) < db(highs_early / mids) - 6.0f, "the splash's highs die first (%.1f -> %.1f dB)",
+              (double)db(highs_early / mids), (double)db(highs_late / mids_late));
+    }
+}
+
 static void pulse_of(float f, float *depth, float *rate)
 {
     float e[140], sx = 0.0f, sy = 0.0f, sxx = 0.0f, sxy = 0.0f, sd = 0.0f, k, b;
@@ -1244,6 +1288,7 @@ int main(int argc, char **argv)
     test_music();
     test_partials();
     test_high();
+    test_kit();
     test_shimmer();
     test_ping();
     test_air();

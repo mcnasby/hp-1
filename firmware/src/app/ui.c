@@ -8,8 +8,8 @@
  *                  zigzag outward as they climb around the pan, the first on the right), Pan rev (left
  *                  first) or Linear (low to high); past the pan's own fields the scale goes on up, as on
  *                  an extended pan
- *   black keys     follow Black. Kit: castanets, a cabasa pushed, then the steel's Gu, ghost, ding slap,
- *                  tak, ding harmonic, rim and mute, the cabasa pulled, a splash cymbal. Duo: castanets,
+ *   black keys     follow Black. Kit: castanets, an egg shaker pushed, then the steel's Gu, ghost, ding
+ *                  slap, tak, ding harmonic, rim and mute, the shaker pulled, a splash cymbal. Duo: castanets,
  *                  a second pan of nine notes whose scale coordinates with the first, the Gu
  *   PLAY freeze the grains     REC palm mute     ARP tap: the groove on / off; held: the Groove page
  *   OCT- / OCT+    the octave

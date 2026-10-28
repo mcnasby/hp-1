@@ -22,7 +22,7 @@
  *           of harmonics a real pan leaves hanging after each note.
  *   HITS    percussion on the steel, not on a field: palm thwaps and fingertip taks on the shoulders,
  *           the Gu, ghost notes, a muted ding slap, the ding's harmonic, a knuckle on the rim. And beside
- *           the pan, a little kit: a splash cymbal, a cabasa a hand, castanets.
+ *           the pan, a little kit: a splash cymbal, an egg shaker, castanets.
  *   FX      a chorus and a granular cloud on the dry sound, a ping-pong delay, a plate reverb
  *           (Dattorro's, from FoMni); then on everything a filter and a tape (wow, flutter, lo-fi).
  *   GROOVE  patterns over the pan's notes and its percussion, on a cycle of 12 pulses (3 a beat), at a
@@ -93,7 +93,7 @@ enum {
     HIT_TAK_R,
     HIT_THWAP_R,
     HIT_SPLASH,                        /* the kit beside the pan: a splash cymbal */
-    HIT_SHAKE_L,                       /* a cabasa, pushed (left) */
+    HIT_SHAKE_L,                       /* an egg shaker, pushed (left) */
     HIT_SHAKE_R,                       /* ...and pulled back (right) */
     HIT_CASTANET,                      /* castanets */
     HIT_N
