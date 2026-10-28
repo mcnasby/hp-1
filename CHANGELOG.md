@@ -10,6 +10,7 @@ taken from its section below. Add the section in the same pull request as the `V
   so there's less click and metallic ping. It rings longer and fuller and moves more air. It also
   builds the more times you hit it in a row: a new strike adds to what's still ringing instead of
   stopping it. The second pan's ding works the same way.
+- **The castanets are quieter**, about 10 dB, so they sit with the other sounds instead of over them.
 
 ## 0.4.2
 
