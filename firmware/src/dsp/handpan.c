@@ -1197,8 +1197,8 @@ static void render_kit(float *ol, float *orr, uint32_t n)
                 o += y;
             }
             cas.click *= cas.cdec;
-            ol[j] += o * 0.8f;
-            orr[j] += o * 0.5f;
+            ol[j] += o * 0.26f;
+            orr[j] += o * 0.16f;
             pk = fm_maxf(pk, fm_fabsf(o));
         }
         for (k = 0; k < CAS_NM; k++) {
