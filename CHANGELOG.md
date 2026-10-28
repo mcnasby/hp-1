@@ -4,6 +4,12 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.4.4
+
+- **Repeated hits on the ding have less attack.** When you strike the ding while it's still ringing,
+  the hit lands softer, with less click and ping, so the sound swells instead of jumping. The louder
+  it's ringing, the softer the hit. It still builds the more you play it.
+
 ## 0.4.3
 
 - **The ding sounds like a ding.** Its attack is softer and rounder: it's struck with a thumb or palm,

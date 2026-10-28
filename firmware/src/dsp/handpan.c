@@ -733,9 +733,12 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
      * strike are broadband), brighter and shorter the firmer the strike */
     float tp = 0.0012f * fm_exp2f(-2.6f * hard), vg = (float)vel * (1.0f / 127.0f), a, n;
     int k, again = v->on;
+    float ring;                                         /* the ding ringing when struck again (0..1) */
     v->ding = (uint8_t)is_ding(cents);
+    ring = v->ding && v->on ? fm_clampf(v->level * 3.0f, 0.0f, 1.0f) : 0.0f;
     if (v->ding) {                                      /* a thumb or a palm: a soft, long contact */
-        tp = 0.0024f * fm_exp2f(-1.0f * hard);
+        tp = 0.0024f * fm_exp2f(-1.0f * hard) * (1.0f + 0.8f * ring);   /* (softer still into a ringing ding:
+                                                         * the hand meets steel already moving) */
         again = 0;                                      /* (and nothing stops what rings: below) */
     }
     if (!v->on)
@@ -762,7 +765,8 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
         n = 1.0f;
     a = vg * vg * 0.55f;
     {
-        float gl = GLIDE_MAX * vg * vg * (0.3f + 0.7f * hard) * (emph == EMPH_ALL ? 1.0f : 0.0f) * (v->ding ? 0.5f : 1.0f);
+        float gl = GLIDE_MAX * vg * vg * (0.3f + 0.7f * hard) * (emph == EMPH_ALL ? 1.0f : 0.0f) * (v->ding ? 0.5f : 1.0f) *
+                   (1.0f - ring);
         v->glide_rise = 0.0f;
         v->rise_n = 0;
         if (again) {
@@ -775,7 +779,8 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     }
     {   /* the ping: the instant of contact, steel on steel through the skin, too short for the finger's
          * pulse to carry. An impulse into the field's higher modes (a firm strike rings them more) */
-        const float ap = a * (0.3f + 0.7f * hard) * (emph == EMPH_ALL ? 1.0f : emph == EMPH_HARMONIC ? 0.6f : 0.0f);
+        const float ap = a * (0.3f + 0.7f * hard) * (emph == EMPH_ALL ? 1.0f : emph == EMPH_HARMONIC ? 0.6f : 0.0f) *
+                         (1.0f - 0.75f * ring);
         for (k = M_PING; k < KM_NMODE; k++)
             v->y1[k] += v->amp[k] * v->s0[k] * ap;     /* (an impulse: it rings at amp x ap) */
     }
@@ -783,7 +788,8 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->ex_ph = again ? -(float)(CONTACT_N * 64u) * v->ex_inc : 0.0f;
     v->ex_amp = a * (FM_PI * 0.5f) / n;                 /* area a: the first mode rings at ~a */
     v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * m->touch * hard * (0.5f + 0.5f * hard) * 0.9f *
-                                                               (1.0f + 0.5f * v->hx) * (v->ding ? 0.35f : 1.0f) : 0.0f;
+                                                               (1.0f + 0.5f * v->hx) * (v->ding ? 0.35f : 1.0f) *
+                                                               (1.0f - 0.75f * ring) : 0.0f;
     v->click_dec = fm_expf(-1.0f / ((0.007f - 0.004f * hard) * KM_SR));
     v->click_a = fm_minf(0.12f + 0.4f * hard + 0.2f * v->hx, 0.8f);   /* its low-pass: ~0.9 to ~4 kHz (more up top) */
     a = ((float)pan * 0.01f * width + 1.0f) * (FM_PI * 0.25f);   /* pan: equal power */
