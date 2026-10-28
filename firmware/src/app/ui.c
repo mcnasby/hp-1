@@ -936,10 +936,10 @@ static void draw_pan(int32_t y0, int32_t y1)
         const int32_t dx = 200, dy = cy - 6, dr = 34;
         draw_shell(dx, dy, dr, dark, light, (int[2]){0, 0});
         for (i = 0; i < KM_NDUO; i++) {
-            spot_t s = i ? ring_spot(i - 1, KM_NDUO - 1, first, dx, dy, dr * 68 / 100, 6)
-                         : (spot_t){(int16_t)dx, (int16_t)dy, 7};
+            spot_t s = i ? ring_spot(i - 1, KM_NDUO - 1, first, dx, dy, dr * 69 / 100, 7)
+                         : (spot_t){(int16_t)dx, (int16_t)dy, 8};
             int c = duo_cents(i);
-            draw_field(s, c, (int)ripple_age(ui.ripple[KM_NPAN + i]), note_level(c), i == 0, dark, light, ink, 0);
+            draw_field(s, c, (int)ripple_age(ui.ripple[KM_NPAN + i]), note_level(c), i == 0, dark, light, ink, 1);
         }
         {
             char t[16];
