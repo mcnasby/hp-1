@@ -949,28 +949,22 @@ static void draw_pan(int32_t y0, int32_t y1)
     }
 }
 
-/* the black keys, as a strip: the steel's kit in the middle (or the second pan's notes), the hand
- * percussion round it */
+/* the black keys, as a strip: the steel's kit in the middle, the hand percussion round it. With Duo
+ * only the end keys: the second pan between shows its own notes, and its keys' room stays empty */
 static void draw_black(int32_t y0)
 {
     int b;
     for (b = 0; b < NBLACK; b++) {
         char t[12];
         int32_t x = 4 + b * 20 + ((b >= 3) + (b >= 5) + (b >= 8) + (b >= 10)) * 3;   /* grouped as the keys are */
-        int on = (ui.keys >> BLACK_K[b] & 1u) != 0,
-            hand = proj.par[P_BLACK] == BLK_DUO ? !is_duo_key(b) : b < 2 || b > NBLACK - 3;
+        int on = (ui.keys >> BLACK_K[b] & 1u) != 0, hand = proj.par[P_BLACK] == BLK_DUO || b < 2 || b > NBLACK - 3;
         uint16_t bg = hand ? K_ACC_T : K_TEAL_T, fg = hand ? K_ACC : K_TEXT;
-        if (is_duo_key(b)) {
-            const int c = duo_cents(duo_index(b));
-            s_cpy(t, note_name(c));
-            if (note_level(c) > 0.15f)
-                on = 1;
-        } else {
-            const int k = black_hit(b);
-            s_cpy(t, HIT_NAME[k]);
-            if (ripple_age(ui.hit_t[k]) < 12u)
-                on = 1;
-        }
+        const int k = black_hit(b);
+        if (is_duo_key(b))
+            continue;
+        s_cpy(t, HIT_NAME[k]);
+        if (ripple_age(ui.hit_t[k]) < 12u)
+            on = 1;
         if (on) {
             bg = hand ? K_ACC : K_TEAL;
             fg = K_WHITE;

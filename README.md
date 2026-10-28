@@ -247,8 +247,9 @@ of nothing, keeps everything. The Setup page is kept either way.
   sends a ripple out when struck. A thwap or tak lights the rim on that side; the Gu breathes in a
   ring round the ding. With Duo, the second pan stands to the right.
 - **The black-key strip:** what each black key does now, above the pan, as the black keys sit above
-  the white. The hand percussion (castanets, shakers, splash) is
-  amber, the steel's kit or the second pan's notes teal, and each lights as it sounds.
+  the white. The hand percussion (castanets, shakers, splash) is amber, the steel's kit teal, and
+  each lights as it sounds. With Duo it shows only the two end keys (castanets, Gu): the second pan
+  shows its own notes, and their place in the strip stays empty.
 - **The knobs:** the page's four values. The one you turned is highlighted for a moment.
 
 ## The scales
