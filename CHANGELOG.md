@@ -4,6 +4,28 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.4.0
+
+- **Thwap and tak moved to the white keys.** The end white key on each side is a palm thwap and the
+  next one in is a fingertip tak. The twelve white keys between play the pan.
+- **A kit on the black keys**, with four new sounds: **castanets** on the far left, a **shaker** (a
+  cabasa) on the second key from each end (pushed on the left, pulled back on the right, so you can
+  alternate them for a shuffle), and a **splash cymbal** on the far right. The pan's own hits (Gu,
+  ghost, ding slap, tak, harmonic, rim, mute) stay in the middle.
+- **A bigger second pan.** With Black on Duo, the castanets stay on the far left and the Gu is on the
+  far right. The nine keys between are the second pan: its ding and eight fields, ding in the middle.
+- **The second pan sits in the first pan's register.** Its ding is where a pan in its key has it: D
+  Kurd's D Celtic now starts on D3, not D4.
+- **The black-key strip sits above the pans in Duo**, the way the black keys sit above the white keys.
+  Without Duo, the strip stays at the bottom.
+- **Higher notes sound more like a real pan.** On small, high fields the octave is a little louder and
+  flatter, and the fifth is weaker, shorter and slightly off. The field's own untuned overtone comes
+  in, and the neighboring notes ring along. The strike is a touch harder and brighter. Low notes are
+  unchanged. Each metal sets how much: Stainless the most, Ember the least. Checked against Eyal Alon's
+  measurements of real pans and recordings of handpan players.
+- MIDI channel 10 now plays the kit too: crash or splash (49, 55, 57), cabasa (69), maracas (70),
+  castanets (85).
+
 ## 0.3.0
 
 - **The Pan layout now matches a real pan.** The first field after the ding is on the right, then the

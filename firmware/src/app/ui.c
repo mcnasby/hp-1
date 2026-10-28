@@ -3,12 +3,14 @@
  * simulator includes it too. (The frame of it, knobs, bands and autosave, is FoMni's ui.c, by way of
  * FiMba-1.)
  *
- *   white keys     the pan's notes: Pan (the ding on both middle keys, the fields zigzag outward as
- *                  they climb around the pan, the first on the right), Pan rev (left first) or Linear
- *                  (low to high); past the pan's own fields the scale goes on up, as on an extended pan
- *   black keys     the two at each end are always the steel: a palm thwap and a fingertip tak a side.
- *                  The seven between follow Black: Kit (Gu, ghost, ding slap, tak, ding harmonic, rim,
- *                  mute) or Duo (a second pan whose scale coordinates with the first)
+ *   white keys     the two at each end are the steel: a palm thwap outside, a fingertip tak inside it.
+ *                  The twelve between, the pan's notes: Pan (the ding on both middle keys, the fields
+ *                  zigzag outward as they climb around the pan, the first on the right), Pan rev (left
+ *                  first) or Linear (low to high); past the pan's own fields the scale goes on up, as on
+ *                  an extended pan
+ *   black keys     follow Black. Kit: castanets, a cabasa pushed, then the steel's Gu, ghost, ding slap,
+ *                  tak, ding harmonic, rim and mute, the cabasa pulled, a splash cymbal. Duo: castanets,
+ *                  a second pan of nine notes whose scale coordinates with the first, the Gu
  *   PLAY freeze the grains     REC palm mute     ARP tap: the groove on / off; held: the Groove page
  *   OCT- / OCT+    the octave
  *   HOME ENV FX LFO SEL SEQ GLO   the pages (pressed again: the button's next page): HOME Pan, Shell;
@@ -44,14 +46,15 @@ static const uint8_t VIEW_KNOB[NVIEWS][4] = {
 static const uint8_t WHITE_K[NWHITE] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
 static const uint8_t BLACK_K[NBLACK] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
 
-/* the black keys: the steel at both ends, the kit (or the second pan) between */
-#define B_DUO0 2                       /* the first of the seven middle keys */
-static const uint8_t HIT_OF[NBLACK] = {HIT_THWAP_L, HIT_TAK_L, HIT_GU, HIT_GHOST, HIT_SLAP, HIT_TAK, HIT_HARM,
-                                       HIT_RIM, HIT_MUTE, HIT_TAK_R, HIT_THWAP_R};
-static const char *const HIT_NAME[HIT_N] = {"Thwp", "Tak", "Gu", "Gho", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwp"};
-static const char *const HIT_LONG[HIT_N] = {"THWAP", "TAK", "GU", "GHOST", "DING SLAP", "TAK", "HARMONIC", "RIM",
-                                            "MUTE", "TAK", "THWAP"};
+/* the black keys: the kit (or the second pan between castanets and the Gu) */
+#define B_DUO0 1                       /* the first of the second pan's nine keys */
+static const uint8_t HIT_OF[NBLACK] = {HIT_CASTANET, HIT_SHAKE_L, HIT_GU, HIT_GHOST, HIT_SLAP, HIT_TAK, HIT_HARM,
+                                       HIT_RIM, HIT_MUTE, HIT_SHAKE_R, HIT_SPLASH};
+static const char *const HIT_NAME[HIT_N] = {"Thwp", "Tak", "Gu", "Gho", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwp",
+                                            "Spl", "Shk", "Shk", "Cas"};
 static int is_duo_key(int b) { return proj.par[P_BLACK] == BLK_DUO && b >= B_DUO0 && b < B_DUO0 + KM_NDUO; }
+/* what black key b plays when it isn't the second pan's */
+static int black_hit(int b) { return proj.par[P_BLACK] == BLK_DUO && b == NBLACK - 1 ? HIT_GU : HIT_OF[b]; }
 
 /* the screen's colors (Setup: Theme). Dark (the default): a dim room, warm cream type, and gold for what
  * sounds. Light: sand and ink. The pan keeps its metal in both. */
@@ -268,7 +271,20 @@ static int ding_now(void) { return km_ding_cents(proj.par[P_KEY], octave_now());
 static int tune(int c) { return proj.par[P_TUNING] == TUNE_JUST ? km_just_cents(c, ding_now()) : c; }
 static int pan_notes(int *n) { return km_pan_notes(proj.par[P_SCALE], proj.par[P_KEY], octave_now(), n); }
 static int white_index(int w) { return km_white_index(proj.par[P_LAYOUT], w); }
-static int white_cents(int w) { return tune(km_white_cents(proj.par[P_LAYOUT], proj.par[P_SCALE], proj.par[P_KEY], octave_now(), w)); }
+static int white_cents(int w)                   /* (-1: a key of the steel) */
+{
+    const int c = km_white_cents(proj.par[P_LAYOUT], proj.par[P_SCALE], proj.par[P_KEY], octave_now(), w);
+    return c < 0 ? -1 : tune(c);
+}
+/* how many of the pan's notes the white keys reach (Pan: the ding and ten; Linear: twelve) */
+static int notes_reached(void)
+{
+    int w, m = 0;
+    for (w = 0; w < NWHITE; w++)
+        if (white_index(w) >= m)
+            m = white_index(w) + 1;
+    return m;
+}
 static int white_pan(int w) { return (int)(km_white_pos(proj.par[P_LAYOUT], w) * 100.0f); }
 static int duo_cents(int i)
 {
@@ -359,6 +375,10 @@ static void strike_hit(int kind)
 
 static void white_down(int w)
 {
+    if (km_white_hit(w) >= 0) {                      /* the steel, at the ends */
+        strike_hit(km_white_hit(w));
+        return;
+    }
     key_strike(WHITE_K[w], white_cents(w), 100, white_pan(w));
     ui.ripple[white_index(w)] = ui.frame + 1u;
 }
@@ -367,11 +387,11 @@ static void black_down(int b)
 {
     if (is_duo_key(b)) {                             /* the second pan, standing to the right */
         const int i = duo_index(b);
-        key_strike(BLACK_K[b], duo_cents(i), 100 * proj.par[P_DUOLVL] / 100 + 12, 55 + 8 * (b - B_DUO0 - 3));
+        key_strike(BLACK_K[b], duo_cents(i), 100 * proj.par[P_DUOLVL] / 100 + 12, 55 + 6 * (b - B_DUO0 - KM_NDUO / 2));
         ui.ripple[KM_NPAN + i] = ui.frame + 1u;
         return;
     }
-    strike_hit(HIT_OF[b]);
+    strike_hit(black_hit(b));
 }
 
 static void black_up(int b) { key_release(BLACK_K[b]); }
@@ -479,7 +499,7 @@ static int midi_pan(int cents)
 {
     int w;
     for (w = 0; w < NWHITE; w++)
-        if (white_cents(w) == cents) {
+        if (white_index(w) >= 0 && white_cents(w) == cents) {
             ui.ripple[white_index(w)] = ui.frame + 1u;
             return white_pan(w);
         }
@@ -514,9 +534,13 @@ static int drum_hit(uint32_t note)
     case 41: case 43: return HIT_THWAP_R;
     case 42: case 44: return HIT_TAK;                      /* hats */
     case 46: return HIT_TAK_R;
-    case 49: case 57: return HIT_HARM;                     /* crashes */
+    case 49: case 55: case 57: return HIT_SPLASH;          /* crashes, the splash */
     case 51: case 59: return HIT_GHOST;                    /* rides */
-    case 54: case 69: case 70: return HIT_TAK_L;           /* tambourine, shakers */
+    case 53: return HIT_HARM;                              /* ride bell */
+    case 54: return HIT_TAK_L;                             /* tambourine */
+    case 69: return HIT_SHAKE_L;                           /* cabasa */
+    case 70: return HIT_SHAKE_R;                           /* maracas */
+    case 85: return HIT_CASTANET;                          /* castanets (GM2) */
     default: return -1;
     }
 }
@@ -882,11 +906,12 @@ static void draw_field(spot_t s, int cents, int age, float lv, int ding, uint16_
     }
 }
 
-static void draw_pan(void)
+/* The pan, with Duo the second pan beside it, centered in the space y0..y1 */
+static void draw_pan(int32_t y0, int32_t y1)
 {
-    int n[KM_NPAN], own = pan_notes(n), i;
+    int n[KM_NPAN], own = pan_notes(n), all = notes_reached(), i;
     const int duo = proj.par[P_BLACK] == BLK_DUO, first = proj.par[P_LAYOUT] == LAY_PANREV ? -1 : 1;
-    const int32_t R = duo ? 52 : 55, cx = duo ? 90 : 120, cy = 56;   /* (the second pan beside it: over) */
+    const int32_t R = duo ? 52 : 55, cx = duo ? 90 : 120, cy = (y0 + y1) / 2;   /* (the second pan beside it: over) */
     const uint16_t dark = METAL->dark, light = METAL->light, ink = METAL->ink;
     int glow[2];
     for (i = 0; i < 2; i++)                           /* the rim, where a thwap or a tak just landed */
@@ -899,7 +924,9 @@ static void draw_pan(void)
     }
     /* every note the keys play: the ding; round it the pan's own fields, the low ones the biggest; and
      * near the rim, smaller, the notes past them (an extended pan's), the zigzag going on */
-    for (i = 0; i < KM_NPAN; i++) {
+    if (own > all)
+        own = all;
+    for (i = 0; i < all; i++) {
         int c = tune(n[i]);
         spot_t s;
         if (!i)
@@ -907,14 +934,14 @@ static void draw_pan(void)
         else if (i < own)
             s = ring_spot(i - 1, own - 1, first, cx, cy, R * 53 / 100, 9 - (i - 1) / 4);
         else
-            s = ring_spot(i - own, KM_NPAN - own, first, cx, cy, R * 83 / 100, 7);
+            s = ring_spot(i - own, all - own, first, cx, cy, R * 83 / 100, 7);
         draw_field(s, c, (int)ripple_age(ui.ripple[i]), note_level(c), i == 0, dark, light, ink, i < own ? 1 : 2);
     }
-    if (duo) {   /* the second pan, smaller, to the right: its ding and six fields, evenly round it */
-        const int32_t dx = 200, dy = 50, dr = 34;
+    if (duo) {   /* the second pan, smaller, to the right: its ding and eight fields, evenly round it */
+        const int32_t dx = 200, dy = cy - 6, dr = 34;
         draw_shell(dx, dy, dr, dark, light, (int[2]){0, 0});
         for (i = 0; i < KM_NDUO; i++) {
-            spot_t s = i ? ring_spot(i - 1, KM_NDUO - 1, first, dx, dy, dr * 64 / 100, 8 - (i - 1) / 3)
+            spot_t s = i ? ring_spot(i - 1, KM_NDUO - 1, first, dx, dy, dr * 66 / 100, 7 - (i - 1) / 4)
                          : (spot_t){(int16_t)dx, (int16_t)dy, 9};
             int c = duo_cents(i);
             draw_field(s, c, (int)ripple_age(ui.ripple[KM_NPAN + i]), note_level(c), i == 0, dark, light, ink, 0);
@@ -927,28 +954,30 @@ static void draw_pan(void)
     }
 }
 
-/* the black keys, as a strip: the steel at both ends, the kit or the second pan's notes between */
+/* the black keys, as a strip: the steel's kit in the middle (or the second pan's notes), the hand
+ * percussion round it */
 static void draw_black(int32_t y0)
 {
     int b;
     for (b = 0; b < NBLACK; b++) {
         char t[12];
         int32_t x = 4 + b * 20 + ((b >= 3) + (b >= 5) + (b >= 8) + (b >= 10)) * 3;   /* grouped as the keys are */
-        int on = (ui.keys >> BLACK_K[b] & 1u) != 0, steel = b < B_DUO0 || b >= B_DUO0 + KM_NDUO;
-        uint16_t bg = steel ? K_ACC_T : K_TEAL_T, fg = steel ? K_ACC : K_TEXT;
+        int on = (ui.keys >> BLACK_K[b] & 1u) != 0,
+            hand = proj.par[P_BLACK] == BLK_DUO ? !is_duo_key(b) : b < 2 || b > NBLACK - 3;
+        uint16_t bg = hand ? K_ACC_T : K_TEAL_T, fg = hand ? K_ACC : K_TEXT;
         if (is_duo_key(b)) {
             const int c = duo_cents(duo_index(b));
             s_cpy(t, note_name(c));
             if (note_level(c) > 0.15f)
                 on = 1;
         } else {
-            const int k = HIT_OF[b];
+            const int k = black_hit(b);
             s_cpy(t, HIT_NAME[k]);
             if (ripple_age(ui.hit_t[k]) < 12u)
                 on = 1;
         }
         if (on) {
-            bg = steel ? K_ACC : K_TEAL;
+            bg = hand ? K_ACC : K_TEAL;
             fg = K_WHITE;
         }
         cv_round(x, y0, 18, 26, 5, bg);
@@ -991,8 +1020,13 @@ static void draw_main(void)
         return;
     ui.sig[1] = h;
     cv_begin(240, MAIN_H, K_BG);
-    draw_pan();
-    draw_black(114);
+    if (proj.par[P_BLACK] == BLK_DUO) {              /* the black keys over the pans (the keys' upper row) */
+        draw_black(1);
+        draw_pan(29, MAIN_H);
+    } else {
+        draw_pan(0, 112);
+        draw_black(114);
+    }
     cv_blit(0, MAIN_Y);
 }
 
@@ -1086,11 +1120,12 @@ static void leds(void)
         b |= 1u << B_PLAY;
     if (ui.pat_on && km_pat_pulse % 3u != 0u)        /* the groove: lit, dark on each beat */
         b |= 1u << B_ARP;
-    for (i = 0; i < NWHITE; i++)                     /* the notes that ring */
-        if (note_level(white_cents((int)i)) > 0.08f)
+    for (i = 0; i < NWHITE; i++)                     /* the notes that ring, the steel just struck */
+        if (km_white_hit((int)i) >= 0 ? ripple_age(ui.hit_t[km_white_hit((int)i)]) < 12u
+                                      : note_level(white_cents((int)i)) > 0.08f)
             k |= 1u << WHITE_K[i];
     for (i = 0; i < NBLACK; i++)
-        if (is_duo_key((int)i) ? note_level(duo_cents(duo_index((int)i))) > 0.08f : ripple_age(ui.hit_t[HIT_OF[i]]) < 12u)
+        if (is_duo_key((int)i) ? note_level(duo_cents(duo_index((int)i))) > 0.08f : ripple_age(ui.hit_t[black_hit((int)i)]) < 12u)
             k |= 1u << BLACK_K[i];
     k |= ui.keys;
     plat_leds(b, k, ding_keys());

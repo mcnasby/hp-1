@@ -40,8 +40,9 @@ C code compiled to WebAssembly, with mouse, touch, computer keyboard and MIDI in
    finds it.
 2. **Work outward to climb.** The tone fields alternate left, right, left, right, the way they zigzag
    up around a real handpan. Every key is in the scale, so nothing you play sounds wrong.
-3. **The black keys at the ends are the steel.** The outermost ones are palm thwaps, the next ones
-   in are fingertip taks, each on its own side of the shell.
+3. **The white keys at the ends are the steel.** The end keys are palm thwaps, the next ones in are
+   fingertip taks, each on its own side of the shell. The black keys are a kit: castanets, shakers,
+   the pan's own hits and a splash cymbal.
 4. **Tap ARP** for a groove (ding, fields, taks and thwaps), and play over it.
 5. **Turn ALGORITHM** to change the scale (it comes in the key makers usually build it in) and
    **PRESETS** to move it to any key. **SELECT** changes the metal.
@@ -77,40 +78,39 @@ strike a hand's natural variation in strength and brightness. Over MIDI, velocit
   the right, as makers lay a pan out (a D Kurd's A3 on the right, Bb3 on the left, C4 right, D4 left
   ... C5 at the top).
 - **Pan rev**: the same, left first, for those who play it the other way round.
-- **Linear**: low to high, left to right, the ding on key 1.
+- **Linear**: low to high, left to right, the ding on key 3.
 
-In D Kurd (the default pan):
+The two keys at each end are always the steel: a palm **thwap** on the end key, a fingertip **tak**
+on the next one in, each on its own side of the shell. In D Kurd (the default pan):
 
-| White key | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8      | 9      | 10  | 11  | 12  | 13  | 14  | 15  | 16  |
-| --------- | --- | --- | --- | --- | --- | --- | --- | ------ | ------ | --- | --- | --- | --- | --- | --- | --- |
-| Pan       | A5  | F5  | D5  | A4  | F4  | D4  | Bb3 | **D3** | **D3** | A3  | C4  | E4  | G4  | C5  | E5  | G5  |
-| Pan rev   | G5  | E5  | C5  | G4  | E4  | C4  | A3  | **D3** | **D3** | Bb3 | D4  | F4  | A4  | D5  | F5  | A5  |
-| Linear    | D3  | A3  | Bb3 | C4  | D4  | E4  | F4  | G4     | A4     | C5  | D5  | E5  | F5  | G5  | A5  | Bb5 |
+| White key | 1     | 2   | 3   | 4   | 5   | 6   | 7   | 8      | 9      | 10  | 11  | 12  | 13  | 14  | 15  | 16    |
+| --------- | ----- | --- | --- | --- | --- | --- | --- | ------ | ------ | --- | --- | --- | --- | --- | --- | ----- |
+| Pan       | Thwap | Tak | D5  | A4  | F4  | D4  | Bb3 | **D3** | **D3** | A3  | C4  | E4  | G4  | C5  | Tak | Thwap |
+| Pan rev   | Thwap | Tak | C5  | G4  | E4  | C4  | A3  | **D3** | **D3** | Bb3 | D4  | F4  | A4  | D5  | Tak | Thwap |
+| Linear    | Thwap | Tak | D3  | A3  | Bb3 | C4  | D4  | E4     | F4     | G4  | A4  | C5  | D5  | E5  | Tak | Thwap |
 
-The pan's own notes are the ding and its 7 to 9 fields. The outermost keys carry the scale on up, as
+The pan's own notes are the ding and its 7 to 9 fields. The outer note keys carry the scale on up, as
 the extra fields of an extended ("mutant") pan do. The screen shows every note the keys play on the
 pan: the ding in the middle, the pan's own fields evenly round it, and the extra notes in a ring near
 the rim, all climbing in the same zigzag from the player's side. The ding's keys glow dimly so you can
 find the center without looking.
 
-### Black keys: the steel, the kit, the second pan
+### Black keys: the kit, the second pan
 
-The two black keys at each end are always the steel. The seven between follow **Black** (SEL →
-Keys, KNOB 4).
+The black keys follow **Black** (SEL → Keys, KNOB 4).
 
-| Black key  | 1     | 2   | 3–9                     | 10  | 11    |
-| ---------- | ----- | --- | ----------------------- | --- | ----- |
-| Always     | Thwap | Tak | **Kit** or **Duo**      | Tak | Thwap |
+| Black key | 1         | 2      | 3  | 4     | 5         | 6   | 7        | 8   | 9    | 10     | 11     |
+| --------- | --------- | ------ | ----- | ----- | --------- | ----- | -------- | ----- | ----- | ------ | ------ |
+| **Kit**   | Castanets | Shaker | Gu    | Ghost | Ding slap | Tak   | Harmonic | Rim   | Mute  | Shaker | Splash |
+| **Duo**   | Castanets | Pan 2  | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Gu     |
 
-**Kit** (the default):
-
-| Key | 3  | 4     | 5         | 6   | 7        | 8   | 9    |
-| --- | -- | ----- | --------- | --- | -------- | --- | ---- |
-| Hit | Gu | Ghost | Ding slap | Tak | Harmonic | Rim | Mute |
-
-- **Thwap:** a flat palm on the shoulder, the hard steel between the fields. The shell's own modes
+- **Castanets:** two hardwood shells clacked.
+- **Shaker:** a cabasa, steel beads round a cylinder: pushed on key 2 (left, a little lower and
+  longer), pulled back on key 10 (right, brighter and quicker). Alternate them for a shuffle.
+- **Splash:** a small, thin cymbal: a bright crash that darkens as it fades.
+- **Thwap** (white keys 1 and 16): a flat palm on the shoulder, the hard steel between the fields. The shell's own modes
   ring on that side, the air inside booms, and the nearby fields ring along.
-- **Tak:** fingertips on the shoulder's edge: bright and short.
+- **Tak** (white keys 2 and 15, and black key 6 by the ding): fingertips on the steel: bright and short.
 - **Gu:** a palm over the bottom port: the deep boom of the cavity.
 - **Ghost:** a light fingertip between the fields.
 - **Ding slap:** the ding struck and held, closed at once.
@@ -119,7 +119,9 @@ Keys, KNOB 4).
 - **Rim:** a knuckle on the rim seam.
 - **Mute:** a palm over the top. Every field and the shell are damped.
 
-**Duo:** the seven middle keys become a **second handpan**, a register above the first, laid out the
+**Duo:** the nine keys between the castanets and the Gu become a **second handpan** of nine notes
+(its ding and eight fields, the scale going on up past a pan of fewer), in the same register as the
+first: its ding sits where a pan in its key has it (an A pan's A2, a D pan's D3). It's laid out the
 way the white keys are (Layout). In Pan, its ding is on the middle key (black key 6, F#4) and its
 fields alternate outward, right then left; Pan rev goes left first; Linear runs low to high from the
 left. Its ding's key glows dimly, as the first pan's do. Its scale and key are chosen to fit with the first pan: every
@@ -244,8 +246,9 @@ of nothing, keeps everything. The Setup page is kept either way.
 - **The pan from above**, shaded in its metal. Each field shows its note, glows as it rings, and
   sends a ripple out when struck. A thwap or tak lights the rim on that side; the Gu breathes in a
   ring round the ding. With Duo, the second pan stands to the right.
-- **The black-key strip:** what each black key does now. The steel's keys are amber, the kit's or
-  the second pan's are teal, and each lights as it sounds.
+- **The black-key strip:** what each black key does now, under the pan. With Duo it moves above the
+  pans, as the black keys sit above the white. The hand percussion (castanets, shakers, splash) is
+  amber, the steel's kit or the second pan's notes teal, and each lights as it sounds.
 - **The knobs:** the page's four values. The one you turned is highlighted for a moment.
 
 ## The scales
@@ -279,7 +282,7 @@ fall at **1 : 2 : 3**: the fundamental, the octave and the compound fifth (an oc
 up). That's why every note sounds like a small chord of itself, full and singing, where a kalimba's
 tine has inharmonic overtones that give it a "ping."
 
-HP-1 models each sounding field as a bank of six resonators, set from measurements of real pans
+HP-1 models each sounding field as a bank of resonators, set from measurements of real pans
 (Eyal Alon, [*Analysis and Synthesis of the Handpan Sound*](https://etheses.whiterose.ac.uk/12260/), MSc by Research, University of York, 2015):
 
 - **the fundamental**, steady. Measured pans ring about 3 s on average (0.9 to 5.9 s), low notes
@@ -291,6 +294,15 @@ HP-1 models each sounding field as a bank of six resonators, set from measuremen
   tune. That pulse is the handpan's shimmer, and without it a field sounds like an electric piano's
   tine. Each field has its own rate, the same every time it's struck;
 - **the double octave**, faint, about 20 dB down.
+
+**The high fields are rougher**, as on a real pan. They're small and stiff, and the tuner can't
+control them as tightly: in Alon's measurements and in recordings, from about F4 up the octave is as
+loud as the fundamental or louder, the fifth is weaker, shorter and 5 to 25 cents off true, the
+field's own untuned mode (about 2.5 times the note) comes in, and the neighboring fields ring along.
+HP-1 does the same, growing from C4 to F5: a harder contact and a brighter skin burst, the octave up
+and a little flat, the fifth down, shorter and off true, the stray mode, and the notes either side
+ringing softly (with Sympathy). The low fields stay as clean as the tuner leaves them. How rough
+depends on the metal: Stainless the most, then Raw, Nitrided, and Ember the least.
 
 A strike is a force pulse with a short burst of skin on steel (the first ~10 ms of a real strike are
 broadband): a soft finger pad is a long pulse (1.2 ms) with almost no burst, a firm flick a short one
@@ -312,7 +324,7 @@ under the fingertip first, through its own decay, so it never clicks.
 | Ember     | ~4.9 s                | ~3.6 Hz   | A softer nitrided alloy: mellow, the fifth tucked in, a gentle pulse   |
 | Raw       | ~3.2 s                | ~6 Hz     | Plain cold-rolled steel (DC04): earthy, drier, a quicker pulse         |
 
-Higher fields ring shorter than low ones. Sustain, Size and Thickness scale it all.
+Higher fields ring shorter than low ones, and rougher (above). Sustain, Size and Thickness scale it all.
 
 ### The shell and the air
 
@@ -347,7 +359,13 @@ it with the fields.
 Each hit is a force pulse into the shell (on one side or both), a push on the air, and a burst of
 noise for skin on steel, each shaped for what it imitates: a palm thwap is long, deep and wide, a tak
 short and bright, the Gu nearly all air. The ding slap strikes the ding and lays a palm on it 30 ms
-later; the harmonic strikes it with the fundamental damped. **Percussion** sets the level of them all.
+later; the harmonic strikes it with the fundamental damped.
+
+The kit beside the pan has sounds of its own (no shell, no air): the **splash** is noise darkening as
+it fades (its highs go first, over ~1.3 s), its clangy low modes under it for a moment, each side its
+own noise for a wide wash; the **shakers** are Perry Cook's PhISEM, the stroke's energy swelling and
+fading, beads colliding at random, each collision a tick of noise through the beads' broad ring;
+the **castanets** a click into the shells' short ring. **Percussion** sets the level of them all.
 
 ### The signal path
 
@@ -378,7 +396,7 @@ MIDI comes in over USB and the TRS jack, on the Setup page's channel (Omni by de
 | -------------------------------- | -------------------------------------------------------------------------------- |
 | Note on                          | Strikes the note of that pitch at that velocity (Tuning and Tune applied)        |
 | Note off                         | Damps it when Release is Damp                                                    |
-| Channel 10 notes (any MIDI ch)   | The steel: 35/36 Gu, 37 rim, 38/40 thwap left, 41/43 thwap right, 39 ding slap, 42/44 tak, 46 tak right, 49/57 harmonic, 51/59 ghost, 54/69/70 tak left |
+| Channel 10 notes (any MIDI ch)   | The steel and the kit: 35/36 Gu, 37 rim, 38/40 thwap left, 41/43 thwap right, 39 ding slap, 42/44 tak, 46 tak right, 49/55/57 splash, 53 harmonic, 51/59 ghost, 54 tak left, 69 shaker (pushed), 70 shaker (pulled), 85 castanets |
 | CC 1 (mod wheel)                 | Sympathy                                                                         |
 | CC 64 (sustain)                  | Holds damps back until the pedal lifts                                           |
 | CC 72 / 73 / 74                  | Sustain / Strike / Harmonics                                                     |
@@ -400,8 +418,8 @@ right now (its note, or its hit), and the computer key that plays it.
   several fingers work on a touch screen. Shift-click (or right-click) a button to hold it down.
 - **Computer keyboard:** <kbd>Space</kbd>, <kbd>G</kbd> or <kbd>H</kbd> for the ding; out along the
   home row (<kbd>F</kbd> <kbd>J</kbd> <kbd>D</kbd> <kbd>K</kbd> <kbd>S</kbd> <kbd>L</kbd> <kbd>A</kbd>
-  <kbd>;</kbd>), then <kbd>R</kbd> <kbd>U</kbd> <kbd>E</kbd> <kbd>I</kbd> <kbd>W</kbd> <kbd>O</kbd>.
-  Black keys <kbd>1</kbd>–<kbd>0</kbd> and <kbd>-</kbd>. <kbd>B</kbd> groove, <kbd>Enter</kbd> mute,
+  <kbd>;</kbd>), then <kbd>R</kbd> <kbd>U</kbd>; tak <kbd>E</kbd> <kbd>I</kbd>, thwap <kbd>W</kbd>
+  <kbd>O</kbd>. Black keys <kbd>1</kbd>–<kbd>0</kbd> and <kbd>-</kbd>. <kbd>B</kbd> groove, <kbd>Enter</kbd> mute,
   <kbd>`</kbd> freeze, <kbd>Esc</kbd> HOME, <kbd>Z</kbd>/<kbd>X</kbd> octave, <kbd>↑</kbd>/<kbd>↓</kbd>
   metal, <kbd>←</kbd>/<kbd>→</kbd> scale, <kbd>[</kbd>/<kbd>]</kbd> key.
 - **MIDI:** "Connect MIDI" uses Web MIDI (Chrome or Edge).

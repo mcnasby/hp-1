@@ -10,7 +10,9 @@
  *           That pulse is the handpan's shimmer. The fundamental doesn't split. A strike is a half-sine
  *           force pulse with a short burst of skin on steel; it also rings the field's own higher,
  *           inharmonic modes for a moment: the metallic ping of a struck pan, gone in ~0.2 s. The metal
- *           sets the levels and the decays.
+ *           sets the levels and the decays. The small, high fields are rougher (as measured): a harder
+ *           contact, a brighter octave, the fifth weaker, shorter and off true, an untuned mode of the
+ *           field's own (~2.5 times it) and the neighbors ringing along.
  *   SHELL   the instrument around the fields: a 1.2 mm steel shell (its own inharmonic modes, a bank a
  *           side, which the thwaps ring and the notes brush) and the air inside, a Helmholtz cavity
  *           tuned by the bottom port (the "Gu"). Size and Thickness move both. Sympathy: a struck note
@@ -19,7 +21,8 @@
  *           tuned to the pan's notes, each ringing its whole harmonic series, diffused: the airy halo
  *           of harmonics a real pan leaves hanging after each note.
  *   HITS    percussion on the steel, not on a field: palm thwaps and fingertip taks on the shoulders,
- *           the Gu, ghost notes, a muted ding slap, the ding's harmonic, a knuckle on the rim.
+ *           the Gu, ghost notes, a muted ding slap, the ding's harmonic, a knuckle on the rim. And beside
+ *           the pan, a little kit: a splash cymbal, a cabasa a hand, castanets.
  *   FX      a chorus and a granular cloud on the dry sound, a ping-pong delay, a plate reverb
  *           (Dattorro's, from FoMni); then on everything a filter and a tape (wow, flutter, lo-fi).
  *   GROOVE  patterns over the pan's notes and its percussion, on a cycle of 12 pulses (3 a beat), at a
@@ -35,12 +38,13 @@
 
 #define KM_SR 44100.0f
 #define KM_NVOICE 16                   /* fields sounding at once */
-#define KM_NMODE 10                    /* resonators per field: fundamental, octave + twin, fifth + twin, 2 oct,
-                                        * and four of the strike's metallic ping */
-#define KM_NWHITE 16                   /* the white keys: one field each (the middle two both the ding) */
+#define KM_NMODE 11                    /* resonators per field: fundamental, octave + twin, fifth + twin, 2 oct,
+                                        * four of the strike's metallic ping, and a high field's stray mode */
+#define KM_NWHITE 16                   /* the white keys: a field each (the middle two both the ding), but... */
+#define KM_WSTEEL 2                    /* ...the two at each end: the steel (a thwap outside, a tak inside) */
 #define KM_NBLACK 11
-#define KM_NPAN 16                     /* a pan's notes: the ding and up to 15 above it */
-#define KM_NDUO 7                      /* the second pan on the black keys: its ding and six fields */
+#define KM_NPAN 12                     /* a pan's notes the keys reach: the ding and up to 11 above it */
+#define KM_NDUO 9                      /* the second pan on the black keys: its ding and eight fields */
 
 /* parameters: value ranges in km_param_info(). Some are the UI's (layout, MIDI): kept here so one
  * table names and bounds every value that is saved. */
@@ -88,6 +92,10 @@ enum {
     HIT_MUTE,                          /* a palm over the top: everything damped */
     HIT_TAK_R,
     HIT_THWAP_R,
+    HIT_SPLASH,                        /* the kit beside the pan: a splash cymbal */
+    HIT_SHAKE_L,                       /* a cabasa, pushed (left) */
+    HIT_SHAKE_R,                       /* ...and pulled back (right) */
+    HIT_CASTANET,                      /* castanets */
     HIT_N
 };
 
@@ -95,10 +103,10 @@ enum {
  * fifth's and the double octave's levels; the octave's and the fifth's T60 against the fundamental's;
  * the beat (Hz, the mean: each field its own, 0.7 to 1.3 times it) and how deep it pulses (the twin's
  * level against its partner's); the skin on the steel; the strike's metallic ping; the shell's
- * brightness and its T60 */
+ * brightness and its T60; how rough its high fields are (1: as measured) */
 typedef struct {
     const char *name;
-    float t60, pitch_k, oct, fifth, dbl, oct_t, fifth_t, beat, depth, touch, ping, shell_bright, shell_t60;
+    float t60, pitch_k, oct, fifth, dbl, oct_t, fifth_t, beat, depth, touch, ping, shell_bright, shell_t60, rough;
 } km_metal_t;
 const km_metal_t *km_metal(int i);
 
@@ -112,9 +120,10 @@ int km_ding_cents(int key, int octave);            /* the ding: between A2 and G
 int km_pan_notes(int scale, int key, int octave, int out[KM_NPAN]);
 /* the note white key w (0..15) plays: Pan (the ding on both middle keys, the fields zigzag outward as
  * they climb around a real pan, the first on the right), Pan rev (the same, the first on the left) or
- * Linear (low to high) */
+ * Linear (low to high). The KM_WSTEEL keys at each end play the steel, not a note: -1 */
 int km_white_index(int layout, int w);             /* into km_pan_notes */
 int km_white_cents(int layout, int scale, int key, int octave, int w);
+int km_white_hit(int w);                           /* what a steel key plays (HIT_*), -1 for a note's */
 /* where on the instrument a field sits: -1 (left) .. +1 (right), for its pan */
 float km_white_pos(int layout, int w);
 /* a pan's accidentals spelled as its scale spells them: bit p set, pitch class p is a sharp (C#), else
@@ -131,9 +140,10 @@ int km_just_cents(int cents, int tonic_cents);
 #define KM_NDUOCHOICE 24
 int km_duo_count(int scale, int key);
 void km_duo_choice(int scale, int key, int choice, int *duo_scale, int *duo_key);
-/* its notes: its ding (a register above the first pan's) and its first six fields */
+/* its notes: its ding (in the first pan's register: between A2 and G#3, then the octave) and its first
+ * eight fields (the scale going on up, past a pan of fewer) */
 int km_duo_notes(int scale, int key, int octave, int choice, int out[KM_NDUO]);
-/* the note (into km_duo_notes) the second pan's key i (0..6, left to right) plays: laid out as the
+/* the note (into km_duo_notes) the second pan's key i (0..8, left to right) plays: laid out as the
  * white keys are (Layout). Pan: its ding on the middle key, its fields alternating outward, right
  * first; Pan rev: left first; Linear: low to high */
 int km_duo_index(int layout, int i);

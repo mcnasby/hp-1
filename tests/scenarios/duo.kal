@@ -1,4 +1,5 @@
-# Black Duo: a second pan on the seven middle black keys, in a scale that goes with the first
+# Black Duo: a second pan on the nine black keys between castanets and the Gu, in a scale that goes with
+# the first, in its register
 # (params: 24 Scale 25 Key 26 Black 27 Duo 28 Duo level; duoI: the second pan's note I, 0 its ding)
 wait 1600
 tap SEL
@@ -15,47 +16,52 @@ spin K4 1
 expect par26 1
 wait 50
 shot duo_keys.png
-# D Kurd's best match: D Celtic, its ding an octave over the first's
+# D Kurd's best match: D Celtic, its ding the first's (D3)
 expect duocount >3
-expect duo0 6200
-expect duo1 6900
-expect duo2 7200
-# the end keys stay the steel
-key b0 down
-wait 20
-expect shellL >5
-key b0 up
-# the middle keys play the second pan, laid out as the white keys are: Pan, its ding in the middle
-# (b5), its fields alternating outward, right first: D Celtic D4 | A4 C5 D5 E5 F5 G5
-expect duokey5 6200
-expect duokey6 6900
-expect duokey4 7200
-expect duokey7 7400
-expect duokey3 7600
-expect duokey8 7700
-expect duokey2 7900
-expect duokey1 -1
-tapkey b5
+expect duo0 5000
+expect duo1 5700
+expect duo2 6000
+expect duo8 7200
+# the end keys: castanets (the left) and the Gu (the right)
+key b10 down
+wait 25
+expect cavity >5
+key b10 up
+expect duokey0 -1
+expect duokey10 -1
+# the keys between play the second pan, laid out as the white keys are: Pan, its ding in the middle
+# (b5), its fields alternating outward, right first: D Celtic D3 | A3 C4 D4 E4 F4 G4 A4 C5
+expect duokey5 5000
+expect duokey6 5700
+expect duokey4 6000
+expect duokey7 6200
+expect duokey3 6400
+expect duokey8 6500
+expect duokey2 6700
+expect duokey9 6900
+expect duokey1 7200
+tapkey b7
 wait 30
 expect note6200 >3
 tapkey b4
 wait 30
-expect note7200 >3
+expect note6000 >3
 wait 50
 shot duo_play.png
 # Pan rev: left first; Linear: low to high, the ding on the left
 expect view 7
 spin K1 1
 expect par23 1
-expect duokey5 6200
-expect duokey4 6900
-expect duokey6 7200
-expect duokey2 7700
+expect duokey5 5000
+expect duokey4 5700
+expect duokey6 6000
+expect duokey2 6500
+expect duokey9 7200
 spin K1 1
 expect par23 2
-expect duokey2 6200
-expect duokey5 7400
-expect duokey8 7900
+expect duokey1 5000
+expect duokey4 6200
+expect duokey9 7200
 spin K1 -2
 expect par23 0
 # Duo level 0: the second pan barely there
@@ -63,7 +69,7 @@ tap SEL
 expect view 8
 spin K2 -80
 expect par28 0
-tapkey b6
+tapkey b9
 wait 30
 expect note6900 <15
 spin K2 80
