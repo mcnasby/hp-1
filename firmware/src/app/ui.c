@@ -922,27 +922,22 @@ static void draw_pan(int32_t y0, int32_t y1)
         if (g > 1)
             cv_ring(cx, cy, 15 + g / 4, 16 + g / 4, 0, mix(mix(dark, light, 8), K_GLOW, g));
     }
-    /* every note the keys play: the ding; round it the pan's own fields, the low ones the biggest; and
-     * near the rim, smaller, the notes past them (an extended pan's), the zigzag going on */
-    if (own > all)
-        own = all;
+    /* every note the keys play: the ding, and round it in one ring, evenly spaced, the fields climbing
+     * in the zigzag, the low ones the biggest; the notes past the pan's own fields (an extended pan's)
+     * carry the ring on, their labels a little quieter */
     for (i = 0; i < all; i++) {
         int c = tune(n[i]);
-        spot_t s;
-        if (!i)
-            s = (spot_t){(int16_t)cx, (int16_t)cy, 13};
-        else if (i < own)
-            s = ring_spot(i - 1, own - 1, first, cx, cy, R * 53 / 100, 9 - (i - 1) / 4);
-        else
-            s = ring_spot(i - own, all - own, first, cx, cy, R * 83 / 100, 7);
+        spot_t s = i ? ring_spot(i - 1, all - 1, first, cx, cy, R * (all > 10 ? 58 : 54) / 100,
+                                 all > 10 ? 8 - (i - 1) / 5 : 9 - (i - 1) / 4)
+                     : (spot_t){(int16_t)cx, (int16_t)cy, 13};
         draw_field(s, c, (int)ripple_age(ui.ripple[i]), note_level(c), i == 0, dark, light, ink, i < own ? 1 : 2);
     }
     if (duo) {   /* the second pan, smaller, to the right: its ding and eight fields, evenly round it */
         const int32_t dx = 200, dy = cy - 6, dr = 34;
         draw_shell(dx, dy, dr, dark, light, (int[2]){0, 0});
         for (i = 0; i < KM_NDUO; i++) {
-            spot_t s = i ? ring_spot(i - 1, KM_NDUO - 1, first, dx, dy, dr * 66 / 100, 7 - (i - 1) / 4)
-                         : (spot_t){(int16_t)dx, (int16_t)dy, 9};
+            spot_t s = i ? ring_spot(i - 1, KM_NDUO - 1, first, dx, dy, dr * 68 / 100, 6)
+                         : (spot_t){(int16_t)dx, (int16_t)dy, 7};
             int c = duo_cents(i);
             draw_field(s, c, (int)ripple_age(ui.ripple[KM_NPAN + i]), note_level(c), i == 0, dark, light, ink, 0);
         }
@@ -1020,13 +1015,8 @@ static void draw_main(void)
         return;
     ui.sig[1] = h;
     cv_begin(240, MAIN_H, K_BG);
-    if (proj.par[P_BLACK] == BLK_DUO) {              /* the black keys over the pans (the keys' upper row) */
-        draw_black(1);
-        draw_pan(29, MAIN_H);
-    } else {
-        draw_pan(0, 112);
-        draw_black(114);
-    }
+    draw_black(1);                                   /* the black keys over the pans (the keys' upper row) */
+    draw_pan(29, MAIN_H);
     cv_blit(0, MAIN_Y);
 }
 

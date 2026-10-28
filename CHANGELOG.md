@@ -12,6 +12,9 @@ taken from its section below. Add the section in the same pull request as the `V
 - **The shakers are egg shakers.** They're high and airy, nearly all 6 to 16 kHz. The left key is the
   push stroke, which swells a little slower and lasts longer; the right is the pull, a quicker snap.
 - Both are shaped against recordings of real cymbals and egg shakers.
+- **A tidier pan on the screen.** Every note now sits in one evenly spaced ring round the ding,
+  instead of a lone extra note squeezed in near the rim. The second pan's fields have more room.
+- **The black-key strip is always above the pan**, as the black keys are above the white.
 
 ## 0.4.0
 
