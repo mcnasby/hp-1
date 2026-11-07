@@ -23,12 +23,18 @@ tapkey w8
 tapkey w9
 wait 600
 expect grains >0
-tap PLAY
+# PLAY held: frozen (a tap is the transport)
+press PLAY
+wait 600
+release PLAY
 expect frozen 3
+expect run 0
 wait 2000
 expect grains >0
 shot grains.png
-tap PLAY
+press PLAY
+wait 600
+release PLAY
 expect frozen 0
 spin K4 4
 expect par19 6

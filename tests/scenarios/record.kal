@@ -1,0 +1,92 @@
+# recording a pattern: REC arms; the first key starts the transport and records; REC again ends the take;
+# PLAY plays it back at its steps. Then the Steps page (a key writes at the cursor), SEQ + EDIT undoes.
+# (params: 36 Tempo 49 Quantize; events: stepS is the note at step S, in cents, or the hit)
+wav record.wav
+wait 300
+# the Tempo page (SEQ: Groove, Pattern, Steps, Tempo, Song): 120 BPM, a sixteenth 125 ms, the bar 2 s
+tap SEQ
+tap SEQ
+tap SEQ
+tap SEQ
+expect view 15
+spin K1 36
+expect par36 120
+shot tempo.png
+tap REC
+expect armed 1
+expect run 0
+leds
+# D3 starts it: step 1; A3 a quarter later (step 5); a ding slap (black 5) at the bar's half (step 9)
+tapkey w8
+expect run 1
+expect rec 1
+wait 410
+tapkey w9
+wait 410
+shot recording.png
+tapkey b4
+wait 500
+tap REC
+expect armed 0
+expect run 1
+expect patev0 3
+expect step0 5000
+expect step4 5700
+expect step8 4
+# the take, played back while the transport runs: the loop starts over at 2 s
+wait 450
+expect outlast 5000
+wait 500
+expect outlast 5700
+expect note5700 >5
+wait 500
+expect outlast 4
+tap PLAY
+expect run 0
+# from the start: each note at its step
+tap PLAY
+expect run 1
+wait 30
+expect outlast 5000
+wait 470
+expect outlast 5700
+tap PLAY
+# armed while playing: it waits for the pattern's start (WAIT), then records loop after loop
+tap PLAY
+tap REC
+expect wait 1
+shot wait.png
+wait 2000
+expect rec 1
+tapkey w10
+wait 300
+tap PLAY
+expect armed 0
+expect patev0 4
+# SEQ + EDIT: the last take undone
+press SEQ
+tap EDIT
+release SEQ
+expect view 15
+expect patev0 3
+# Steps (stopped): K1 the cursor; a key writes there and moves it on; K2 the note at the cursor
+tap SEQ
+tap SEQ
+tap SEQ
+tap SEQ
+expect view 14
+spin K1 1
+tapkey w5
+expect step1 6200
+spin K2 1
+expect step2 5000
+spin K2 -1
+expect step2 -1
+spin K1 -1
+expect steplen1 96
+spin K3 2
+expect steplen1 288
+wait 1500
+shot steps.png
+wavstop
+expect dropped 0

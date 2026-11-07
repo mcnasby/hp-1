@@ -1,0 +1,111 @@
+# The transport's buttons. PLAY: a tap plays and stops; held half a second, the grains freeze (and again,
+# live). REC: a tap arms and disarms; held, a palm mute; held while PLAY goes down, armed and started
+# after the count-in. The header shows where it is; the click counts the beats.
+# (params: 36 Tempo 50 Count-in 51 Click 16 Grains)
+wav transport.wav
+wait 300
+tap PLAY
+expect run 1
+expect frozen 0
+wait 1500
+shot playing.png
+tap PLAY
+expect run 0
+# PLAY held: frozen, the transport left as it was
+tap LFO
+spin K1 40
+tapkey w8
+wait 300
+press PLAY
+wait 600
+release PLAY
+expect frozen 3
+expect run 0
+leds
+press PLAY
+wait 600
+release PLAY
+expect frozen 0
+# REC: a tap arms, another disarms; held: the palm mute (D4 damped), not armed
+tap REC
+expect armed 1
+leds
+tap REC
+expect armed 0
+tapkey w5
+wait 100
+expect note6200 >5
+press REC
+wait 600
+release REC
+wait 100
+expect note6200 <2
+expect armed 0
+# Tempo page: a bar of count-in, the click on while recording (level 6)
+tap SEQ
+tap SEQ
+tap SEQ
+tap SEQ
+expect view 15
+spin K1 36
+spin K3 1
+spin K4 6
+expect par36 120
+expect par50 1
+expect par51 6
+expect click 0
+# REC held, PLAY: counting in (a bar at 120: 2 s), then recording
+press REC
+press PLAY
+release PLAY
+release REC
+expect armed 1
+expect count 4
+wait 1500
+shot countin.png
+expect count 1
+expect click 4
+wait 520
+expect rec 1
+tapkey w9
+wait 1400
+shot rec.png
+tap REC
+expect armed 0
+expect run 1
+expect patev0 1
+expect step0 5700
+# REC while playing: it waits for the pattern's start
+tap REC
+expect wait 1
+wait 1500
+shot wait.png
+tap PLAY
+expect run 0
+expect armed 0
+# Click On: it clicks whether recording or not; heard on its own over an empty pattern (4), after the
+# instrument; Click off, that pattern is silence
+spin K4 10
+expect par51 16
+press SEQ
+tapkey w3
+release SEQ
+expect seqpat 3
+wait 5000
+peakreset
+tap PLAY
+wait 1100
+expect click >9
+expect peak_db_min -30
+tap PLAY
+spin K4 -20
+expect par51 0
+wait 500
+peakreset
+tap PLAY
+wait 1100
+expect peak_db_max -80
+tap PLAY
+wavstop
+expect peak_db_max -0.3
+expect dropped 0

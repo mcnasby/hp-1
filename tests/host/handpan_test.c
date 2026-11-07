@@ -742,6 +742,52 @@ static void test_delayed(void)
     CHECK(peak < 1e-4f, "a canceled strike sounded (%.5f)", (double)peak);
 }
 
+/* the sequencer's notes ending (km_release): a finger on the field when it's due, never a strike to come
+ * taken back */
+static void test_release(void)
+{
+    float ring, early;
+    int i, on = 0;
+    fresh();
+    km_pluck(6000, 100, 0, 0);
+    render(0, 44100);
+    ring = rms(bufl, 30000, 4410);
+    early = rms(bufl, 3000, 1000);
+    fresh();
+    km_pluck(6000, 100, 0, 0);
+    km_release(6000, 100);                       /* 100 ms later */
+    render(0, 44100);
+    CHECK(rms(bufl, 3000, 1000) > early * 0.9f, "km_release: ringing until it's due");
+    CHECK(rms(bufl, 30000, 4410) < ring * 0.05f, "km_release: then damped (%.5f vs %.5f)", (double)rms(bufl, 30000, 4410), (double)ring);
+    fresh();
+    km_pluck(6000, 100, 0, 0);
+    render(0, 2205);
+    km_pluck(6000, 100, 0, 40);                  /* the same note again, 40 ms on, and the first one let go now */
+    km_release(6000, 0);
+    render(0, 4410);
+    for (i = 0; i < KM_NVOICE; i++)
+        on |= km_voice_cents[i] == 6000 && km_voice_level[i] > 0.02f;
+    CHECK(on, "km_release kept the strike to come");
+}
+
+/* the groove pulse by pulse (the app's transport): each pulse when it's due */
+static void test_groove_pulse(void)
+{
+    int i, ding = 0;
+    fresh();
+    give_pan(0, 2);
+    km_set(P_PATTERN, PAT_CASCADE);              /* pulse 7: the ding */
+    km_groove_pulse(7, 50);
+    render(0, 1764);                             /* 40 ms: not yet */
+    for (i = 0; i < KM_NVOICE; i++)
+        ding |= km_voice_cents[i] == 5000;
+    CHECK(!ding && !km_pat_on, "a pulse 50 ms ahead: not at 40 ms");
+    render(0, 882);
+    for (i = 0; i < KM_NVOICE; i++)
+        ding |= km_voice_cents[i] == 5000;
+    CHECK(ding && km_pat_pulse == 7 && !km_pat_on, "...at 50 ms, pulse 7 (the ding), the groove's own clock off");
+}
+
 /* Sympathy: D4 struck on a D Kurd wakes the D3 ding (its octave) and the A3 field (its compound fifth
  * meets A3's octave? no: D4's fifth partial is A5, A3's fifth is E5, A3's octave A4... D4 x 3 = A5 =
  * A4 x 2 = A3 x 4: A4 rings along). Off at 0. A free voice only. */
@@ -1353,6 +1399,8 @@ int main(int argc, char **argv)
     test_damp();
     test_voices();
     test_delayed();
+    test_release();
+    test_groove_pulse();
     test_sympathy();
     test_hits();
     test_delay();
