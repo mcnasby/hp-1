@@ -14,8 +14,8 @@
 /* The format counts the settings a project holds: a newer version reads an older project's values and
  * gives the settings it lacks their defaults (its spare bytes, zeros, are never taken for settings).
  * Add a setting at the end of P_*, bump the format, and add its count here. */
-#define PROJ_FORMAT 1u                    /* 1: the first */
-#define PROJ_NPAR_OF(f) P_NPARAMS
+#define PROJ_FORMAT 2u                    /* 2: Feel; 1: the first */
+#define PROJ_NPAR_OF(f) ((f) == 1u ? P_FEEL : P_NPARAMS)
 
 typedef struct {
     uint32_t magic, format;

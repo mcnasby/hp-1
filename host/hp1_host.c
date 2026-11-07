@@ -25,11 +25,14 @@
  *                                 dropped pat pulse ext shellL shellR cavity duocount parN
  *                                 whiteW (cents of white key W) duoI (cents of the second pan's note I)
  *                                 duokeyB (cents black key B plays as the second pan, -1 not)
- *                                 noteC (level x100 of the note at C cents) lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
+ *                                 noteC (level x100 of the note at C cents) levelC (the same, x1000)
+ *                                 lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
  *                                 dimkey (the key whose LED is dim, -1 none) litkeys (bits)
+ *                                 touchK (the pressure Feel gives held key K, 0..127: K as for key)
  *                                 peak_db_max peak_db_min)
  *   reboot                       re-run boot from the simulated flash (persistence test)
  *   oldproject                   put a FiMba-1 project in the simulated flash (it must not load)
+ *   v1project                    put a format 1 project (before Feel) in the flash, Feel's place not 0
  */
 #define OM_HOST 1
 #ifndef _POSIX_C_SOURCE
@@ -350,14 +353,14 @@ static int key_of(const char *s)
     return atoi(s);
 }
 
-static int note_lvl(int cents)
+static int note_lvl(int cents, float x)
 {
     int v;
     float l = 0.0f;
     for (v = 0; v < KM_NVOICE; v++)
         if (km_voice_cents[v] == cents && km_voice_level[v] > l)
             l = km_voice_level[v];
-    return (int)(l * 100.0f);
+    return (int)(l * x);
 }
 
 static int expect(const char *what, const char *val)
@@ -402,8 +405,12 @@ static int expect(const char *what, const char *val)
         got = is_duo_key(b) ? duo_cents(duo_index(b)) : -1;
     } else if (!strncmp(what, "duo", 3))          /* duoI: the cents of the second pan's note I (0: its ding) */
         got = duo_cents(atoi(what + 3));
+    else if (!strncmp(what, "touch", 5))          /* touchK: the pressure on held key K (Feel) */
+        got = tch.p[key_of(what + 5)];
     else if (!strncmp(what, "note", 4))           /* noteC: the level x 100 of the note at C cents */
-        got = note_lvl(atoi(what + 4));
+        got = note_lvl(atoi(what + 4), 100.0f);
+    else if (!strncmp(what, "level", 5))          /* levelC: the same, x 1000 */
+        got = note_lvl(atoi(what + 5), 1000.0f);
     else if (!strcmp(what, "dimkey")) {            /* the key whose LED is dim (-1: none) */
         int q;
         for (got = -1, q = 0; q < NKEYS; q++)
@@ -561,6 +568,11 @@ int main(int argc, char **argv)
             project_defaults();
             proj.magic = 0x41424C4Bu;
             proj.par[P_METAL] = 2;
+            plat_store_save(OBJ_PROJ, &proj, sizeof proj);
+        } else if (!strcmp(cmd, "v1project")) {  /* saved before Feel: it takes its default, whatever is there */
+            project_defaults();
+            proj.format = 1u;
+            proj.par[P_FEEL] = FEEL_CLASSIC;
             plat_store_save(OBJ_PROJ, &proj, sizeof proj);
         } else if (!strcmp(cmd, "reboot")) {
             memset(&proj, 0, sizeof proj);

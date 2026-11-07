@@ -14,15 +14,16 @@
  *   PLAY freeze the grains     REC palm mute     ARP tap: the groove on / off; held: the Groove page
  *   OCT- / OCT+    the octave
  *   HOME ENV FX LFO SEL SEQ GLO   the pages (pressed again: the button's next page): HOME Pan, Shell;
- *                  ENV Touch; FX Space, Color; LFO Grain, Spread; SEL Keys, Duo; SEQ Groove; GLO Setup.
- *                  EDIT steps through them all.
+ *                  ENV Touch, Feel; FX Space, Color; LFO Grain, Spread; SEL Keys, Duo; SEQ Groove; GLO
+ *                  Setup. EDIT steps through them all.
  *   SELECT metal   ALGORITHM scale (and its usual key)   PRESETS key   KNOB 1-4 the page's values
  *   SAVE           saves (it also saves by itself, a few seconds after a change, when quiet) */
 
-enum { V_PAN, V_SHELL, V_TOUCH, V_SPACE, V_COLOR, V_GRAIN, V_SPREAD, V_KEYS, V_DUO, V_GROOVE, V_SETUP, NVIEWS };
+enum { V_PAN, V_SHELL, V_TOUCH, V_SPACE, V_COLOR, V_GRAIN, V_SPREAD, V_KEYS, V_DUO, V_GROOVE, V_SETUP, V_FEEL, NVIEWS };
 static const char *const VIEW_NAME[NVIEWS] = {"Pan", "Shell", "Touch", "Space", "Color", "Grain", "Spread",
-                                              "Keys", "Duo", "Groove", "Setup"};
-static const uint8_t VIEW_BTN[NVIEWS] = {B_HOME, B_HOME, B_ENV, B_FX, B_FX, B_LFO, B_LFO, B_SEL, B_SEL, B_SEQ, B_GLO};
+                                              "Keys", "Duo", "Groove", "Setup", "Feel"};
+static const uint8_t VIEW_BTN[NVIEWS] = {B_HOME, B_HOME, B_ENV, B_FX, B_FX, B_LFO, B_LFO, B_SEL, B_SEL, B_SEQ, B_GLO,
+                                         B_ENV};
 #define K_NONE 255                     /* a knob with nothing on it */
 static const uint8_t VIEW_KNOB[NVIEWS][4] = {
     {P_METAL, P_STRIKE, P_SUSTAIN, P_HARMONICS},
@@ -36,6 +37,7 @@ static const uint8_t VIEW_KNOB[NVIEWS][4] = {
     {P_DUO, P_DUOLVL, P_PERC, P_OCTAVE},
     {P_PATTERN, P_PTEMPO, P_PERC, K_NONE},
     {P_TUNE, P_MIDICH, P_MIDIOUT, P_THEME},
+    {P_FEEL, K_NONE, K_NONE, K_NONE},
 };
 #define ARP_HOLD_MS 500u               /* ARP held this long: the Groove page (a tap: the groove on / off) */
 #define SAVE_HOLD_MS 1500u             /* SAVE held this long: reset to the defaults? (a tap: save) */
@@ -338,11 +340,112 @@ static int human_vel(int vel)
 }
 static int human_ms(void) { return proj.par[P_HUMAN] > 50 ? (int)(ui_rnd() % (uint32_t)(1 + (proj.par[P_HUMAN] - 50) / 12)) : 0; }
 
+/* -------------------------------------------------------------- feel --- */
+/* Feel: Expressive (the default). The FM-1's keys are contacts, on or off: they can't tell a light tap
+ * from a hard press. So the touch is played in time. Every strike is a lighter, quicker fingertip (a
+ * little brighter); a key let go within TAP_MS is a quick tap: the field rings shorter (Release Ring;
+ * Damp damps it as ever); a key held past PRESS_MS is a hand resting on the field, pressing in over
+ * PRESS_RISE_MS (an S), and lifting with the key: the note fuller and darker (km_press; MIDI out: poly
+ * pressure). Over MIDI, the controller's own pressure: poly (A0) on its note, channel (D0) on every
+ * note held. Classic: none of it, the sound as it always was. */
+#define TAP_MS 180u
+#define PRESS_MS 300u
+#define PRESS_RISE_MS 1200u
+#define PRESS_STEP 4                   /* sent as it moves this much (of 127): ~30 messages a press */
+#define LIGHT 100                      /* km_pluck_x: the strike Strike + 14 */
+static struct {
+    uint32_t t[NKEYS];                 /* when each key went down */
+    uint8_t p[NKEYS];                  /* the pressure last sent for it */
+    uint32_t mon[4], mprs[4];          /* MIDI notes held, and those with pressure on them */
+} tch;
+
+static int expressive(void) { return proj.par[P_FEEL] == FEEL_EXPRESSIVE; }
+
+static void press_out(int cents, int p)
+{
+    uint32_t st = 0xA0u | (uint32_t)midi_ch();
+    if (proj.par[P_MIDIOUT])
+        plat_midi_out(st >> 4 | st << 8 | (uint32_t)cents_note(cents) << 16 | (uint32_t)p << 24);
+}
+
+static void touch_pluck(int k, int cents, int vel, int pan, int ms)
+{
+    if (expressive())
+        km_pluck_x(cents, vel, pan, ms, LIGHT);
+    else
+        km_pluck(cents, vel, pan, ms);
+    tch.t[k] = plat_ms();
+    tch.p[k] = 0;
+}
+
+static void touch_send(int k, int p)
+{
+    tch.p[k] = (uint8_t)p;
+    km_press(ui.key_cents[k], p);
+    press_out(ui.key_cents[k], p);
+}
+
+static void touch_up(int k)
+{
+    if (tch.p[k])
+        touch_send(k, 0);                        /* the hand comes off */
+    if (expressive() && !proj.par[P_RELEASE] && plat_ms() - tch.t[k] < TAP_MS)
+        km_staccato(ui.key_cents[k]);
+}
+
+/* each frame: the keys held press in */
+static void touch_tick(void)
+{
+    const uint32_t now = plat_ms();
+    int k;
+    for (k = 0; k < NKEYS; k++) {
+        int p = 0, d;
+        if (!ui.key_on[k])
+            continue;
+        if (expressive() && now - tch.t[k] > PRESS_MS) {
+            float x = (float)(now - tch.t[k] - PRESS_MS) * (1.0f / (float)PRESS_RISE_MS);
+            x = x > 1.0f ? 1.0f : x;
+            p = (int)(127.0f * x * x * (3.0f - 2.0f * x) + 0.5f);
+        }
+        d = p - tch.p[k];
+        if (d && (d >= PRESS_STEP || d <= -PRESS_STEP || !p || p == 127))
+            touch_send(k, p);
+    }
+}
+
+/* MIDI in (on its channel): the notes held, and the pressure on them */
+static void midi_press(uint32_t n, uint32_t p)
+{
+    const uint32_t m = 1u << (n & 31u);
+    km_press(tune((int)n * 100), (int)p);
+    tch.mprs[n >> 5] = p ? tch.mprs[n >> 5] | m : tch.mprs[n >> 5] & ~m;
+}
+
+static void touch_midi(uint32_t type, uint32_t d1, uint32_t d2)
+{
+    const uint32_t m = 1u << (d1 & 31u);
+    uint32_t n;
+    if (type == 0x90u && d2) {
+        tch.mon[d1 >> 5] |= m;
+        tch.mprs[d1 >> 5] &= ~m;                 /* (a strike: the hand came off it) */
+    } else if (type == 0x80u || type == 0x90u) {
+        tch.mon[d1 >> 5] &= ~m;
+        if (tch.mprs[d1 >> 5] & m)
+            midi_press(d1, 0);
+    } else if (type == 0xA0u && expressive()) {  /* poly pressure: its note */
+        midi_press(d1, d2);
+    } else if (type == 0xD0u && expressive()) {  /* channel pressure: every note held */
+        for (n = 0; n < 128u; n++)
+            if (tch.mon[n >> 5] >> (n & 31u) & 1u)
+                midi_press(n, d1);
+    }
+}
+
 /* key k strikes a note: remembered so its release can damp it */
 static void key_strike(int k, int cents, int vel, int pan)
 {
     vel = human_vel(vel);
-    km_pluck(cents, vel, pan, human_ms());
+    touch_pluck(k, cents, vel, pan, human_ms());
     ui.key_cents[k] = (int16_t)cents;
     ui.key_on[k] = 1;
     note_out(1, cents_note(cents), (uint8_t)(vel < 1 ? 1 : vel > 127 ? 127 : vel));
@@ -352,6 +455,7 @@ static void key_release(int k)
 {
     if (!ui.key_on[k])
         return;
+    touch_up(k);
     if (proj.par[P_RELEASE])
         km_damp(ui.key_cents[k]);
     note_out(0, cents_note(ui.key_cents[k]), 0);
@@ -457,10 +561,8 @@ static void button(int b)
         return;
     }
     if (VIEW_BTN[ui.view] == b) {                   /* pressed again: its next page, or round to its first */
-        v = ui.view + 1;
-        if (v >= NVIEWS || VIEW_BTN[v] != b)
-            for (v = ui.view; v > 0 && VIEW_BTN[v - 1] == b; v--)
-                ;
+        for (v = (ui.view + 1) % NVIEWS; VIEW_BTN[v] != b; v = (v + 1) % NVIEWS)
+            ;
         set_view(v);
         return;
     }
@@ -567,6 +669,7 @@ static void midi_in(void)
         }
         if (proj.par[P_MIDICH] && (st & 0x0Fu) + 1u != (uint32_t)proj.par[P_MIDICH])
             continue;
+        touch_midi(type, d1, d2);                       /* (Feel) */
         if (type == 0x90u && d2) {
             int c = tune((int)d1 * 100);
             km_pluck(c, (int)d2, midi_pan(c), 0);
@@ -1136,6 +1239,7 @@ void ui_init(void)
 {
     char t[24];
     memset(&ui, 0, sizeof ui);
+    memset(&tch, 0, sizeof tch);
     ui.touched = -1;
     ui.rng = 0x2545F491u;
     lcd_fill(0, 0, 240, 240, K_BG);
@@ -1148,6 +1252,7 @@ void ui_init(void)
 void ui_frame(void)
 {
     input();
+    touch_tick();
     autosave();
     draw_header();
     draw_main();

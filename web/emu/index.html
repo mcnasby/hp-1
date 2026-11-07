@@ -159,7 +159,7 @@ footer { margin: 2rem 0 0; color: var(--muted); font-size: .88rem; }
       <li><b>SELECT</b> the metal: <b>Nitrided</b> (warm, the classic dark pan), <b>Stainless</b> (bright, the longest ring), <b>Ember</b> (mellow), <b>Raw</b> steel (earthy, drier).</li>
       <li><b>ALGORITHM</b> the scale, in the key it's usually built in. <b>PRESETS</b> moves the ding to any root.</li>
       <li><b>HOME</b> Pan: metal, strike, sustain, harmonics (how loud the octave and fifth above each note are). Press again for <b>Shell</b>: size (44 to 62 cm), thickness (1.0 to 1.4 mm), sympathy (how much the pan rings along), port (the air inside).</li>
-      <li><b>ENV</b> Touch: worn, humanize, tuning, release. <b>FX</b> Space, Color. <b>LFO</b> Grain, Spread. <b>SEL</b> Keys, Duo. <b>SEQ</b> Groove. <b>GLO</b> Setup. <b>EDIT</b> steps through them all.</li>
+      <li><b>ENV</b> Touch: worn, humanize, tuning, release. Press again for <b>Feel</b>: <b>Expressive</b> (a quick tap rings shorter and brighter, a key held down presses in and the note grows fuller and darker; MIDI aftertouch presses too) or <b>Classic</b>. <b>FX</b> Space, Color. <b>LFO</b> Grain, Spread. <b>SEL</b> Keys, Duo. <b>SEQ</b> Groove. <b>GLO</b> Setup. <b>EDIT</b> steps through them all.</li>
       <li>Hold <b>SAVE</b> for 1.5 s to go back to the defaults (SAVE again to confirm).</li>
     </ul>
   </div>
@@ -356,7 +356,7 @@ function hit(c, cls) {
 }
 // what each control does, on hover (the Buttons list below says the same)
 const TIP = { FX: "Space, then Color: reverb, delay; tape, lo-fi, chorus, filter", SEL: "Keys, then Duo: layout, scale, key, black keys; the second pan",
-  ENV: "Touch: worn, humanize, tuning, release", LFO: "Grain, then Spread: the grain cloud; spray, feedback, width", EDIT: "Every page in turn",
+  ENV: "Touch, then Feel: worn, humanize, tuning, release; Expressive or Classic", LFO: "Grain, then Spread: the grain cloud; spray, feedback, width", EDIT: "Every page in turn",
   GLO: "Setup page", HOME: "Pan, then Shell: metal, strike, sustain, harmonics; size, thickness, sympathy, port", SAVE: "Save (hold: reset to the defaults)",
   ARP: "Tap: a groove on / off. Hold: its settings", SEQ: "Groove page: groove, tempo, percussion", PLAY: "Freeze the grains", REC: "Palm mute: damp everything",
   "OCT-": "Octave down", "OCT+": "Octave up", SELECT: "Metal", ALGORITHM: "Scale (in its usual key)", PRESETS: "Key: the ding's note",

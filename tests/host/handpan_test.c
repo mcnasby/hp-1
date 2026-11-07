@@ -2,8 +2,9 @@
 /* The instrument on the host (no libm: the device has none, so neither does this test):
  *   the music: the scales as the makers build them, the three layouts, the dings' register, the
  *              second pans that go with each pan
- *   the fields: every metal in tune with its octave and fifth, the decays, damping, one voice per
- *              field, voice stealing, delayed strikes, sympathy
+ *   the fields: every metal in tune with its octave and fifth, the decays, damping, Feel (a hand
+ *              resting on a field, a quick tap, the lighter strike), one voice per field, voice
+ *              stealing, delayed strikes, sympathy
  *   the steel: every hit, its side, the Gu's pitch with the size, the mute, the slap, the harmonic
  *   the FX: delay, grains, color, no clicks, the grooves and MIDI clock, a 20-minute run
  * and one WAV per metal in build/host/materials/, for listening.
@@ -699,6 +700,106 @@ static void test_damp(void)
     CHECK(rms(bufl, 30000, 4410) < ring * 0.05f, "damp all");
 }
 
+/* Feel: Expressive. The note at `cents`, struck (light: km_pluck_x), held from 0.3 s with pressure p
+ * (in steps, as the UI sends it), or let go of quickly (staccato at 0.15 s) */
+static void feel_note(int cents, int light, int p, int stacc)
+{
+    int i;
+    fresh();
+    km_set(P_PORT, 0);
+    give_pan(0, 2);
+    render(0, 256);
+    if (light)
+        km_pluck_x(cents, 100, 0, 0, light);
+    else
+        km_pluck(cents, 100, 0, 0);
+    render(256, 6615);
+    if (stacc)
+        km_staccato(cents);
+    render(256 + 6615, 6615);
+    for (i = 1; i <= 16; i++) {                        /* (from 0.3 s: up to p over ~0.35 s) */
+        if (p)
+            km_press(cents, p * i / 16);
+        render(256 + 13230 + (uint32_t)(i - 1) * 960u, 960);
+    }
+    render(256 + 13230 + 16u * 960u, 88200 - 13230 - 16u * 960u);
+}
+
+static void test_feel(void)
+{
+    const uint32_t at = 256 + 66150 - 4096;           /* around 1.5 s */
+    float f = hz(5700), fund[2], oct[2], fifth[2], dfund[2], doct[2], edge[2], late[3], bright[2];
+    int p;
+    for (p = 0; p < 2; p++) {                          /* a field and the ding, held and not */
+        feel_note(5700, 0, p ? 127 : 0, 0);
+        fund[p] = mag(at, 8192, f);
+        oct[p] = mag(at, 8192, 2.0f * f);
+        fifth[p] = mag(at, 8192, 3.0f * f);
+        edge[p] = edge_max(256 + 13230, 16u * 960u);
+        late[p] = rms(bufl, 256 + 44100, 4410);
+        feel_note(5000, 0, p ? 127 : 0, 0);
+        dfund[p] = mag(at, 8192, hz(5000));
+        doct[p] = mag(at, 8192, 2.0f * hz(5000));
+    }
+    printf("  feel: held, the fundamental %+.1f dB, the octave %+.1f, the fifth %+.1f; the ding %+.1f, %+.1f\n",
+           (double)db(fund[1] / fund[0]), (double)db(oct[1] / oct[0]), (double)db(fifth[1] / fifth[0]),
+           (double)db(dfund[1] / dfund[0]), (double)db(doct[1] / doct[0]));
+    CHECK(db(oct[1] / oct[0]) < -6.0f && db(fifth[1] / fifth[0]) < db(oct[1] / oct[0]),
+          "held: the octave %.1f dB, the fifth %.1f dB (muted, the fifth more)", (double)db(oct[1] / oct[0]),
+          (double)db(fifth[1] / fifth[0]));
+    CHECK(db(fund[1] / fund[0]) > 1.0f && db(fund[1] / fund[0]) < 6.0f, "held: the fundamental %.1f dB (rings on, fuller)",
+          (double)db(fund[1] / fund[0]));
+    CHECK(db(dfund[1] / dfund[0]) > 1.0f && db(doct[1] / doct[0]) > -6.0f && db(doct[1] / doct[0]) < -1.0f,
+          "the ding held: the fundamental %.1f dB, the octave %.1f dB (rounder, not choked)", (double)db(dfund[1] / dfund[0]),
+          (double)db(doct[1] / doct[0]));
+    printf("  feel: edges, pressure in steps %.6f, none %.6f\n", (double)edge[1], (double)edge[0]);
+    CHECK(edge[1] < edge[0] * 2.0f + 3e-6f, "pressure clicks: edge %.6f, %.6f without", (double)edge[1], (double)edge[0]);
+    for (p = 0; p < 2; p++) {                          /* nor all of it at once, on a bright, high field */
+        fresh();
+        km_set(P_PORT, 0);
+        km_pluck(7400, 127, 0, 0);
+        render(0, 4410);
+        if (p)
+            km_press(7400, 127);
+        render(4410, 4410);
+        edge[p] = edge_max(4410, 4410);
+    }
+    printf("  feel: edges, all the pressure at once %.6f, none %.6f\n", (double)edge[1], (double)edge[0]);
+    CHECK(edge[1] < edge[0] * 2.0f + 3e-6f, "all the pressure at once clicks: edge %.6f, %.6f without", (double)edge[1],
+          (double)edge[0]);
+    feel_note(5700, 0, 0, 1);                          /* a quick tap */
+    late[2] = rms(bufl, 256 + 44100, 4410);
+    printf("  feel: a quick tap at 1 s %+.1f dB (a damp: below -26)\n", (double)db(late[2] / late[0]));
+    CHECK(db(late[2] / late[0]) < -6.0f && db(late[2] / late[0]) > -24.0f, "staccato: %.1f dB at 1 s (shorter, not damped)",
+          (double)db(late[2] / late[0]));
+    for (p = 0; p < 2; p++) {                          /* the lighter strike: brighter */
+        feel_note(5700, p ? 100 : 0, 0, 0);
+        bright[p] = band_e(256, 1024, 2000.0f, 9000.0f);
+    }
+    printf("  feel: the light strike %+.1f dB above 2 kHz\n", (double)db(bright[1] / bright[0]));
+    CHECK(db(bright[1] / bright[0]) > 1.0f && db(bright[1] / bright[0]) < 6.0f, "the light strike: %.1f dB above 2 kHz",
+          (double)db(bright[1] / bright[0]));
+    {   /* light 0 is km_pluck (but for the hair km_init leaves behind) */
+        float a[4096], d = 0.0f, m = 0.0f;
+        int i;
+        fresh();
+        km_pluck(5700, 90, 20, 0);
+        render(0, 4096);
+        for (i = 0; i < 4096; i++)
+            a[i] = bufl[i];
+        fresh();
+        km_pluck_x(5700, 90, 20, 0, 0);
+        render(0, 4096);
+        for (i = 0; i < 4096; i++) {
+            d = fm_maxf(d, fm_fabsf(a[i] - bufl[i]));
+            m = fm_maxf(m, fm_fabsf(a[i]));
+        }
+        printf("  feel: light 0 against km_pluck: %.3g of %.3g\n", (double)d, (double)m);
+        CHECK(d < m * 1e-4f, "km_pluck_x light 0 is km_pluck (%.3g of %.3g)", (double)d, (double)m);
+    }
+    CHECK(!nan_seen && peak < 0.95f, "feel: peak %.3f", (double)peak);
+}
+
 static void test_voices(void)
 {
     int i, n = 0;
@@ -1351,6 +1452,7 @@ int main(int argc, char **argv)
     test_air();
     test_decay();
     test_damp();
+    test_feel();
     test_voices();
     test_delayed();
     test_sympathy();

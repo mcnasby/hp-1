@@ -3,7 +3,7 @@
 #  10 Delay 11 Time 12 Tape 13 Lo-fi 14 Chorus 15 Filter 16 Grains 17 Grain ms 18 Density 19 Pitch
 #  20 Spray 21 Feedback 22 Width 23 Layout 24 Scale 25 Key 26 Black 27 Duo 28 Duo level 29 Percussion
 #  30 Octave 31 Worn 32 Humanize 33 Tuning 34 Release 35 Groove 36 Tempo 37 Tune 38 MIDI ch 39 MIDI out
-#  40 Theme)
+#  40 Theme 41 Feel)
 wav first.wav
 wait 300
 shot hello.png
@@ -61,6 +61,12 @@ expect view 0
 tap ENV
 expect view 2
 shot touch.png
+tap ENV
+expect view 11
+wait 50
+shot feel.png
+tap ENV
+expect view 2
 tap FX
 expect view 3
 shot space.png
@@ -91,6 +97,8 @@ shot groove.png
 tap GLO
 expect view 10
 shot setup.png
+tap EDIT
+expect view 11
 tap EDIT
 expect view 0
 tap EDIT

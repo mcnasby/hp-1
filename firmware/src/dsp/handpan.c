@@ -26,6 +26,7 @@ static const km_param_t PARAMS[P_NPARAMS] = {
     {"Worn", 0, 100, 0}, {"Humanize", 0, 100, 35}, {"Tuning", 0, TUNE_N - 1, TUNE_EQUAL}, {"Release", 0, 1, 0},
     {"Groove", 0, PAT_N - 1, PAT_HEART}, {"Tempo", 40, 200, 84},
     {"Tune", -50, 50, 0}, {"MIDI ch", 0, 16, 0}, {"MIDI out", 0, 1, 0}, {"Theme", 0, THEME_N - 1, THEME_DARK},
+    {"Feel", 0, FEEL_N - 1, FEEL_EXPRESSIVE},
 };
 const km_param_t *km_param_info(int i) { return (i >= 0 && i < P_NPARAMS) ? &PARAMS[i] : &PARAMS[0]; }
 
@@ -339,6 +340,7 @@ void km_param_text(int i, int v, char *b)
     static const char *const PAT[PAT_N] = {"Heartbeat", "Cascade", "3 over 2", "Backbeat"};
     static const char *const TUN[TUNE_N] = {"Equal", "Just"};
     static const char *const THM[THEME_N] = {"Dark", "Light"};
+    static const char *const FEEL[FEEL_N] = {"Expressive", "Classic"};
     switch (i) {
     case P_METAL: copy_s(b, km_metal(v)->name); return;
     case P_LAYOUT: copy_s(b, LAY[(unsigned)v < LAY_N ? v : 0]); return;
@@ -350,6 +352,7 @@ void km_param_text(int i, int v, char *b)
     case P_PATTERN: copy_s(b, PAT[(unsigned)v < PAT_N ? v : 0]); return;
     case P_TUNING: copy_s(b, TUN[v ? 1 : 0]); return;
     case P_THEME: copy_s(b, THM[v ? 1 : 0]); return;
+    case P_FEEL: copy_s(b, FEEL[v ? 1 : 0]); return;
     case P_MIDIOUT: copy_s(b, ONOFF[v ? 1 : 0]); return;
     case P_DUO:                                    /* (the UI shows the pan's name; this is its rank) */
         if (!v) {
@@ -398,7 +401,7 @@ void km_param_text(int i, int v, char *b)
 
 /* ------------------------------------------------------------ commands --- */
 enum { C_SET, C_PLUCK, C_HIT, C_DAMP, C_DAMPALL, C_SUSTAIN, C_BEND, C_FREEZE, C_PANIC, C_PATTERN, C_PANCLR, C_PANADD,
-       C_CLOCK };
+       C_CLOCK, C_PRESS, C_STACC };
 typedef struct {
     uint8_t c;
     int8_t pan;
@@ -431,6 +434,14 @@ void km_pluck(int cents, int vel, int pan, int delay_ms)
 {
     post(C_PLUCK, clampi(cents, 0, 12700), clampi(vel, 1, 127), clampi(pan, -100, 100), clampi(delay_ms, 0, 2000));
 }
+/* (the light rides above the velocity: 0, and it is km_pluck's command exactly) */
+void km_pluck_x(int cents, int vel, int pan, int delay_ms, int light)
+{
+    post(C_PLUCK, clampi(cents, 0, 12700), clampi(vel, 1, 127) | clampi(light, 0, 100) << 7, clampi(pan, -100, 100),
+         clampi(delay_ms, 0, 2000));
+}
+void km_press(int cents, int p) { post(C_PRESS, cents, clampi(p, 0, 127), 0, 0); }
+void km_staccato(int cents) { post(C_STACC, cents, 0, 0, 0); }
 void km_hit(int kind, int vel, int delay_ms) { post(C_HIT, clampi(kind, 0, HIT_N - 1), clampi(vel, 1, 127), 0, clampi(delay_ms, 0, 2000)); }
 void km_damp(int cents) { post(C_DAMP, cents, 0, 0, 0); }
 void km_damp_all(void) { post(C_DAMPALL, 0, 0, 0, 0); }
@@ -495,6 +506,8 @@ typedef struct {
     uint16_t live;                                    /* the modes still sounding (bit k): the rest are skipped */
     float hx;                                         /* how high and small the field is (high_x) */
     uint8_t ding;                                     /* it's a ding (the pan's, or the second pan's) */
+    float press;                                      /* a hand resting on it (km_press), 0..1 */
+    uint8_t stacc;                                    /* let go of quickly (km_staccato): it rings shorter */
 } voice_t;
 /* Two spare slots where a stolen voice fades out over a few milliseconds while its slot takes the new
  * field: cutting it dead was a pop (as loud as the field was) */
@@ -583,6 +596,25 @@ static int is_ding(int cents)
     return pan_n && (cents == pan_c[0] || (pan_n > KM_NPAN && cents == pan_c[KM_NPAN]));
 }
 
+/* Feel: Expressive. A hand resting on a ringing field (km_press) damps it the way a palm does, the
+ * higher the partial the more: the octave a little, the fifth more, the double octave, the stray mode and
+ * the ping the most; and the fundamental, held under it, rings on longer: the note fuller and darker
+ * the harder and longer it's held. The ding under a palm stays round (gentler on all of it). A quick tap
+ * let go (km_staccato) rings ~0.6 as long; the ding, ~0.75. Only the decays move: the waves
+ * carry on as they are (no click). */
+#define PRESS_UP 2.0f                                  /* at full pressure the fifth's T60 / 3 */
+#define PRESS_FUND 0.35f                               /* ...and the fundamental's x 1.35 */
+static void touch_t60(const voice_t *v, float *tk)
+{
+    static const float UP[KM_NMODE] = {0.0f, 0.55f, 0.55f, 1.0f, 1.0f, 1.4f, 1.8f, 1.8f, 1.8f, 1.8f, 1.8f};
+    const float p = v->press, up = PRESS_UP * p * (v->ding ? 0.4f : 1.0f),
+                st = v->stacc ? (v->ding ? 0.75f : 0.6f) : 1.0f;
+    int k;
+    tk[M_FUND] *= (1.0f + PRESS_FUND * p * (v->ding ? 1.4f : 1.0f)) * st;
+    for (k = 1; k < KM_NMODE; k++)
+        tk[k] *= st / (1.0f + up * UP[k]);
+}
+
 static float thick_f(void) { return (float)par[P_THICK] * (1.0f / 12.0f); }
 static float size_f(void) { return 53.0f / (float)par[P_SIZE]; }   /* > 1 smaller, < 1 bigger */
 
@@ -637,6 +669,8 @@ static void voice_coefs(voice_t *v)
     ratio[M_STRAY] = 2.5f + 0.08f * wear(v->cents, 10);
     amp[M_STRAY] = 0.16f * harm * hx;                   /* (~-16 dB at the top; none below C4) */
     tk[M_STRAY] = t1 * 0.3f;
+    if (v->press > 0.0f || v->stacc)
+        touch_t60(v, tk);
     for (k = 0; k < KM_NMODE; k++) {
         float f = f0 * ratio[k], t60 = tk[k], r, a = amp[k] * lvl;
         v->amp[k] = 0.0f;
@@ -758,6 +792,8 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->damp = again ? CONTACT_D : 1.0f;                 /* ringing: the fingertip lands on it first */
     v->contact = again ? (uint8_t)CONTACT_N : 0u;
     v->released = 0;
+    v->press = 0.0f;                                    /* (a new strike: the hand came off it) */
+    v->stacc = 0;
     voice_coefs(v);
     tp *= 1.0f - 0.4f * fm_minf(v->hx, 1.0f);           /* a small field is stiffer: a harder contact */
     n = tp * KM_SR;                                     /* pulse samples */
@@ -883,10 +919,13 @@ static void sympathy(int cents, int vel, float scale)
     }
 }
 
-static void pluck(int cents, int vel, int pan)
+/* light (Feel: Expressive): a lighter, quicker fingertip off the steel: a harder contact, a brighter
+ * strike, more of the ping and the skin */
+#define LIGHT_HARD 0.0014f                             /* light 100: Strike + 14 */
+static void pluck(int cents, int vel, int pan, int light)
 {
     voice_t *v = voice_for(cents);
-    float hard = strike_hard(vel);
+    float hard = fm_minf(strike_hard(vel) + (float)light * LIGHT_HARD, 1.0f);
     strike(v, cents, vel, pan, hard, EMPH_ALL);
     sympathy(cents, vel, 1.0f);
 }
@@ -1769,7 +1808,7 @@ static void pat_fire(void)
             hit(HIT_THWAP_L, vel - 22);
         else if (pan_n) {
             int i = r == RD || !tops ? 0 : 1 + (r - RF1) % tops;
-            pluck(pan_c[i], r == RD ? vel + 6 : vel, i ? ((i & 1) ? 40 : -40) : 0);
+            pluck(pan_c[i], r == RD ? vel + 6 : vel, i ? ((i & 1) ? 40 : -40) : 0, 0);
         }
     }
     km_pat_pulse = (uint8_t)pulse;
@@ -1954,9 +1993,9 @@ static void drain(void)
             break;
         case C_PLUCK:
             if (c.d > 0)
-                pend_add(PD_STRIKE, c.a, c.b, c.pan, 0, (uint32_t)c.d * 44u + (uint32_t)c.d / 10u);
+                pend_add(PD_STRIKE, c.a, c.b & 127, c.pan, c.b >> 7, (uint32_t)c.d * 44u + (uint32_t)c.d / 10u);
             else
-                pluck(c.a, c.b, c.pan);
+                pluck(c.a, c.b & 127, c.pan, c.b >> 7);
             break;
         case C_HIT:
             if (c.d > 0)
@@ -1975,6 +2014,19 @@ static void drain(void)
             for (i = 0; i < NPEND; i++)                  /* a strike let go before it got there */
                 if (pend[i].on && pend[i].type == PD_STRIKE && pend[i].cents == c.a && !sustain)
                     pend[i].on = 0;
+            break;
+        case C_PRESS: case C_STACC:                   /* (Feel: Expressive) */
+            for (i = 0; i < KM_NVOICE; i++)
+                if (vc[i].on && vc[i].cents == c.a) {
+                    const float p = (float)c.b * (1.0f / 127.0f);
+                    if (c.c == C_STACC ? vc[i].stacc : vc[i].press == p)
+                        continue;
+                    if (c.c == C_STACC)
+                        vc[i].stacc = 1;
+                    else
+                        vc[i].press = p;
+                    voice_coefs(&vc[i]);
+                }
             break;
         case C_DAMPALL:
             for (i = 0; i < KM_NVOICE; i++)
@@ -2471,7 +2523,7 @@ void km_render(int32_t *out, uint32_t n, uint32_t gain_q12)
             if (pend[i].on && (int32_t)(pend[i].due - now_s) <= 0) {
                 pend[i].on = 0;
                 switch (pend[i].type) {
-                case PD_STRIKE: pluck(pend[i].cents, pend[i].vel, pend[i].pan); break;
+                case PD_STRIKE: pluck(pend[i].cents, pend[i].vel, pend[i].pan, pend[i].emph); break;
                 case PD_HIT: hit(pend[i].cents, pend[i].vel); break;
                 case PD_SYMP: symp_ring(pend[i].cents, pend[i].vel, pend[i].emph); break;
                 default: {                              /* the slap's palm settles on the ding */
