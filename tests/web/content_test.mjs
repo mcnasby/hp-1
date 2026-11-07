@@ -6,7 +6,7 @@
 // file's bytes.
 //   node tests/web/content_test.mjs [build/host/hp1_host]     (after host/build_host.sh)
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { createInterface } from "node:readline";
 import * as C from "../../web/hp1content.js";
 
@@ -150,7 +150,9 @@ const real = C.midiFile(seq, 0, proj.tempo);
 ok(real[0] === 0x4D && real.length > 40, "MIDI file: the simulator's pattern 1");
 
 // the page carries this module (after web/emu/build.sh)
-if (existsSync("build/emu/index.html")) ok(readFileSync("build/emu/index.html", "utf8").includes("/* ---- web/hp1content.js (inlined) ---- */"), "the page carries the content manager");
+const built = "build/emu/index.html", fresh = existsSync(built) &&
+  statSync(built).mtimeMs >= Math.max(statSync("web/emu/index.html").mtimeMs, statSync("web/hp1content.js").mtimeMs);
+if (fresh) ok(readFileSync("build/emu/index.html", "utf8").includes("/* ---- web/hp1content.js (inlined) ---- */"), "the page carries the content manager");
 
 host.stdin.end();
 console.log(failed ? `CONTENT TESTS FAILED (${failed})` : "content tests passed");

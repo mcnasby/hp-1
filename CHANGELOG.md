@@ -4,6 +4,33 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.5.0
+
+- **Feel: an expressive touch, on by default.** The FM-1's keys only sense on and off, so HP-1 reads
+  your touch from time. A quick tap rings a touch shorter and brighter. A key held past a moment
+  presses in, and the note grows fuller and darker as its upper partials die away under the hand.
+  Over MIDI, poly and channel aftertouch press for real, and held keys send poly aftertouch out.
+  Press ENV twice for the Feel page. **Classic** keeps the sound exactly as it was before.
+- **An arpeggiator** (ARP, two pages): Up, Down, Up-down, Random or Repeat, at 1/4 to 4 bars or
+  triplets, over 1 to 4 octaves. It also has gate, swing, chance, a Hold latch, and note or played
+  order. It follows the tempo or MIDI clock.
+- **A sequencer.** PLAY plays and stops, and REC arms recording: the first key you play starts it.
+  Hold REC and press PLAY for a count-in. There are 16 patterns of up to 64 steps, recorded live
+  with overdub, quantize, a click and one undo. You can also edit them step by step (SEQ → Steps).
+  Hold SEQ and press a white key to pick a pattern; OCT− clears it and OCT+ copies it.
+- **Songs** (SEQ → Song): chain patterns into up to 64 sections, each repeated up to 16 times. Play
+  the song once or loop it.
+- **Four project slots** (GLO → Projects): name a project, then save it to slot A–D or load it back.
+- **Manage your projects from the web page.** Connect the FM-1 by USB in Chrome or Edge, or use the
+  page's own HP-1. Then you can see what's on it, load, save, rename and clear slots, download or
+  upload a project, back up and restore everything, keep projects in your browser, and export a
+  pattern or the song as a MIDI file.
+- **Moved:** freezing the grains is now *hold PLAY*, and the palm mute is *hold REC* (it's also on
+  a black key in Kit). The groove now starts with PLAY when Groove on is set (SEQ → Groove). The
+  tempo goes from 40 to 240 BPM.
+- The arpeggiator, sequencer and content manager are modeled on Melodee (Kerem Kilic / Ellic
+  Studio, GPL-3.0).
+
 ## 0.4.4
 
 - **Repeated hits on the ding have less attack.** When you strike the ding while it's still ringing,
