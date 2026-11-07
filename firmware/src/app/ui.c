@@ -76,9 +76,12 @@ static const uint8_t HIT_OF[NBLACK] = {HIT_CASTANET, HIT_SHAKE_L, HIT_GU, HIT_GH
                                        HIT_RIM, HIT_MUTE, HIT_SHAKE_R, HIT_SPLASH};
 static const char *const HIT_NAME[HIT_N] = {"Thwp", "Tak", "Gu", "Gho", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwp",
                                             "Spl", "Shk", "Shk", "Cas"};
-static int is_duo_key(int b) { return proj.par[P_BLACK] == BLK_DUO && b >= B_DUO0 && b < B_DUO0 + KM_NDUO; }
+/* the black keys a second pan (Duo: it shares the first's root, Duo key: in another key) */
+static int duo_on(void) { return proj.par[P_BLACK] == BLK_DUO || proj.par[P_BLACK] == BLK_DUOKEY; }
+static int duo_other(void) { return proj.par[P_BLACK] == BLK_DUOKEY; }
+static int is_duo_key(int b) { return duo_on() && b >= B_DUO0 && b < B_DUO0 + KM_NDUO; }
 /* what black key b plays when it isn't the second pan's */
-static int black_hit(int b) { return proj.par[P_BLACK] == BLK_DUO && b == NBLACK - 1 ? HIT_GU : HIT_OF[b]; }
+static int black_hit(int b) { return duo_on() && b == NBLACK - 1 ? HIT_GU : HIT_OF[b]; }
 
 /* the screen's colors (Setup: Theme). Dark (the default): a dim room, warm cream type, and gold for what
  * sounds. Light: sand and ink. The pan keeps its metal in both. */
@@ -239,7 +242,7 @@ static void value_text(int k, char *t)
     if (k >= KV_PAT)
         kv_text(k, t);
     else if (k == P_DUO)
-        km_duo_name(proj.par[P_SCALE], proj.par[P_KEY], proj.par[P_DUO], t);
+        km_duo_name(proj.par[P_SCALE], proj.par[P_KEY], duo_other(), proj.par[P_DUO], t);
     else
         km_param_text(k, proj.par[k], t);
 }
@@ -260,7 +263,7 @@ static void say_param(int k)
 
 static int knob_hi(int k)
 {
-    return k >= KV_PAT ? kv_hi(k) : k == P_DUO ? km_duo_count(proj.par[P_SCALE], proj.par[P_KEY]) - 1 : km_param_info(k)->hi;
+    return k >= KV_PAT ? kv_hi(k) : k == P_DUO ? km_duo_count(proj.par[P_SCALE], proj.par[P_KEY], duo_other()) - 1 : km_param_info(k)->hi;
 }
 
 static void knob_set(int k, int v)
@@ -281,7 +284,7 @@ static void knob_set(int k, int v)
         proj.par[P_KEY] = (int16_t)km_scale_root(v);
         km_set(P_KEY, proj.par[P_KEY]);
     }
-    if (k == P_SCALE || k == P_KEY) {                /* and its second pan matches it afresh */
+    if (k == P_SCALE || k == P_KEY || k == P_BLACK) {   /* and its second pan matches it afresh */
         proj.par[P_DUO] = 0;
         km_set(P_DUO, 0);
     }
@@ -307,7 +310,7 @@ static int knob_off(int k)
 {
     if (k >= KV_PAT)
         return kv_off(k);
-    return (k == P_DUO || k == P_DUOLVL) && proj.par[P_BLACK] != BLK_DUO;
+    return (k == P_DUO || k == P_DUOLVL) && !duo_on();
 }
 
 static void turn(int role, int k, int32_t e)
@@ -348,7 +351,7 @@ static int white_pan(int w) { return (int)(km_white_pos(proj.par[P_LAYOUT], w) *
 static int duo_cents(int i)
 {
     int n[KM_NDUO];
-    km_duo_notes(proj.par[P_SCALE], proj.par[P_KEY], octave_now(), proj.par[P_DUO], n);
+    km_duo_notes(proj.par[P_SCALE], proj.par[P_KEY], duo_other(), octave_now(), proj.par[P_DUO], n);
     return tune(n[i < 0 ? 0 : i >= KM_NDUO ? KM_NDUO - 1 : i]);
 }
 /* the second pan's key b (a black key) : its note's index, laid out as the white keys are */
@@ -367,7 +370,7 @@ static void pan_sync(void)
     pan_notes(n);
     for (i = 0; i < KM_NPAN; i++)
         n[i] = tune(n[i]);
-    if (proj.par[P_BLACK] == BLK_DUO)
+    if (duo_on())
         for (i = 0; i < KM_NDUO; i++)
             n[m++] = duo_cents(i);
     for (i = 0; i < m; i++)
@@ -696,7 +699,7 @@ static int note_choices(uint8_t *kind, int16_t *val)
         kind[m] = EV_PAN;
         val[m++] = (int16_t)tune(n[i]);
     }
-    if (proj.par[P_BLACK] == BLK_DUO)
+    if (duo_on())
         for (i = 0; i < KM_NDUO; i++) {
             kind[m] = EV_DUO;
             val[m++] = (int16_t)duo_cents(i);
@@ -1596,7 +1599,7 @@ static void draw_field(spot_t s, int cents, int age, float lv, int ding, uint16_
 static void draw_pan(int32_t y0, int32_t y1)
 {
     int n[KM_NPAN], own = pan_notes(n), all = notes_reached(), i;
-    const int duo = proj.par[P_BLACK] == BLK_DUO, first = proj.par[P_LAYOUT] == LAY_PANREV ? -1 : 1;
+    const int duo = duo_on(), first = proj.par[P_LAYOUT] == LAY_PANREV ? -1 : 1;
     const int32_t R = duo ? 52 : 55, cx = duo ? 90 : 120, cy = (y0 + y1) / 2;   /* (the second pan beside it: over) */
     const uint16_t dark = METAL->dark, light = METAL->light, ink = METAL->ink;
     int glow[2];
@@ -1629,7 +1632,7 @@ static void draw_pan(int32_t y0, int32_t y1)
         }
         {
             char t[16];
-            km_duo_name(proj.par[P_SCALE], proj.par[P_KEY], proj.par[P_DUO], t);
+            km_duo_name(proj.par[P_SCALE], proj.par[P_KEY], duo_other(), proj.par[P_DUO], t);
             text_c(dx, dy + dr + 4, &FONT_XS, t, K_DIM);
         }
     }
@@ -1643,7 +1646,7 @@ static void draw_black(int32_t y0)
     for (b = 0; b < NBLACK; b++) {
         char t[12];
         int32_t x = 4 + b * 20 + ((b >= 3) + (b >= 5) + (b >= 8) + (b >= 10)) * 3;   /* grouped as the keys are */
-        int on = (ui.keys >> BLACK_K[b] & 1u) != 0, hand = proj.par[P_BLACK] == BLK_DUO || b < 2 || b > NBLACK - 3;
+        int on = (ui.keys >> BLACK_K[b] & 1u) != 0, hand = duo_on() || b < 2 || b > NBLACK - 3;
         uint16_t bg = hand ? K_ACC_T : K_TEAL_T, fg = hand ? K_ACC : K_TEXT;
         const int k = black_hit(b);
         if (is_duo_key(b))

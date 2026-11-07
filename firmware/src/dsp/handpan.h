@@ -77,7 +77,7 @@ void km_param_text(int i, int v, char *buf);   /* the value as the screen shows 
 
 enum { MET_NITRIDED, MET_STAINLESS, MET_EMBER, MET_RAW, MET_N };
 enum { LAY_PAN, LAY_PANREV, LAY_LINEAR, LAY_N };   /* Pan: the first field on the right, as makers lay them out */
-enum { BLK_KIT, BLK_DUO, BLK_N };
+enum { BLK_KIT, BLK_DUO, BLK_DUOKEY, BLK_N };   /* Duo key: the second pan in another key than the first */
 enum { PAT_HEART, PAT_CASCADE, PAT_HEMIOLA, PAT_BACKBEAT, PAT_N };
 enum { TUNE_EQUAL, TUNE_JUST, TUNE_N };
 enum { THEME_DARK, THEME_LIGHT, THEME_N };
@@ -147,18 +147,19 @@ const char *km_note_name(int cents, uint16_t sharps);   /* "G#", "Bb", "E" */
 int km_just_cents(int cents, int tonic_cents);
 
 /* the second pan (Duo): the scales and keys whose notes sit within the first pan's, best first (the
- * same ding, then a fifth, a fourth, the relative...). Choice 0 is the best match. */
+ * same ding, then a fifth, a fourth, the relative...). Choice 0 is the best match. Other: only those
+ * in another key than the first pan's (Black: Duo key): a fifth, a fourth, the relative... */
 #define KM_NDUOCHOICE 24
-int km_duo_count(int scale, int key);
-void km_duo_choice(int scale, int key, int choice, int *duo_scale, int *duo_key);
+int km_duo_count(int scale, int key, int other);
+void km_duo_choice(int scale, int key, int other, int choice, int *duo_scale, int *duo_key);
 /* its notes: its ding (in the first pan's register: between A2 and G#3, then the octave) and its first
  * eight fields (the scale going on up, past a pan of fewer) */
-int km_duo_notes(int scale, int key, int octave, int choice, int out[KM_NDUO]);
+int km_duo_notes(int scale, int key, int other, int octave, int choice, int out[KM_NDUO]);
 /* the note (into km_duo_notes) the second pan's key i (0..8, left to right) plays: laid out as the
  * white keys are (Layout). Pan: its ding on the middle key, its fields alternating outward, right
  * first; Pan rev: left first; Linear: low to high */
 int km_duo_index(int layout, int i);
-const char *km_duo_name(int scale, int key, int choice, char *buf);   /* "A Kurd" (16 bytes) */
+const char *km_duo_name(int scale, int key, int other, int choice, char *buf);   /* "A Kurd" (16 bytes) */
 
 /* ---- commands (main loop -> render). The main loop is the only producer. */
 void km_init(void);

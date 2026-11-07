@@ -199,8 +199,9 @@ int km_just_cents(int cents, int tonic_cents)
 /* A second pan that plays along: a scale and key whose every note is already in the first pan (or, for
  * a pan of few notes, all but one, and that one not a semitone from its ding). Ranked by how its ding
  * sits against the first's: the same, a fifth, a fourth, the relative major or minor, then the rest;
- * then by how many notes they share. The same pan in the same key isn't offered. */
-static int duo_list(int s, int key, uint8_t *out_s, uint8_t *out_k)
+ * then by how many notes they share. The same pan in the same key isn't offered. Other (Black: Duo key):
+ * only pans in another key, so the two pans answer each other from different roots. */
+static int duo_list(int s, int key, int other, uint8_t *out_s, uint8_t *out_k)
 {
     static const uint8_t RANK[12] = {0, 9, 6, 4, 5, 2, 9, 1, 5, 3, 8, 9};   /* by the dings' interval */
     const uint16_t main_pcs = scale_pcs(s);
@@ -212,7 +213,7 @@ static int duo_list(int s, int key, uint8_t *out_s, uint8_t *out_k)
             const int iv = (ck - key + 12) % 12;
             const uint16_t p = scale_pcs(cs), rot = (uint16_t)(((p << iv) | (p >> (12 - iv))) & 0xFFFu);
             int out = 0, shared = 0, b;
-            if (cs == s && ck == key)
+            if ((cs == s || other) && ck == key)
                 continue;
             for (b = 0; b < 12; b++)
                 if (rot >> b & 1u) {
@@ -257,12 +258,12 @@ static int duo_list(int s, int key, uint8_t *out_s, uint8_t *out_k)
     return n;
 }
 
-int km_duo_count(int s, int key) { return duo_list(s, key, 0, 0); }
+int km_duo_count(int s, int key, int other) { return duo_list(s, key, other, 0, 0); }
 
-void km_duo_choice(int s, int key, int choice, int *ds, int *dk)
+void km_duo_choice(int s, int key, int other, int choice, int *ds, int *dk)
 {
     uint8_t ls[KM_NDUOCHOICE], lk[KM_NDUOCHOICE];
-    int n = duo_list(s, key, ls, lk);
+    int n = duo_list(s, key, other, ls, lk);
     choice = choice < 0 ? 0 : choice >= n ? n - 1 : choice;
     *ds = ls[choice];
     *dk = lk[choice];
@@ -270,10 +271,10 @@ void km_duo_choice(int s, int key, int choice, int *ds, int *dk)
 
 /* the second pan in the first's register: its ding where a pan in its key has it (an A pan's A2, beside
  * a D pan's D3), as a player's second pan would be */
-int km_duo_notes(int s, int key, int octave, int choice, int out[KM_NDUO])
+int km_duo_notes(int s, int key, int other, int octave, int choice, int out[KM_NDUO])
 {
     int ds, dk, n[KM_NPAN], i;
-    km_duo_choice(s, key, choice, &ds, &dk);
+    km_duo_choice(s, key, other, choice, &ds, &dk);
     km_pan_notes(ds, dk, octave, n);
     for (i = 0; i < KM_NDUO; i++)
         out[i] = n[i];
@@ -292,11 +293,11 @@ int km_duo_index(int layout, int i)
     return i == mid ? 0 : i < mid ? 2 * (mid - i) - 1 : 2 * (i - mid);
 }
 
-const char *km_duo_name(int s, int key, int choice, char *b)
+const char *km_duo_name(int s, int key, int other, int choice, char *b)
 {
     int ds, dk, i = 0;
     const char *p;
-    km_duo_choice(s, key, choice, &ds, &dk);
+    km_duo_choice(s, key, other, choice, &ds, &dk);
     for (p = KM_NOTE_NAME[dk]; *p; p++)
         b[i++] = *p;
     b[i++] = ' ';
@@ -338,7 +339,7 @@ void km_param_text(int i, int v, char *b)
 {
     static const char *const ONOFF[2] = {"Off", "On"};
     static const char *const LAY[LAY_N] = {"Pan", "Pan rev", "Linear"};
-    static const char *const BLK[BLK_N] = {"Kit", "Duo"};
+    static const char *const BLK[BLK_N] = {"Kit", "Duo", "Duo key"};
     static const char *const GP[GP_N] = {"-12", "-7", "0", "+7", "+12", "+19", "Shimmer", "Reverse"};
     static const char *const REL[2] = {"Ring", "Damp"};
     static const char *const PAT[PAT_N] = {"Heartbeat", "Cascade", "3 over 2", "Backbeat"};

@@ -174,7 +174,7 @@ static uint16_t pcs_of(const int *c, int n)
 
 static void test_music(void)
 {
-    int i, s, k, n[KM_NPAN], own;
+    int i, s, k, o, n[KM_NPAN], own;
     char b[24];
     /* D Kurd, as the makers build it (Kurd 10): D3 / A3 Bb3 C4 D4 E4 F4 G4 A4 C5, then the scale on up */
     static const int KURD[KM_NPAN] = {5000, 5700, 5800, 6000, 6200, 6400, 6500, 6700, 6900, 7200, 7400, 7600};
@@ -246,37 +246,43 @@ static void test_music(void)
         CHECK(n[KM_NPAN - 1] - n[0] <= 4200, "%s spans %d cents", km_scale_name(s), n[KM_NPAN - 1] - n[0]);
     }
     /* the second pan: for every pan in every key, at least one; all of its notes in the first pan's (or,
-     * for a pan of few notes, all but one); never the same pan; its ding in the first pan's register */
-    for (s = 0; s < KM_NSCALE; s++)
-        for (k = 0; k < 12; k++) {
-            int cnt = km_duo_count(s, k), c;
-            uint16_t main_pcs;
-            km_pan_notes(s, k, 0, n);
-            main_pcs = pcs_of(n, KM_NPAN);
-            CHECK(cnt >= 1 && cnt <= KM_NDUOCHOICE, "%s in %s: %d second pans", km_scale_name(s), KM_NOTE_NAME[k], cnt);
-            for (c = 0; c < cnt; c++) {
-                int ds, dk, d[KM_NPAN], outside, bit, dn[KM_NDUO];
-                km_duo_choice(s, k, c, &ds, &dk);
-                CHECK(!(ds == s && dk == k), "the same pan offered");
-                km_pan_notes(ds, dk, 0, d);
-                for (outside = 0, bit = 0; bit < 12; bit++)
-                    outside += (pcs_of(d, km_scale_tops(ds) + 1) >> bit & 1u) && !(main_pcs >> bit & 1u);
-                CHECK(outside <= 1, "%s %s with %s %s: %d notes outside", KM_NOTE_NAME[k], km_scale_name(s),
-                      KM_NOTE_NAME[dk], km_scale_name(ds), outside);
-                km_duo_notes(s, k, 0, c, dn);
-                CHECK(dn[0] == km_ding_cents(dk, 0), "duo ding %d", dn[0]);
-                for (i = 1; i < KM_NDUO; i++)
-                    CHECK(dn[i] > dn[i - 1], "duo climbs");
+     * for a pan of few notes, all but one); never the same pan; its ding in the first pan's register.
+     * Duo key (other): never the first pan's root */
+    for (o = 0; o < 2; o++)
+        for (s = 0; s < KM_NSCALE; s++)
+            for (k = 0; k < 12; k++) {
+                int cnt = km_duo_count(s, k, o), c;
+                uint16_t main_pcs;
+                km_pan_notes(s, k, 0, n);
+                main_pcs = pcs_of(n, KM_NPAN);
+                CHECK(cnt >= 1 && cnt <= KM_NDUOCHOICE, "%s in %s: %d second pans", km_scale_name(s), KM_NOTE_NAME[k], cnt);
+                for (c = 0; c < cnt; c++) {
+                    int ds, dk, d[KM_NPAN], outside, bit, dn[KM_NDUO];
+                    km_duo_choice(s, k, o, c, &ds, &dk);
+                    CHECK(!(ds == s && dk == k), "the same pan offered");
+                    CHECK(!o || dk != k, "Duo key: %s %s offered %s %s, the same root", KM_NOTE_NAME[k], km_scale_name(s),
+                          KM_NOTE_NAME[dk], km_scale_name(ds));
+                    km_pan_notes(ds, dk, 0, d);
+                    for (outside = 0, bit = 0; bit < 12; bit++)
+                        outside += (pcs_of(d, km_scale_tops(ds) + 1) >> bit & 1u) && !(main_pcs >> bit & 1u);
+                    CHECK(outside <= 1, "%s %s with %s %s: %d notes outside", KM_NOTE_NAME[k], km_scale_name(s),
+                          KM_NOTE_NAME[dk], km_scale_name(ds), outside);
+                    km_duo_notes(s, k, o, 0, c, dn);
+                    CHECK(dn[0] == km_ding_cents(dk, 0), "duo ding %d", dn[0]);
+                    for (i = 1; i < KM_NDUO; i++)
+                        CHECK(dn[i] > dn[i - 1], "duo climbs");
+                }
             }
-        }
-    CHECK(!strcmp(km_duo_name(0, 2, 0, b), "D Celtic"), "D Kurd's best second pan: %s", b);
+    CHECK(!strcmp(km_duo_name(0, 2, 0, 0, b), "D Celtic"), "D Kurd's best second pan: %s", b);
+    km_duo_name(0, 2, 1, 0, b);
+    printf("  duo key: D Kurd's best second pan in another key: %s\n", b);
     {   /* D Kurd's: D Celtic, D3 / A3 C4 D4 E4 F4 G4 A4 C5, beside it */
         static const int CELTIC[KM_NDUO] = {5000, 5700, 6000, 6200, 6400, 6500, 6700, 6900, 7200};
         int dn[KM_NDUO];
-        km_duo_notes(0, 2, 0, 0, dn);
+        km_duo_notes(0, 2, 0, 0, 0, dn);
         for (i = 0; i < KM_NDUO; i++)
             CHECK(dn[i] == CELTIC[i], "D Celtic note %d: %d, wanted %d", i, dn[i], CELTIC[i]);
-        km_duo_notes(0, 2, 1, 0, dn);
+        km_duo_notes(0, 2, 0, 1, 0, dn);
         CHECK(dn[0] == 6200, "the second pan follows Octave (%d)", dn[0]);
     }
     /* its keys laid out as the white keys: Pan the ding in the middle (key 4 of 0..8), the fields
@@ -295,7 +301,7 @@ static void test_music(void)
             CHECK(seen == (1 << KM_NDUO) - 1, "duo layout %d plays every note once (%x)", lay, seen);
         }
     }
-    km_duo_choice(3, 6, 0, &s, &k);
+    km_duo_choice(3, 6, 0, 0, &s, &k);
     CHECK(k == 6, "F# Pygmy's best second pan shares its ding (%s %s)", KM_NOTE_NAME[k], km_scale_name(s));
     for (i = 0; i < P_NPARAMS; i++) {
         const km_param_t *p = km_param_info(i);
