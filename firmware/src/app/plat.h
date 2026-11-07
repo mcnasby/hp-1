@@ -56,6 +56,7 @@ int plat_store_stage_write(uint32_t off, const void *src, uint32_t n);
 int plat_store_stage_read(uint32_t off, void *dst, uint32_t n);
 int plat_store_stage_commit(void);
 void plat_store_stage_abort(void);
+int plat_store_clear(uint32_t obj);    /* both copies erased: it holds nothing (0) */
 uint32_t plat_crc32(uint32_t crc, const void *p, uint32_t n);   /* zlib's, continued from crc (0 to start) */
 
 /* audio load in % of the render budget, and xruns since boot (device: from the ISR) */

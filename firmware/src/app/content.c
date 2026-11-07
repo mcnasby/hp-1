@@ -144,6 +144,7 @@ void ct_write_abort(void)
 int ct_write_commit(void)
 {
     const int id = ct.staged - 1;
+    int rc;
     if (!ct.staged)
         return -1;
     ct.staged = 0;
@@ -151,8 +152,8 @@ int ct_write_commit(void)
         plat_store_stage_abort();
         return -3;                                       /* not one of its kind: the old one stays */
     }
-    if (plat_store_stage_commit())
-        return -4;
+    if ((rc = plat_store_stage_commit()) != 0)
+        return rc == -11 ? -3 : -4;                      /* (-11: not the CRC it was begun with) */
     if (id == CT_PROJECT) {                              /* taken up at once */
         project_load();
         project_apply();
@@ -253,4 +254,14 @@ int ct_slot_rename(int slot, const char *name)
         return -3;
     ct_refresh();
     return 0;
+}
+
+int ct_slot_clear(int slot)
+{
+    int rc;
+    if (slot < 0 || slot >= PLAT_NSLOT)
+        return -1;
+    rc = plat_store_clear(OBJ_SLOT0 + (uint32_t)slot);
+    ct_refresh();
+    return rc;
 }

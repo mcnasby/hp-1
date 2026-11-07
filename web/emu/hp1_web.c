@@ -115,6 +115,17 @@ __attribute__((used, visibility("default"))) int web_ct_slot_rename(int slot)   
     return ct_slot_rename(slot, (const char *)ct_buf);
 }
 
+/* the content manager's SysEx (firmware/src/app/editor.c), the same protocol the FM-1 speaks over USB: the page
+ * puts a whole frame (F0..F7) in web_sysex_in, web_sysex runs it as the device's main loop would and gives the
+ * reply's length (0: none), its bytes in web_sysex_out */
+static uint8_t sx_in[2048];
+__attribute__((used, visibility("default"))) uint8_t *web_sysex_in(void) { return sx_in; }
+__attribute__((used, visibility("default"))) uint8_t *web_sysex_out(void) { return ed_rx; }
+__attribute__((used, visibility("default"))) uint32_t web_sysex(uint32_t n)
+{
+    return host_sysex(sx_in, n > sizeof sx_in ? (uint32_t)sizeof sx_in : n);
+}
+
 /* how the pan spells its accidentals (km_sharps: bit p, pitch class p a sharp), for the page's labels */
 __attribute__((used, visibility("default"))) uint32_t web_sharps(void) { return km_sharps(proj.par[P_SCALE], proj.par[P_KEY]); }
 

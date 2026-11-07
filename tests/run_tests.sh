@@ -3,7 +3,7 @@
 # HP-1 host tests: the maths, the platform pieces kept from Felucca / X0X / FoMni, the instrument
 # (built without libm, as on the device), and the whole firmware app in the simulator
 # (tests/scenarios/*.kal: the pan, the steel, the duo, MIDI, FX, persistence, the arp, the sequencer, songs,
-# project slots), with screenshots and audio in
+# project slots, the content manager's SysEx), with screenshots and audio in
 # build/scenarios/ and one WAV per metal in build/host/materials/.
 #   tests/run_tests.sh
 set -u
@@ -36,6 +36,10 @@ run golden sh -c "$CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Wdouble-prom
 # the clock, the arpeggiator, the sequencer, recording and songs (firmware/src/app/seq.c), on their own
 run seq sh -c "$CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Werror -DOM_HOST -Ifirmware/src -Ifirmware/src/dsp \
     -o $OUT/seq_test tests/host/seq_test.c firmware/src/dsp/handpan.c && $OUT/seq_test"
+# the content manager's SysEx protocol (firmware/src/app/editor.c) on the simulator: frames in, replies out
+run editor sh -c "mkdir -p build/gen && { [ -f build/gen/felucca_font.h ] || python3 tools/gen_font.py build/gen/felucca_font.h >/dev/null; } && \
+    $CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter -DOM_HOST \
+    -Ifirmware/src -Ifirmware/src/dsp -Ibuild/gen -o $OUT/editor_test tests/host/editor_test.c firmware/src/dsp/handpan.c -lm && $OUT/editor_test"
 run storage sh -c "$CC -O2 -o $OUT/storage_test tests/storage_test.c && $OUT/storage_test"
 # the update path, against the firmware package (Felucca's tests; needs ./build.sh)
 if [ -f build/hp1.fwsc ]; then
@@ -57,12 +61,20 @@ else
     echo "  skip update-path tests (no build/hp1.fwsc: run ./build.sh)"
 fi
 run host-build sh host/build_host.sh
+# the page's content manager (web/hp1content.js) against the simulator's protocol, as over a USB cable
+if command -v node >/dev/null 2>&1; then
+    run content node tests/web/content_test.mjs build/host/hp1_host
+else
+    echo "  skip content (needs node)"
+fi
 if command -v emcc >/dev/null 2>&1; then
     run emu sh -c "sh web/emu/build.sh >/dev/null 2>&1 && node tests/host/emu_test.mjs build/emu/hp1.wasm"
     CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     [ -x "$CHROME" ] || CHROME="$(command -v google-chrome || command -v chromium || true)"
     # the installer as the page ships it, against a simulated FM-1
     run updater node tests/web/updater_test.mjs
+    # the content manager against the WebAssembly build (the page's emulator), and the page's scripts parse
+    run content-emu node tests/web/content_emu_test.mjs build/emu/hp1.wasm
     if [ -n "$CHROME" ]; then
         run standalone node tests/host/standalone_test.mjs "$CHROME"
         if [ -f build/hp1.fwsc ]; then       # the installer's buttons, end to end (needs a firmware build)

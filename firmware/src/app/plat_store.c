@@ -27,4 +27,5 @@ int plat_store_stage_write(uint32_t off, const void *src, uint32_t n) { return s
 int plat_store_stage_read(uint32_t off, void *dst, uint32_t n) { return st_stage_read(off, dst, n); }
 int plat_store_stage_commit(void) { return plat_store_done(st_stage_commit()); }
 void plat_store_stage_abort(void) { st_stage_abort(); }
+int plat_store_clear(uint32_t obj) { return flash_ok ? plat_store_done(st_clear(obj)) : -9; }
 uint32_t plat_crc32(uint32_t crc, const void *p, uint32_t n) { return st_crc_add(crc, p, n); }

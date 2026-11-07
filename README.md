@@ -389,9 +389,11 @@ patterns and the song, and a name. The screen lists the slots and their names.
 
 The working project and its sequence, the four slots, and the panel's calibration each keep two
 copies in the FM-1's flash, and a save writes the older one, its header last: a save cut short by a
-power cut leaves the last good one in charge. A content manager (such as a web page) can list, read,
-write and rename them through the same code (`firmware/src/app/content.h`): a write is checked whole
-before it replaces anything.
+power cut leaves the last good one in charge.
+
+The web page manages them from a computer too ([below](#managing-projects-from-the-browser)): load,
+save, rename, clear, download and upload the slots, and back everything up in one file. It goes through
+the same code (`firmware/src/app/content.h`), and a write is checked whole before it replaces anything.
 
 ## The scales
 
@@ -608,6 +610,31 @@ right now (its note, or its hit), and the computer key that plays it.
 - **MIDI:** "Connect MIDI" uses Web MIDI (Chrome or Edge).
 - **Saving:** SAVE keeps your settings in that browser.
 
+### Managing projects from the browser
+
+The page's **Projects on your FM-1** section (like Melodee's editor for its projects) shows and moves
+what an FM-1 running HP-1 keeps, over the USB cable (Chrome or Edge: Web MIDI with SysEx). Choose
+**FM-1 (USB)** or **This page's HP-1 (emulator)** and press **Connect**; the emulator needs no hardware,
+and moving projects between it and an FM-1 goes through a file or the browser's list.
+
+- **The working project:** its name, its sound (metal, scale and key, Feel, tempo), each pattern that
+  holds notes (its steps, division and events) and the song's sections. **Download it** as a `.hp1`
+  file, keep it in the browser, or export a pattern or the song as a **MIDI file** (the pan's notes on
+  channel 1, the second pan's on 2, the hits on channel 10 as General MIDI drums, the steps unswung).
+- **The four slots, A to D:** their names and sizes. **Load** one into the FM-1, **save** the working
+  project into one, **rename**, **clear** (asked first, by name), **download** a `.hp1`, **upload** a
+  `.hp1` into it, or keep it in the browser.
+- **Back up everything** into one file (the working project, its sequence and the slots), and
+  **restore** from one: the whole file is checked first, then replaces everything (the working
+  project last).
+- **Kept in this browser:** projects saved in the page (`localStorage`), to send to any slot later.
+
+Changes wait while the transport runs or recording is armed (press PLAY to stop it): a flash write
+silences the audio for a moment. The messages are in [docs/EDITOR_PROTOCOL.md](docs/EDITOR_PROTOCOL.md):
+`F0 7D 48 50 cmd args F7`, INFO, LIST, GET, a staged PUT, SLOT (save, load, rename, clear) and SAVE.
+
+### Installing from the browser
+
 The same page installs HP-1 on an FM-1 (Chrome or Edge, Web MIDI with SysEx), with Felucca's update
 protocol: connect the FM-1 by USB and press **Install HP-1 X.Y.Z**. It can also put M-VAVE's stock
 firmware back.
@@ -636,6 +663,11 @@ python3 tools/fm1_install.py build/hp1.fwsc
   undo), swing and divisions in playback, pattern changes, songs, the count-in, the click and the
   groove's pulses. **The storage test** checks objects of several sectors, a torn save across them,
   saves from pieces, and the staged writes the web uses.
+- **The content manager:** `tests/host/editor_test.c` sends the SysEx protocol's frames to the whole
+  app in the simulator (reads back to the byte and their CRCs, staged writes with good and bad data,
+  the slots' actions, refusals while playing); `tests/web/content_test.mjs` runs the page's client
+  against it through a pipe (`hp1_host --pipe`), as over a cable: backup, restore, slots, MIDI files;
+  `tests/web/content_emu_test.mjs` does the same against the WebAssembly build.
 - **The host simulator** (`build/host/hp1_host SCRIPT OUTDIR`) runs the whole firmware from a
   script (`tests/scenarios/*.kal`). The screenshots in this README are its output.
 - **GitHub Actions** tests everything, builds the firmware and the web app, and publishes the site.
@@ -665,7 +697,7 @@ the second pan, the grooves, the screen, the pages and the tests.
 | [Felucca](https://github.com/hugelton/Felucca), Leo Kuroshita (@kurogedelic), Hügelton Instruments | The platform: hardware layer, USB, storage, update loader, OTA, MIDI, LCD, drawing, build and install tools | GPL-3.0-only |
 | [X0X](https://github.com/charlesvestal/fm1-x0x), Charles Vestal                                    | The platform adapted for another instrument, the host simulator                             | GPL-3.0-only |
 | [FoMni](https://github.com/charlesvestal/fm1-fomni), Charles Vestal                                | Boot, safe mode, panel map, project storage, the UI's frame, the maths library, the plate reverb, the browser emulator | GPL-3.0-only |
-| [Melodee](https://github.com/keremimo/melodee), Kerem Kilic (Ellic Studio)                         | The arpeggiator, the recording and transport gestures, the song's sections and the click's voice (adapted for one instrument) | GPL-3.0-only |
+| [Melodee](https://github.com/keremimo/melodee), Kerem Kilic (Ellic Studio)                         | The arpeggiator, the recording and transport gestures, the song's sections and the click's voice (adapted for one instrument); the content manager's SysEx encodings, staged transfer and backup file, after its editor's | GPL-3.0-only |
 | Jon Dattorro, "Effect Design, Part 1" (JAES, 1997)                                                 | The plate reverb's design                                                                   | —            |
 | Barlow (The Barlow Project Authors), Terminus (Dimitar Toshkov Zhekov)                             | The screen's fonts                                                                          | SIL OFL 1.1  |
 | JieLi AC79 SDK                                                                                     | Three small files placed in the package at build time (not in this repository)              | Apache-2.0   |

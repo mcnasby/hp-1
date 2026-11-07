@@ -325,3 +325,19 @@ static int st_stage_commit(void)
 }
 
 static void st_stage_abort(void) { st_stage.on = 0; }
+
+/* the object emptied: both copies erased, the one not in charge first (a cut between leaves it as it was) */
+static int st_clear(uint32_t obj)
+{
+    st_hdr_t h;
+    uint32_t other;
+    int rc;
+    if (obj >= OBJ_NOBJ || (st_stage.on && st_stage.obj == obj))
+        return -10;
+    other = st_current(obj, &h) == 0 ? 1u : 0u;
+    st_forget(obj, 0u);
+    st_forget(obj, 1u);
+    if ((rc = st_erase_copy(obj, other)) != 0)
+        return rc;
+    return st_erase_copy(obj, 1u - other);
+}

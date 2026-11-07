@@ -43,12 +43,14 @@ int ct_read(int id, uint32_t off, void *dst, uint32_t n);   /* bytes read (0 pas
 
 int ct_write_begin(int id, uint32_t size, uint32_t crc);    /* 0: ready (the spare copy erased) */
 int ct_write_data(uint32_t off, const void *src, uint32_t n);   /* 0: written and read back */
-int ct_write_commit(void);               /* 0: published (and taken up); < 0 refused, the old one kept */
+int ct_write_commit(void);               /* 0: published (and taken up); -3 not whole, not its CRC or not one of
+                                          * its kind, -4 flash (< 0: refused, the old one kept) */
 void ct_write_abort(void);
 
 int ct_slot_save(int slot);              /* the working project and sequence into slot 0..3: 0 = saved */
 int ct_slot_load(int slot);              /* slot 0..3 into the working project (Setup's values kept): 0 */
 int ct_slot_rename(int slot, const char *name);   /* A-Z 0-9 - and spaces, up to 15: 0 */
+int ct_slot_clear(int slot);             /* slot 0..3 erased (empty): 0 */
 int ct_slot_used(int slot);
 const char *ct_slot_name(int slot);      /* "" when unnamed or empty */
 void ct_refresh(void);                   /* re-read the slots' names (boot) */

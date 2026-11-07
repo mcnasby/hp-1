@@ -107,6 +107,27 @@ kbd { font: 600 .85em ui-monospace, Menlo, monospace; background: var(--card); b
 .install summary { cursor: pointer; color: var(--muted); }
 .install pre { max-height: 12rem; overflow: auto; font: .8rem ui-monospace, Menlo, monospace; color: var(--muted); background: var(--ground);
                padding: .5rem; border-radius: 8px; white-space: pre-wrap; }
+/* the content manager */
+.content .targets { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; align-items: center; margin: .7rem 0; }
+.content .targets label { display: inline-flex; gap: .35rem; align-items: center; cursor: pointer; }
+.content h3 { display: block; margin: 1.1rem 0 .4rem; }
+.content .card { border: 1px solid var(--rule); border-radius: 12px; padding: .7rem .9rem; background: var(--ground); }
+.content .card p { margin: .2rem 0; }
+.content .muted { color: var(--muted); }
+.content .slots, .content .lib { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem;
+                                 grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); }
+.content .slots li, .content .lib li { border: 1px solid var(--rule); border-radius: 12px; padding: .6rem .8rem; background: var(--ground); min-width: 0; }
+.content .slot-name { font: 600 1.05rem "Barlow Semi Condensed", "Barlow", sans-serif; overflow-wrap: anywhere; }
+.content .slot-name .letter { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; margin-right: .45rem; border-radius: 50%;
+                              background: var(--accent); color: var(--accent-ink); font-size: .85rem; }
+.content .slot-name.empty .letter { background: var(--rule); color: var(--muted); }
+.content .acts { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 0; }
+.content .acts button, .content .acts label.btn { font: 600 .9rem "Barlow Semi Condensed", "Barlow", sans-serif; padding: .3em .8em; }
+.content label.btn { display: inline-block; border: 1px solid var(--rule); border-radius: 999px; cursor: pointer; color: var(--ink); }
+.content label.btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.content label.btn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.content select { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: .2em .4em; max-width: 100%; }
+.content ul.pats { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--muted); }
 footer { margin: 2rem 0 0; color: var(--muted); font-size: .88rem; }
 </style>
 <main>
@@ -116,7 +137,7 @@ footer { margin: 2rem 0 0; color: var(--muted); font-size: .88rem; }
     <h1>HP-1</h1>
     <p>A handpan for the M-VAVE FM-1, running in your browser from the firmware's own C code</p>
   </div>
-  <nav><a href="#install">Install</a><a href="https://github.com/mcnasby/hp-1">Source and manual</a></nav>
+  <nav><a href="#content">Projects</a><a href="#install">Install</a><a href="https://github.com/mcnasby/hp-1">Source and manual</a></nav>
 </header>
 
 <ol class="quick" aria-label="Quick start">
@@ -202,6 +223,46 @@ footer { margin: 2rem 0 0; color: var(--muted); font-size: .88rem; }
   </div>
 </section>
 
+<section class="install content" id="content" aria-labelledby="content-h">
+  <h2 id="content-h">Projects on your FM-1</h2>
+  <p>See what's on an FM-1 running HP-1, and move projects between it, this page's HP-1 and your computer: load, save,
+    rename and clear the four project slots, download and upload projects (<code>.hp1</code> files), back up
+    everything in one file, and export a pattern or the song as a MIDI file. Connect over USB in Chrome or Edge, or try
+    it all on the HP-1 above, no hardware needed.</p>
+  <div class="targets" role="radiogroup" aria-label="Which HP-1">
+    <label><input type="radio" name="ctTarget" value="usb" checked> FM-1 (USB)</label>
+    <label><input type="radio" name="ctTarget" value="emu"> This page's HP-1 (emulator)</label>
+    <button id="ctConnect" type="button">Connect</button>
+  </div>
+  <p class="status" id="ctStatus" role="status" aria-live="polite"></p>
+  <progress id="ctBar" max="1" value="0" hidden aria-label="Transfer progress"></progress>
+  <div id="ctBody" hidden>
+    <h3>The working project</h3>
+    <div class="card" id="ctWorking"></div>
+    <div class="acts">
+      <button id="ctDlWorking" type="button" class="quiet">Download it (.hp1)</button>
+      <button id="ctKeepWorking" type="button" class="quiet">Keep it in this browser</button>
+      <label for="ctPat" class="muted">MIDI file of</label>
+      <select id="ctPat"></select>
+      <button id="ctMidi" type="button" class="quiet">Export as MIDI</button>
+      <button id="ctRefresh" type="button" class="quiet">Refresh</button>
+    </div>
+    <h3>Project slots</h3>
+    <ul class="slots" id="ctSlots"></ul>
+    <h3>Everything at once</h3>
+    <div class="acts">
+      <button id="ctBackup" type="button">Back up everything</button>
+      <label class="btn">Restore from a backup&hellip;<input type="file" id="ctRestore" accept=".json,application/json"></label>
+    </div>
+    <p class="muted">A backup is one file with the working project, its sequence and the four slots. Restoring checks the
+      whole file first, then replaces everything on the FM-1 (the working project last).</p>
+  </div>
+  <h3>Kept in this browser</h3>
+  <p class="muted" id="ctLibNote">Projects you keep here stay in this browser, ready to send to any slot later.</p>
+  <ul class="lib" id="ctLib"></ul>
+  <div class="acts"><label class="btn">Add a .hp1 file&hellip;<input type="file" id="ctLibAdd" accept=".hp1"></label></div>
+</section>
+
 <section class="install" id="install" aria-labelledby="install-h">
   <h2 id="install-h">Install on your FM-1</h2>
   <p class="warn"><b>Beta.</b> Custom firmware is installed at your own risk. Before you start, download M-VAVE's
@@ -243,7 +304,8 @@ footer { margin: 2rem 0 0; color: var(--muted); font-size: .88rem; }
 <footer>
   HP-1 is built on <a href="https://github.com/jadamsowers/fm1-fimba">FiMba-1</a> (jadamsowers), itself from
   <a href="https://github.com/charlesvestal/fm1-fomni">FoMni</a> and <a href="https://github.com/charlesvestal/fm1-x0x">X0X</a> by Charles Vestal and
-  <a href="https://github.com/hugelton/Felucca">Felucca</a> by Leo Kuroshita. GPL-3.0. Not affiliated with M-VAVE or any handpan maker.
+  <a href="https://github.com/hugelton/Felucca">Felucca</a> by Leo Kuroshita; the projects manager after
+  <a href="https://github.com/keremimo/melodee">Melodee</a>'s editor by Kerem Kilic. GPL-3.0. Not affiliated with M-VAVE or any handpan maker.
 </footer>
 </main>
 
@@ -572,6 +634,7 @@ async function switchOn() {
       node.port.onmessage = (e) => {
         const m = e.data;
         if (m.type === "ready") res();
+        else if (m.type === "sysex") emuSysexReply(m);
         else if (m.type === "frame") {
           if (m.fb) drawScreen(m.fb);
           drawLights(m.buttons, m.keys, m.dim);
@@ -594,6 +657,24 @@ async function switchOn() {
   }
 }
 document.getElementById("go").addEventListener("click", switchOn);
+
+// the content manager (below) talks to this HP-1 in the same SysEx it speaks over USB (editor.c in the wasm)
+const emuWaiting = new Map();
+let emuSeq = 0;
+function emuSysexReply(m) {
+  const w = emuWaiting.get(m.id);
+  if (w) { emuWaiting.delete(m.id); clearTimeout(w.timer); w.resolve(m.data); }
+}
+window.hp1Emu = {
+  on: () => !!node,
+  switchOn: async () => { if (!node) await switchOn(); return !!node; },
+  exchange: (frame, timeout) => new Promise((resolve) => {
+    if (!node) { resolve(null); return; }
+    const id = ++emuSeq;
+    emuWaiting.set(id, { resolve, timer: setTimeout(() => { emuWaiting.delete(id); resolve(null); }, timeout) });
+    send({ type: "sysex", id, data: frame });
+  }),
+};
 
 // ---------------------------------------------------------------- Web MIDI in
 const midiStat = document.getElementById("midistat");
@@ -760,4 +841,279 @@ async function run(pkg, label, isStock) {
 $("instLatest").addEventListener("click", () => latest && run(latest, `HP-1 ${latest.version}`, false));
 $("instFileGo").addEventListener("click", () => chosen && run(chosen, chosen.product, false));
 $("stockGo").addEventListener("click", () => stock && run(stock, "the stock firmware", true));
+</script>
+
+
+<script type="module">
+/* the content manager: HP-1's SysEx protocol (web/hp1content.js, inlined at build time) to an FM-1 over Web MIDI,
+   or to the HP-1 on this page (window.hp1Emu: the same protocol, answered by the firmware's code in the wasm) */
+/*HP1CONTENT*/
+const $ = (id) => document.getElementById(id);
+const SLOTS = "ABCD";
+let dev = null, devName = "", busy = false, working = null, slotList = [];
+const target = () => document.querySelector('input[name="ctTarget"]:checked').value;
+const status = (t) => { $("ctStatus").textContent = t; };
+const store = (() => { try { localStorage.setItem("hp1-probe", "1"); localStorage.removeItem("hp1-probe"); return localStorage; } catch (_) { return null; } })();
+const slotLabel = (s) => `slot ${SLOTS[s]}${slotList[s] && slotList[s].used && slotList[s].name ? ` "${slotList[s].name}"` : ""}`;
+const kb = (n) => n >= 1024 ? `${(n / 1024).toFixed(1)} KB` : `${n} bytes`;
+
+function download(bytes, name, type = "application/octet-stream") {
+  const url = URL.createObjectURL(new Blob([bytes], { type }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+const fileName = (s) => (s || "project").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, "") || "project";
+
+function setBusy(on) {
+  busy = on;
+  document.querySelectorAll("#content button, #content input, #content select").forEach((b) => {
+    if (b.name !== "ctTarget") b.disabled = on || (b.dataset.needsDevice === "1" && !dev) || b.dataset.off === "1";
+  });
+}
+// one action at a time; its errors said plainly
+async function act(what, fn) {
+  if (busy) return;
+  setBusy(true);
+  try { await fn(); }
+  catch (e) {
+    status(e instanceof ContentError ? e.message : `${what} didn't work: ${(e && e.message) || e}. Try again.`);
+    if (e instanceof ContentError && /didn't answer|disconnected/.test(e.message)) disconnect(false);
+  }
+  finally { $("ctBar").hidden = true; setBusy(false); }
+}
+const progress = (k, n) => { $("ctBar").hidden = false; $("ctBar").value = n ? k / n : 0; };
+
+function disconnect(clear = true) {
+  if (dev) dev.close();
+  dev = null; working = null;
+  $("ctBody").hidden = true;
+  $("ctConnect").textContent = "Connect";
+  if (clear) status("");
+  renderLibrary();
+}
+
+async function connect() {
+  disconnect();
+  if (target() === "emu") {
+    status("Starting this page's HP-1...");
+    if (!(await window.hp1Emu.switchOn())) { status("This page's HP-1 didn't start. Press Switch on above, then Connect."); return; }
+    dev = new ContentClient((f, t) => window.hp1Emu.exchange(f, t));
+    devName = "this page's HP-1";
+  } else {
+    if (!navigator.requestMIDIAccess) { status("Connecting over USB needs Web MIDI: open this page in Chrome or Edge. The emulator works in any browser."); return; }
+    let access;
+    try { access = await navigator.requestMIDIAccess({ sysex: true }); }
+    catch (_) { status("MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (the address bar) and press Connect again."); return; }
+    status("Looking for the FM-1...");
+    const found = await findDevice(access);
+    if (!found) {
+      status("No FM-1 running HP-1 answered. Check the USB cable (a data cable), close other apps that use MIDI, and connect again. " +
+             "An FM-1 with older HP-1 firmware needs an update first (Install, below).");
+      return;
+    }
+    dev = found.client;
+    devName = "the FM-1";
+  }
+  $("ctConnect").textContent = "Disconnect";
+  await refresh();
+}
+
+async function refresh() {
+  const info = await dev.info();
+  if (!info.playing) await dev.save();               // (the working copies as they are now)
+  const list = await dev.list();
+  slotList = list.filter((o) => o.kind === "slot").map((o) => ({ ...o, slot: o.id - OBJ.SLOT_A }));
+  const pb = list[0].used ? await dev.read(list[0]) : null, sb = list[1].used ? await dev.read(list[1]) : null;
+  working = { info, projectBytes: pb, sequenceBytes: sb, project: parseProject(pb), sequence: parseSequence(sb) };
+  renderWorking();
+  renderSlots();
+  renderLibrary();
+  $("ctBody").hidden = false;
+  status(`Connected to ${devName}: HP-1 ${info.version}.` + (info.playing ? " It's playing: this shows what was last saved, and changes wait until it's stopped (PLAY)." : ""));
+}
+
+function renderWorking() {
+  const w = working, el = $("ctWorking"), p = w.project, s = w.sequence;
+  el.textContent = "";
+  const line = (text, cls) => { const e = document.createElement("p"); e.textContent = text; if (cls) e.className = cls; el.appendChild(e); return e; };
+  const name = s && s.name ? s.name : "Unnamed";
+  const t = line(name, "slot-name");
+  t.prepend(Object.assign(document.createElement("span"), { className: "muted", textContent: "Name: " }));
+  line(p ? `${p.metal}, ${p.scale} in ${p.key}, Feel ${p.feel}, ${p.tempo} BPM, black keys: ${p.black}` : "No saved sound yet.");
+  const sel = $("ctPat");
+  sel.textContent = "";
+  if (s) {
+    const d = describeSequence(s);
+    line(d.pats.length ? `${d.pats.length} pattern${d.pats.length > 1 ? "s" : ""} with notes:` : "No patterns recorded yet.", "muted");
+    if (d.pats.length) {
+      const ul = document.createElement("ul");
+      ul.className = "pats";
+      for (const q of d.pats) {
+        const li = document.createElement("li");
+        li.textContent = `Pattern ${q.n}: ${q.len} steps of ${q.division}${q.swing ? `, swing ${q.swing}` : ""}, ${q.events} event${q.events > 1 ? "s" : ""}`;
+        ul.appendChild(li);
+        sel.appendChild(new Option(`Pattern ${q.n}`, String(q.n - 1)));
+      }
+      el.appendChild(ul);
+    }
+    line(d.song.length ? `Song (${s.songMode}): ${d.song.join(" → ")}` : "No song yet.", "muted");
+    if (d.song.length) sel.appendChild(new Option("The song", "-1"));
+  }
+  $("ctMidi").dataset.off = $("ctPat").dataset.off = sel.options.length ? "0" : "1";   /* (nothing to export yet) */
+  $("ctMidi").disabled = $("ctPat").disabled = !sel.options.length;
+  for (const e of [$("ctMidi"), $("ctPat"), document.querySelector('label[for="ctPat"]')]) e.hidden = !sel.options.length;
+}
+
+function slotItem(o) {
+  const li = document.createElement("li"), s = o.slot, L = SLOTS[s];
+  const h = document.createElement("div");
+  h.className = "slot-name" + (o.used ? "" : " empty");
+  h.append(Object.assign(document.createElement("span"), { className: "letter", textContent: L }), o.used ? (o.name || "Unnamed") : "Empty");
+  li.appendChild(h);
+  if (o.used) li.appendChild(Object.assign(document.createElement("p"), { className: "muted", textContent: kb(o.size) }));
+  const acts = document.createElement("div");
+  acts.className = "acts";
+  const btn = (text, title, fn, quiet = true) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: text, title, className: quiet ? "quiet" : "" });
+    b.setAttribute("aria-label", `${text}: slot ${L}`);
+    b.addEventListener("click", () => act(text, fn));
+    acts.appendChild(b);
+  };
+  if (o.used) btn(`Load to ${target() === "emu" ? "this HP-1" : "the FM-1"}`, "Make it the working project", async () => {
+    if (!confirm(`Load ${slotLabel(s)} into the working project? The working project is replaced (keep a slot or a download of it first if you want it).`)) return;
+    await dev.slot(SLOT_OP.LOAD, s); await refresh(); status(`Loaded ${slotLabel(s)}.`);
+  }, false);
+  btn("Save the working project here", "The working project into this slot", async () => {
+    if (o.used && !confirm(`Replace ${slotLabel(s)} with the working project?`)) return;
+    await dev.slot(SLOT_OP.SAVE, s); await refresh(); status(`Saved the working project to slot ${L}.`);
+  });
+  if (o.used) {
+    btn("Rename", "A-Z, 0-9, - and spaces, up to 15", async () => {
+      const n = prompt(`A new name for slot ${L} (A-Z, 0-9, - and spaces, up to 15):`, o.name || "");
+      if (n === null) return;
+      if (!cleanName(n)) { status("That name has nothing the screen can show. Use A-Z, 0-9, - and spaces."); return; }
+      await dev.slot(SLOT_OP.RENAME, s, n); await refresh(); status(`Slot ${L} is now "${cleanName(n)}".`);
+    });
+    btn("Download", "As a .hp1 file", async () => {
+      const b = await dev.readId(o.id);
+      download(b, `hp1-${fileName(o.name || "slot-" + L)}.hp1`);
+      status(`Downloaded ${slotLabel(s)}.`);
+    });
+    btn("Keep in this browser", "In the list below, to send to any slot later", async () => {
+      libraryAdd(store, o.name || `Slot ${L}`, await dev.readId(o.id)); renderLibrary(); status(`Kept ${slotLabel(s)} in this browser.`);
+    });
+    btn("Clear", "Erase this slot", async () => {
+      if (!confirm(`Clear ${slotLabel(s)}? Its project is erased from ${devName}.`)) return;
+      await dev.slot(SLOT_OP.CLEAR, s); await refresh(); status(`Cleared slot ${L}.`);
+    });
+  }
+  const up = Object.assign(document.createElement("label"), { className: "btn", textContent: "Upload a .hp1…" });
+  const inp = Object.assign(document.createElement("input"), { type: "file", accept: ".hp1" });
+  inp.setAttribute("aria-label", `Upload a .hp1 file into slot ${L}`);
+  inp.addEventListener("change", () => {
+    const f = inp.files && inp.files[0];
+    inp.value = "";
+    if (f) act("Upload", async () => sendToSlot(new Uint8Array(await f.arrayBuffer()), s, f.name));
+  });
+  up.appendChild(inp);
+  acts.appendChild(up);
+  li.appendChild(acts);
+  return li;
+}
+function renderSlots() {
+  const ul = $("ctSlots");
+  ul.textContent = "";
+  for (const o of slotList) ul.appendChild(slotItem(o));
+}
+
+async function sendToSlot(bytes, s, what) {
+  const p = parseSlot(bytes);
+  if (!p) { status(`${what} isn't an HP-1 project (.hp1). Choose a file downloaded from a slot.`); return; }
+  if (slotList[s].used && !confirm(`Replace ${slotLabel(s)} with "${p.name || what}"?`)) return;
+  await dev.put(OBJ.SLOT_A + s, bytes, progress);
+  await refresh();
+  status(`Sent "${p.name || what}" to slot ${SLOTS[s]}.`);
+}
+
+function renderLibrary() {
+  const ul = $("ctLib");
+  ul.textContent = "";
+  if (!store) { $("ctLibNote").textContent = "This browser keeps no files for this page (private browsing?): download projects instead."; return; }
+  const lib = libraryLoad(store);
+  $("ctLibNote").textContent = lib.length ? "Projects kept here stay in this browser, ready to send to any slot." :
+    "Nothing kept here yet. Keep a slot or the working project in this browser, or add a .hp1 file.";
+  for (const it of lib) {
+    const li = document.createElement("li");
+    li.appendChild(Object.assign(document.createElement("div"), { className: "slot-name", textContent: it.name }));
+    li.appendChild(Object.assign(document.createElement("p"), { className: "muted", textContent: `${kb(it.size)}, kept ${new Date(it.created).toLocaleDateString()}` }));
+    const acts = document.createElement("div");
+    acts.className = "acts";
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", `The slot to send ${it.name} to`);
+    for (let s = 0; s < 4; s++) sel.appendChild(new Option(`Slot ${SLOTS[s]}`, String(s)));
+    const send = Object.assign(document.createElement("button"), { type: "button", textContent: "Send to", className: "quiet" });
+    send.dataset.needsDevice = "1";
+    send.disabled = !dev;
+    send.title = dev ? "" : "Connect first";
+    send.addEventListener("click", () => act("Send", () => sendToSlot(fromBase64(it.data), +sel.value, it.name)));
+    const dl = Object.assign(document.createElement("button"), { type: "button", textContent: "Download", className: "quiet" });
+    dl.addEventListener("click", () => download(fromBase64(it.data), `hp1-${fileName(it.name)}.hp1`));
+    const del = Object.assign(document.createElement("button"), { type: "button", textContent: "Delete", className: "quiet" });
+    del.addEventListener("click", () => { if (confirm(`Delete "${it.name}" from this browser?`)) { libraryRemove(store, it.id); renderLibrary(); } });
+    acts.append(send, sel, dl, del);
+    li.appendChild(acts);
+    ul.appendChild(li);
+  }
+}
+
+function workingSlot() {
+  const w = working;
+  if (!w || !w.projectBytes || !w.sequenceBytes) throw new ContentError("The working project isn't saved yet: stop the transport and press Refresh.");
+  return buildSlot(w.sequence.name || "WORKING", w.projectBytes, w.sequenceBytes);
+}
+
+$("ctConnect").addEventListener("click", () => act("Connect", () => (dev ? Promise.resolve(disconnect()) : connect())));
+document.querySelectorAll('input[name="ctTarget"]').forEach((r) => r.addEventListener("change", () => disconnect()));
+$("ctRefresh").addEventListener("click", () => act("Refresh", refresh));
+$("ctDlWorking").addEventListener("click", () => act("Download", async () => {
+  download(workingSlot(), `hp1-${fileName(working.sequence.name || "working")}.hp1`);
+}));
+$("ctKeepWorking").addEventListener("click", () => act("Keep", async () => {
+  libraryAdd(store, working.sequence.name || "Working project", workingSlot()); renderLibrary(); status("Kept the working project in this browser.");
+}));
+$("ctMidi").addEventListener("click", () => act("Export", async () => {
+  const p = +$("ctPat").value, nm = working.sequence.name || "HP-1";
+  download(midiFile(working.sequence, p, working.project ? working.project.tempo : 120, nm),
+           `hp1-${fileName(nm)}-${p < 0 ? "song" : "pattern-" + (p + 1)}.mid`, "audio/midi");
+}));
+$("ctBackup").addEventListener("click", () => act("Back up", async () => {
+  const b = await dev.backup(working && working.info.version, progress);
+  download(new TextEncoder().encode(JSON.stringify(b)), `hp1-backup-${new Date().toISOString().slice(0, 10)}.json`, "application/json");
+  status(`Backed up everything on ${devName}.`);
+}));
+$("ctRestore").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (f) act("Restore", async () => {
+    const text = await f.text();
+    readBackup(text);                                  // (checked whole before asking)
+    if (!confirm(`Replace everything on ${devName} (the working project and all four slots) with ${f.name}?`)) return;
+    await dev.restore(text, progress);
+    await refresh();
+    status(`Restored ${f.name}.`);
+  });
+});
+$("ctLibAdd").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (f) act("Add", async () => {
+    if (!store) throw new ContentError("This browser keeps no files for this page.");
+    libraryAdd(store, f.name.replace(/\.hp1$/i, ""), new Uint8Array(await f.arrayBuffer()));
+    renderLibrary();
+    status(`Kept ${f.name} in this browser.`);
+  });
+});
+for (const id of ["ctDlWorking", "ctKeepWorking", "ctRefresh", "ctBackup", "ctRestore", "ctMidi", "ctPat"]) $(id).dataset.needsDevice = "1";
+renderLibrary();
 </script>
