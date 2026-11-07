@@ -48,7 +48,10 @@ C code compiled to WebAssembly, with mouse, touch, computer keyboard and MIDI in
    **PRESETS** to move it to any key. **SELECT** changes the metal.
 
 The FM-1's keys only sense on and off, not how hard you press, so **Humanize** (ENV) gives each
-strike a hand's natural variation in strength and brightness. Over MIDI, velocity does it for real.
+strike a hand's natural variation in strength and brightness, and **Feel** (ENV, pressed again)
+plays your touch in time: a quick tap rings shorter and brighter, a key held down presses in and the
+note grows fuller and darker ([below](#touch-and-feel)). Over MIDI, velocity and pressure do it for
+real.
 
 ## The controls
 
@@ -141,7 +144,7 @@ show which page you're on.
 | Button                            | Pages       | What it does                                                                                     |
 | --------------------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
 | **HOME**                          | Pan → Shell | The metal and the strike; the shell's size and thickness                                         |
-| **ENV**                           | Touch       | Wear, humanizing, tuning, release                                                                |
+| **ENV**                           | Touch → Feel | Wear, humanizing, tuning, release; how the keys feel (Expressive or Classic)                    |
 | **FX**                            | Space → Color | Reverb and delay; tape, lo-fi, chorus, filter                                                  |
 | **LFO**                           | Grain → Spread | The grain cloud; its scatter, the echoes' feedback, the stereo width                          |
 | **SEL**                           | Keys → Duo  | Layout, scale, key, black keys; the second pan, its level, the percussion level, the octave      |
@@ -196,6 +199,12 @@ show which page you're on.
 | Humanize | 0–100 (35)      | Each strike's strength varies, as a hand's does; above 50, a hair of timing too                                    |
 | Tuning   | Equal, Just     | Just: pure intervals over the ding                                                                                 |
 | Release  | Ring, Damp      | Ring: a field keeps ringing after you let go, as on a real pan. Damp: letting go puts a hand on it                 |
+
+**ENV → Feel** (press ENV again)
+
+| Knob | Range (default)                     | What it does                                                                                     |
+| ---- | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Feel | Expressive, Classic (Expressive)    | Expressive: a quick tap rings shorter, a held key presses in (fuller, darker), MIDI pressure presses ([below](#touch-and-feel)). Classic: every strike the same, however long you hold it |
 
 **FX → Space**, **FX → Color**, **LFO → Grain**, **LFO → Spread** are FiMba-1's effects, unchanged:
 reverb (amount, room), a ping-pong delay (level, time 40–740 ms, feedback), tape, lo-fi, chorus, a
@@ -325,6 +334,30 @@ sounds faintly under every note (Sympathy). Sixteen fields can ring at once. A n
 takes over the quietest, which fades out instead of being cut. Re-striking a ringing field damps it
 under the fingertip first, through its own decay, so it never clicks.
 
+### Touch and feel
+
+On a real pan, how you play a note shapes it after the strike: a light, quick tap bounces off and
+leaves the field ringing bright; a hand that stays on the field presses it in, and its upper
+partials die away under the palm while the fundamental sings on. The FM-1 can't sense any of that.
+Its keys are single contacts, on or off, with no velocity and no pressure (M-VAVE's own aftertouch
+only takes channel pressure from another controller, as vibrato). So with **Feel** on **Expressive**
+(the default), HP-1 reads your touch from time:
+
+- **every strike** is a lighter, quicker fingertip: a touch harder contact, a little more ping and
+  skin (as Strike +14);
+- **a quick tap** (let go within 0.18 s) rings about 0.6 as long (the ding ~0.75). It's still a
+  ring, not a damp, and with Release on Damp, letting go damps as it always does;
+- **a key held** past 0.3 s is a hand resting on the field. It presses in smoothly, all the way by
+  1.5 s, and the note grows fuller and darker: the octave decays about twice as fast, the fifth three
+  times, the double octave, the ping and the stray mode faster still, while the fundamental rings
+  about a third longer. On the ding the hand is gentler: rounder, never choked. Let go and the hand
+  comes off. Only the decays change, never the wave itself, so pressing never clicks.
+
+Over MIDI the pressure is real: **poly aftertouch** presses its note, **channel pressure** presses
+every note held, and note velocity is the strike, as always. With MIDI out on, a held key's pressure
+goes out as poly aftertouch. **Classic** is the sound as it was before Feel: every strike the same,
+however long you hold the key, and MIDI pressure ignored.
+
 ### The metals
 
 | Metal     | The ding's ring (T60) | Shimmer   | Character                                                              |
@@ -418,9 +451,12 @@ MIDI comes in over USB and the TRS jack, on the Setup page's channel (Omni by de
 | CC 120, CC 123                   | Damp everything                                                                  |
 | Program change                   | Metal (0–3, wrapping)                                                            |
 | Pitch bend                       | ±2 semitones, on every ringing note                                              |
+| Poly aftertouch                  | Presses that note: fuller, darker (Feel Expressive)                              |
+| Channel pressure                 | Presses every note held over MIDI (Feel Expressive)                              |
 | Clock, Start, Continue, Stop     | The groove follows the clock                                                     |
 
-**Out** (off by default; Setup KNOB 3): the keys are sent as notes on the Setup channel.
+**Out** (off by default; Setup KNOB 3): the keys are sent as notes on the Setup channel, and with
+Feel on Expressive, a held key's pressure as poly aftertouch.
 
 ## The browser version
 
@@ -457,7 +493,7 @@ python3 tools/fm1_install.py build/hp1.fwsc
 
 - **The engine test** (`tests/host/handpan_test.c`, built without libm as on the device) checks the
   scales and layouts, every second-pan match against every pan in every key, each metal's pitch,
-  octave and fifth, the shimmer (3–9 Hz) and the decays measured pans have, damping, sympathy, every hit (its side, the Gu's pitch against the
+  octave and fifth, the shimmer (3–9 Hz) and the decays measured pans have, damping, Feel (pressure, the quick tap, the light strike), sympathy, every hit (its side, the Gu's pitch against the
   size, the mute, the slap, the harmonic), the effects, that nothing clicks, the grooves and MIDI
   clock, and a 20-minute run. It writes one WAV per metal to `build/host/materials/`.
 - **The host simulator** (`build/host/hp1_host SCRIPT OUTDIR`) runs the whole firmware from a

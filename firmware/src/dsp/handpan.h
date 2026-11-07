@@ -60,6 +60,7 @@ enum {
     P_WORN, P_HUMAN, P_TUNING, P_RELEASE,            /* Touch page */
     P_PATTERN, P_PTEMPO,                             /* Groove page */
     P_TUNE, P_MIDICH, P_MIDIOUT, P_THEME,            /* Setup page */
+    P_FEEL,                                          /* Feel page (the keys' touch: the UI's) */
     P_NPARAMS
 };
 typedef struct {
@@ -75,6 +76,7 @@ enum { BLK_KIT, BLK_DUO, BLK_N };
 enum { PAT_HEART, PAT_CASCADE, PAT_HEMIOLA, PAT_BACKBEAT, PAT_N };
 enum { TUNE_EQUAL, TUNE_JUST, TUNE_N };
 enum { THEME_DARK, THEME_LIGHT, THEME_N };
+enum { FEEL_EXPRESSIVE, FEEL_CLASSIC, FEEL_N };
 enum { GP_DOWN12, GP_DOWN7, GP_UNISON, GP_UP7, GP_UP12, GP_UP19, GP_SHIMMER, GP_REVERSE, GP_N };
 #define KM_NSCALE 11
 extern const char *const KM_NOTE_NAME[12];
@@ -158,6 +160,13 @@ void km_hit(int kind, int vel, int delay_ms);      /* percussion (HIT_*), on the
 void km_pan(const int *cents, int n);              /* the pan's notes, the ding first (sympathy, grooves) */
 void km_damp(int cents);                           /* a finger on that field (a key let go, Release Damp) */
 void km_damp_all(void);                            /* a palm over the top */
+/* Feel: Expressive. A touch the FM-1's on / off keys can't sense, played from time (the UI) or from a
+ * controller's pressure (MIDI). None of these is sent with Classic, which sounds as km_pluck alone */
+void km_pluck_x(int cents, int vel, int pan, int delay_ms, int light);   /* a lighter, quicker fingertip:
+                                                    * light 0..100 (0: km_pluck), a brighter strike */
+void km_press(int cents, int p);                   /* a hand resting on the ringing field, 0..127: its upper
+                                                    * partials die sooner, the fundamental rings on (fuller) */
+void km_staccato(int cents);                       /* a quick tap let go: the field rings shorter */
 void km_sustain(int on);                           /* the pedal (CC64): km_damp waits for it to lift */
 void km_bend(int v);                               /* pitch bend, -8192..8191: +-2 semitones */
 void km_freeze(int on);                            /* the grain buffer stops recording */
