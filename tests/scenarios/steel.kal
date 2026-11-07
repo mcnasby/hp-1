@@ -82,12 +82,15 @@ tapkey b8
 wait 500
 expect note5700 <2
 expect note5000 <2
-# REC: the palm mute too
+# REC held: the palm mute too (a tap arms recording)
 tapkey w5
 wait 100
 expect note6200 >5
-tap REC
-wait 500
+press REC
+wait 600
+release REC
+wait 100
+expect armed 0
 expect note6200 <2
 # the keys light while they sound
 tapkey w0

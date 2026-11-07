@@ -36,6 +36,7 @@ static void render_block(int32_t *o)                /* ALNK0: one half, measured
         uint32_t k;
         for (k = 0; k < HALF_FRAMES; k += REND_FRAMES) {
             km_render(o + 2u * k, REND_FRAMES, master_q12);
+            click_mix(o + 2u * k, REND_FRAMES, master_q12);   /* the sequencer's click, after the instrument */
 #if FELUCCA_UAC
             uac_tap(o + 2u * k, REND_FRAMES);       /* the USB audio input: the same master output */
 #endif
@@ -126,6 +127,18 @@ void fm1_timer5_irq(void)
     }
 }
 extern void isr_timer5(void);
+
+/* ------------------------------------------------------- the editor --- */
+/* the content manager's SysEx (editor.c): a frame with its header is answered here, in the main loop;
+ * any other is left for the updater (ota_service). Replies leave as the updater's do. */
+static void ed_reply(const uint8_t *p, uint32_t n) { ota_wire_send(p, n); }
+static void ed_service(void)
+{
+    const uint8_t *p;
+    uint32_t n;
+    if (ota_frame_get(&p, &n) && ed_handle(p, n))
+        ota_frame_done();
+}
 
 /* ------------------------------------------------------------- boot --- */
 #define BOOTGUARD_MAGIC 0x42475244u
@@ -287,6 +300,8 @@ static void fm1_main(void)
     km_init();
     project_load();                                 /* defaults when nothing (or another format) is saved */
     project_apply();
+    seq_load();                                     /* the patterns and the song (empty when none) */
+    ct_refresh();                                   /* the project slots' names */
     audio_init();
     usb_start();
 #if OM_TRS
@@ -338,6 +353,7 @@ static void fm1_main(void)
                 enter_uboot("UBOOT");
             }
         }
+        ed_service();                               /* the content manager (editor.c) */
         ota_service();                              /* M-UPGRADE handshake (other SysEx is dropped) */
         if (usb.ota_req) {
             usb.ota_req = 0;

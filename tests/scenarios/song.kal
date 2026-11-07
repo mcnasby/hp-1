@@ -1,0 +1,81 @@
+# Song mode: sections in order, each a pattern played so many times; at End it stops (Loop: round again).
+# Two patterns of four sixteenths (half a second at 120): pattern 1 the ding, pattern 2 an A3.
+# (params: 36 Tempo; seqpat the pattern chosen, section the song's section playing, from 0)
+wait 300
+tap SEQ
+tap SEQ
+expect view 13
+# Pattern 1: four steps; on Steps the ding at the first
+spin K2 -12
+tap SEQ
+expect view 14
+tapkey w8
+expect step0 5000
+# SEQ held, white key 2: pattern 2 (the keys don't play meanwhile)
+press SEQ
+tapkey w1
+release SEQ
+expect seqpat 1
+expect view 14
+expect outn 0
+spin K1 -1
+tapkey w9
+expect step0 5700
+tap SEQ
+tap SEQ
+tap SEQ
+expect view 9
+tap SEQ
+expect view 13
+spin K2 -12
+# Tempo 120
+tap SEQ
+tap SEQ
+expect view 15
+spin K1 36
+expect par36 120
+# Song: section 1 pattern 2 once, section 2 pattern 1 twice, then End; Song On
+tap SEQ
+expect view 16
+spin K2 -15
+spin K3 0
+spin K1 1
+spin K2 -16
+spin K3 1
+spin K4 1
+wait 1500
+shot song.png
+tap PLAY
+expect run 1
+expect section 0
+expect playpat 1
+wait 20
+expect outlast 5700
+wait 500
+expect section 1
+expect outlast 5000
+wait 500
+expect section 1
+expect outlast 5000
+expect note5000 >5
+shot song_playing.png
+wait 520
+expect run 0
+# Loop: round again, pattern 2 after pattern 1's second time
+spin K4 1
+tap PLAY
+wait 1520
+expect run 1
+expect section 0
+expect outlast 5700
+tap PLAY
+expect run 0
+# Song off: PLAY plays the pattern chosen (2), over and over
+spin K4 -2
+tap PLAY
+wait 1200
+expect run 1
+expect section -1
+expect playpat 1
+tap PLAY
+expect dropped 0

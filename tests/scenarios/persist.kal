@@ -38,13 +38,17 @@ wait 6000
 expect dirty 0
 # ...frozen ones do: an erase would cut the drone
 tapkey w7
-tap PLAY
+press PLAY
+wait 600
+release PLAY
 expect frozen 3
 tap HOME
 spin K2 5
 wait 6000
 expect dirty 1
-tap PLAY
+press PLAY
+wait 600
+release PLAY
 wait 6000
 expect dirty 0
 # a FiMba-1 project in the flash: the defaults, not its values

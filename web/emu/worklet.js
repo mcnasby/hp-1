@@ -58,6 +58,13 @@ class Handpan extends AudioWorkletProcessor {
       this.ex.web_midi(m.st, m.d1 | 0, m.d2 | 0);
     } else if (m.type === "master") {
       this.ex.web_master(m.value | 0);
+    } else if (m.type === "sysex") {               // the content manager: one frame in, its reply out
+      const d = Uint8Array.from(m.data).subarray(0, 2048);
+      new Uint8Array(this.mem.buffer, this.ex.web_sysex_in(), d.length).set(d);
+      const n = this.ex.web_sysex(d.length);
+      const reply = n ? Array.from(new Uint8Array(this.mem.buffer, this.ex.web_sysex_out(), n)) : null;
+      this.port.postMessage({ type: "sysex", id: m.id, data: reply });
+      this.publish();                              // (the screen, and what it saved, straight away)
     }
   }
 

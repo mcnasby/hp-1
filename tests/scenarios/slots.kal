@@ -1,0 +1,110 @@
+# Project slots (GLO: Setup, Projects): K1 the slot; OCT+ saves the working project into it (pressed twice),
+# OCT- loads it (twice); K2 / K3 the name, a letter at a time. The content manager's calls (content.h) as
+# the web would use them: rename, a staged copy, a staged write that doesn't check out. A power cut in a
+# save keeps the slot as it was.
+# (params: 0 Metal 40 Theme; slotK: slot K holds a project; slotnameK: its name's first letter)
+wait 300
+# a project: Stainless, and a thwap (the white key at the left end) on step 1 of pattern 1
+turn SELECT 1
+expect par0 1
+tap SEQ
+tap SEQ
+tap SEQ
+expect view 14
+tapkey w0
+expect patev0 1
+tap GLO
+tap GLO
+expect view 17
+expect slot0 0
+# its name: H, P
+spin K3 8
+spin K2 1
+spin K3 16
+wait 50
+# OCT+: asked; again: saved into slot A
+tap OCT+
+expect slot0 0
+expect par30 0
+tap OCT+
+expect slot0 1
+expect slotname0 72
+wait 1500
+shot projects.png
+# slot C too
+spin K1 2
+tap OCT+
+tap OCT+
+expect slot2 1
+# the working project changed: Ember, pattern 1 cleared (SEQ + OCT-, twice)
+turn SELECT 1
+expect par0 2
+press SEQ
+tap OCT-
+tap OCT-
+release SEQ
+expect patev0 0
+# OCT- on an empty slot: nothing
+spin K1 -1
+tap OCT-
+tap OCT-
+expect par0 2
+# load slot A: Stainless and its pattern back; the theme (Setup) stays as it is here
+tap GLO
+spin K4 1
+expect par40 1
+tap GLO
+spin K1 -1
+tap OCT-
+expect par0 2
+tap OCT-
+expect par0 1
+expect patev0 1
+expect par40 1
+# the working project follows (autosave), and all of it survives a restart
+wait 6000
+expect seqdirty 0
+expect dirty 0
+reboot
+expect par0 1
+expect patev0 1
+expect slot0 1
+expect slot1 0
+expect slot2 1
+expect slotname0 72
+# content.h: rename slot C; copy slot A into slot D through a staged write; a staged write whose CRC
+# is wrong is refused, and one that isn't a slot's (slot D as it was)
+rename 2 PAN_SONG
+expect slotname2 80
+ctcopy 2 5
+expect slot3 1
+expect slotname3 72
+ctbad 5
+expect slot3 1
+expect slotname3 72
+# ...and a whole one that isn't a slot (the project object) is refused too
+ctcopy 0 5
+expect slot3 1
+expect slotname3 72
+# a power cut in the middle of saving into slot C: it keeps what it had
+tap GLO
+tap GLO
+expect view 17
+spin K1 2
+expect par30 0
+torn 1
+tap OCT+
+tap OCT+
+expect par30 0
+expect slot2 1
+expect slotname2 80
+# saved again, whole: the working project's name in it
+tap OCT+
+tap OCT+
+expect slotname2 72
+# the sequence object through content.h: a copy of itself, taken up at once
+ctcopy 1 1
+expect patev0 1
+wait 1500
+shot projects2.png
+expect dropped 0

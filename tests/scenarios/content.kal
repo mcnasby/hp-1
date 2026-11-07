@@ -1,0 +1,48 @@
+# The content manager over SysEx (firmware/src/app/editor.c, docs/EDITOR_PROTOCOL.md), as the web page
+# drives it: F0 7D 48 50 cmd args F7. SLOT (5): op 0 save, 1 load, 2 rename, 3 clear; SAVE (6). edrc: the
+# last reply's rc (0 ok, 1 invalid, 3 playing). The Projects page shows what the page did.
+# (params: 0 Metal; slotK: slot K holds a project; slotnameK: its name's first letter)
+wait 300
+# Stainless, saved into slot B from the page
+turn SELECT 1
+expect par0 1
+sysex F0 7D 48 50 05 00 01 F7
+expect edrc 0
+expect slot1 1
+# renamed JAM (4A 41 4D)
+sysex F0 7D 48 50 05 02 01 4A 41 4D 00 F7
+expect edrc 0
+expect slotname1 74
+# a name the screen can't show: refused
+sysex F0 7D 48 50 05 02 01 6A 61 6D 00 F7
+expect edrc 1
+expect slotname1 74
+# the working project changed (Ember), then B loaded back from the page
+turn SELECT 1
+expect par0 2
+sysex F0 7D 48 50 05 01 01 F7
+expect edrc 0
+expect par0 1
+wait 400
+# Projects (GLO twice), slot B chosen: its name
+tap GLO
+tap GLO
+spin K1 1
+wait 400
+shot content.png
+# playing: the page's writes are refused (rc 3) and nothing changes
+tap PLAY
+expect run 1
+sysex F0 7D 48 50 05 03 01 F7
+expect edrc 3
+expect slot1 1
+sysex F0 7D 48 50 06 F7
+expect edrc 3
+tap PLAY
+expect run 0
+# stopped: cleared
+sysex F0 7D 48 50 05 03 01 F7
+expect edrc 0
+expect slot1 0
+reboot
+expect slot1 0

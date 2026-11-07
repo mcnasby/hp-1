@@ -14,7 +14,10 @@ expect dimkey 14
 tapkey w8
 wait 30
 expect dimkey -1
-tap REC
+# (REC held: the palm mute)
+press REC
+wait 600
+release REC
 wait 400
 expect dimkey 14
 # change a sound and the Setup page

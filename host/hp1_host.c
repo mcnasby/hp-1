@@ -25,11 +25,29 @@
  *                                 dropped pat pulse ext shellL shellR cavity duocount parN
  *                                 whiteW (cents of white key W) duoI (cents of the second pan's note I)
  *                                 duokeyB (cents black key B plays as the second pan, -1 not)
- *                                 noteC (level x100 of the note at C cents) lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
+ *                                 noteC (level x100 of the note at C cents) levelC (the same, x1000)
+ *                                 lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
  *                                 dimkey (the key whose LED is dim, -1 none) litkeys (bits)
+ *                                 touchK (the pressure Feel gives held key K, 0..127: K as for key)
  *                                 peak_db_max peak_db_min)
  *   reboot                       re-run boot from the simulated flash (persistence test)
  *   oldproject                   put a FiMba-1 project in the simulated flash (it must not load)
+ *   v1project                    put a format 1 project (before Feel) in the flash, Feel's place not 0
+ *   torn N                       the next save stops after N flash programs (a power cut)
+ *   rename SLOT NAME             rename slot 0..3 (content.h, as the web manager would; _ for a space)
+ *   ctcopy FROM TO               copy content object FROM into TO through content.h's staged write
+ *   ctbad TO                     a staged write of TO with a wrong CRC (refused: the old one stays)
+ *   sysex HEX..                  a SysEx frame for the content manager (editor.c), F0..F7 as hex bytes
+ *                                (several arguments or one run); its reply is printed (expect edrc: its rc)
+ *
+ *   hp1_host --pipe              no script: frames in on stdin, one per line as hex (F0 .. F7), each reply out on
+ *                                stdout as one hex line ("-" for none), 20 ms of the device between; a line not
+ *                                starting with F0 is a script command (its output goes to stderr)
+ * expect, the sequencer: run armed rec wait count seqpat playpat nev patevP (events in pattern P)
+ *   stepS (cents or hit of step S of the chosen pattern, -1 a rest) steplenS (its length, sub-steps)
+ *   outn (notes the sequencer and the arp played) outlast (the last one's cents or hit) arpheld bpm
+ *   slotK (slot K holds a project) slotnameK (the first letter of its name, 0 none) undo section
+ *   seqdirty click (clicks posted) edrc (the content manager's last reply's rc)
  */
 #define OM_HOST 1
 #ifndef _POSIX_C_SOURCE
@@ -113,29 +131,53 @@ void plat_midi_out(uint32_t pkt)
         fprintf(midi_log, "%u ms: %02X %02X %02X\n", now_ms, (pkt >> 8) & 0xFF, (pkt >> 16) & 0xFF, (pkt >> 24) & 0xFF);
 }
 
-/* flash: one buffer per object, kept across a simulated reboot */
-static uint8_t store[OBJ_NOBJ][PLAT_STORE_MAX];
-static int store_len[OBJ_NOBJ] = {-1, -1};
+/* flash: a simulated NOR (erase -> 0xFF, programming only clears bits), kept across a simulated reboot,
+ * with the device's own storage.c over it. "torn N" makes the next save stop after N programs. */
+static uint8_t nor[0x100000];
+static int nor_init_done, torn_after = -1;
 static uint32_t store_writes;
-int plat_store_load(uint32_t obj, void *dst, uint32_t max)
+static const uint8_t flash_ok = 1;
+static void nor_init(void)
 {
-    int n;
-    if (obj >= OBJ_NOBJ || (n = store_len[obj]) < 0)
-        return -1;
-    if ((uint32_t)n > max)
-        n = (int)max;
-    memcpy(dst, store[obj], (size_t)n);
-    return n;
+    if (!nor_init_done) {
+        memset(nor, 0xFF, sizeof nor);
+        nor_init_done = 1;
+    }
 }
-int plat_store_save(uint32_t obj, const void *src, uint32_t len)
+static int st_read(uint32_t off, void *dst, uint32_t n)
 {
-    if (obj >= OBJ_NOBJ || len > PLAT_STORE_MAX)
+    nor_init();
+    if (off >= sizeof nor || n > sizeof nor - off)
         return -1;
-    memcpy(store[obj], src, len);
-    store_len[obj] = (int)len;
-    store_writes++;
+    memcpy(dst, nor + off, n);
     return 0;
 }
+static int st_erase(uint32_t off)
+{
+    nor_init();
+    if (!((off >= 0x97000u && off + 4096u <= 0xE0000u) || (off >= 0xFC000u && off + 4096u <= 0xFF000u)) || (off & 0xFFFu))
+        return -8;                                    /* (as FL_STORE_OK on the device) */
+    memset(nor + off, 0xFF, 4096);
+    return 0;
+}
+static int st_prog(uint32_t off, const void *src, uint32_t n)
+{
+    const uint8_t *s = src;
+    uint32_t i;
+    nor_init();
+    if (torn_after == 0)
+        return -9;                                    /* (the power cut) */
+    if (torn_after > 0)
+        torn_after--;
+    if ((off & 0xFFu) + n > 256u || off + n > sizeof nor)
+        return -1;
+    for (i = 0; i < n; i++)
+        nor[off + i] &= s[i];
+    return 0;
+}
+#define PLAT_STORE_DONE(rc) (store_writes += (rc) == 0, torn_after = -1)
+#include "../firmware/src/storage.c"
+#include "../firmware/src/app/plat_store.c"
 
 static uint32_t cpu_pct;
 uint32_t plat_cpu_pct(void) { return cpu_pct; }
@@ -144,7 +186,30 @@ uint32_t plat_xruns(void) { return 0; }
 /* -------------------------------------------------------------- app --- */
 #include "../firmware/src/app/app.h"
 #include "../firmware/src/app/project.c"
+#include "../firmware/src/app/seq.c"
+#include "../firmware/src/app/click.c"
+#include "../firmware/src/app/content.c"
 #include "../firmware/src/app/ui.c"
+#include "../firmware/src/app/editor.c"
+
+/* the content manager's SysEx (editor.c), as the device's main loop takes it: a whole frame (F0..F7) in,
+ * its reply (if any) out. The script's "sysex", the pipe (--pipe) and the browser (web_sysex) use it. */
+static uint8_t ed_rx[4096];
+static uint32_t ed_rx_n;
+static void ed_reply(const uint8_t *p, uint32_t n)
+{
+    if (ed_rx_n + n <= sizeof ed_rx) {
+        memcpy(ed_rx + ed_rx_n, p, n);
+        ed_rx_n += n;
+    }
+}
+static uint32_t host_sysex(const uint8_t *f, uint32_t n)   /* the reply's bytes in ed_rx (0: none) */
+{
+    ed_rx_n = 0;
+    if (n >= 2u && f[0] == 0xF0 && f[n - 1u] == 0xF7)
+        ed_handle(f + 1, n - 2u);
+    return ed_rx_n;
+}
 
 /* ---------------------------------------------------------- outputs --- */
 static void png_write(const char *path)
@@ -282,6 +347,8 @@ static void boot(void)
     km_init();
     project_load();
     project_apply();
+    seq_load();
+    ct_refresh();
     lcd_fill(0, 0, 240, 240, 0);
     ui_init();
 }
@@ -295,6 +362,7 @@ static void run_ms(uint32_t ms)
         while (audio_due_ms <= (double)now_ms) {      /* 256-frame blocks, as the device renders them */
             double t0 = now_ns(), dt;
             km_render(blk, 256, master);
+            click_mix(blk, 256, master);
 #ifdef OM_WEB
             web_audio(blk, 256);
 #endif
@@ -350,14 +418,14 @@ static int key_of(const char *s)
     return atoi(s);
 }
 
-static int note_lvl(int cents)
+static int note_lvl(int cents, float x)
 {
     int v;
     float l = 0.0f;
     for (v = 0; v < KM_NVOICE; v++)
         if (km_voice_cents[v] == cents && km_voice_level[v] > l)
             l = km_voice_level[v];
-    return (int)(l * 100.0f);
+    return (int)(l * x);
 }
 
 static int expect(const char *what, const char *val)
@@ -385,8 +453,52 @@ static int expect(const char *what, const char *val)
         got = (int)(km_cavity_level * 1000.0f);
     else if (!strcmp(what, "dropped"))
         got = (int)km_dropped;
-    else if (!strcmp(what, "pat"))                /* the groove: 3 = the UI and the engine agree it runs */
-        got = ui.pat_on + 2 * km_pat_on;
+    else if (!strcmp(what, "pat"))                /* the groove: 3 = it plays with the transport */
+        got = groove_on() ? 3 : 0;
+    else if (!strcmp(what, "run"))
+        got = seq_running();
+    else if (!strcmp(what, "armed"))
+        got = seq_armed();
+    else if (!strcmp(what, "rec"))
+        got = seq_recording();
+    else if (!strcmp(what, "wait"))
+        got = seq_waiting();
+    else if (!strcmp(what, "count"))
+        got = seq_counting();
+    else if (!strcmp(what, "seqpat"))
+        got = sq.h.cur;
+    else if (!strcmp(what, "playpat"))
+        got = seq_playing_pat();
+    else if (!strcmp(what, "section"))
+        got = seq_section();
+    else if (!strcmp(what, "nev"))
+        got = sq.h.nev;
+    else if (!strncmp(what, "patev", 5))
+        got = seq_used(atoi(what + 5));
+    else if (!strncmp(what, "steplen", 7)) {
+        int e = seq_step_ev(sq.h.cur, atoi(what + 7));
+        got = e < 0 ? -1 : sq.ev[e].len;
+    } else if (!strncmp(what, "step", 4)) {
+        int e = seq_step_ev(sq.h.cur, atoi(what + 4));
+        got = e < 0 ? -1 : sq.ev[e].val & 0x3FFF;
+    } else if (!strcmp(what, "outn"))
+        got = (int)ui.out_n;
+    else if (!strcmp(what, "outlast"))
+        got = ui.out_last;
+    else if (!strcmp(what, "arpheld"))
+        got = seq_arp_held();
+    else if (!strcmp(what, "bpm"))
+        got = seq_bpm();
+    else if (!strcmp(what, "seqdirty"))
+        got = seq_dirty();
+    else if (!strcmp(what, "edrc"))               /* the content manager's last reply's rc */
+        got = ed.rc;
+    else if (!strcmp(what, "click"))
+        got = (int)click_w;
+    else if (!strncmp(what, "slotname", 8))
+        got = ct_slot_name(atoi(what + 8))[0];
+    else if (!strncmp(what, "slot", 4))
+        got = ct_slot_used(atoi(what + 4));
     else if (!strcmp(what, "duocount"))           /* how many second pans go with this one */
         got = km_duo_count(proj.par[P_SCALE], proj.par[P_KEY]);
     else if (!strcmp(what, "pulse"))
@@ -402,8 +514,12 @@ static int expect(const char *what, const char *val)
         got = is_duo_key(b) ? duo_cents(duo_index(b)) : -1;
     } else if (!strncmp(what, "duo", 3))          /* duoI: the cents of the second pan's note I (0: its ding) */
         got = duo_cents(atoi(what + 3));
+    else if (!strncmp(what, "touch", 5))          /* touchK: the pressure on held key K (Feel) */
+        got = tch.p[key_of(what + 5)];
     else if (!strncmp(what, "note", 4))           /* noteC: the level x 100 of the note at C cents */
-        got = note_lvl(atoi(what + 4));
+        got = note_lvl(atoi(what + 4), 100.0f);
+    else if (!strncmp(what, "level", 5))          /* levelC: the same, x 1000 */
+        got = note_lvl(atoi(what + 5), 1000.0f);
     else if (!strcmp(what, "dimkey")) {            /* the key whose LED is dim (-1: none) */
         int q;
         for (got = -1, q = 0; q < NKEYS; q++)
@@ -442,17 +558,212 @@ static int expect(const char *what, const char *val)
     return 0;
 }
 
-#ifndef OM_WEB
+#if !defined(OM_WEB) && !defined(OM_HOST_LIB)
+static const char *dir = ".";
+static char out[400];
+
+static uint32_t hex_bytes(const char *s, uint8_t *b, uint32_t max)   /* "F0 7D .." or "F07D..": the bytes */
+{
+    uint32_t n = 0;
+    while (*s && n < max) {
+        char h[3] = {0, 0, 0};
+        while (*s == ' ' || *s == '\t' || *s == '\n' || *s == '\r')
+            s++;
+        if (!s[0] || !s[1])
+            break;
+        h[0] = s[0];
+        h[1] = s[1];
+        b[n++] = (uint8_t)strtoul(h, 0, 16);
+        s += 2;
+    }
+    return n;
+}
+
+static void hex_print(FILE *f, const uint8_t *b, uint32_t n)
+{
+    uint32_t i;
+    for (i = 0; i < n; i++)
+        fprintf(f, i ? " %02X" : "%02X", b[i]);
+    fprintf(f, "\n");
+}
+
+/* one line of a script: 0, or 2 (a line it can't run) */
+static int script_line(char *line, int lineno, int *fails)
+{
+    char cmd[32] = {0}, a[256] = {0}, b[64] = {0}, c[64] = {0};
+    if (line[0] == '#' || sscanf(line, "%31s %255s %63s %63s", cmd, a, b, c) < 1)
+        return 0;
+    if (!strcmp(cmd, "wait"))
+        run_ms((uint32_t)atoi(a));
+    else if (!strcmp(cmd, "press") || !strcmp(cmd, "release") || !strcmp(cmd, "tap")) {
+        int i = find_name(BTN_N, NB, a);
+        if (i < 0) {
+            printf("line %d: no button %s\n", lineno, a);
+            return 2;
+        }
+        if (cmd[0] != 'r')
+            held_btn |= 1u << i;
+        if (cmd[0] == 't')
+            run_ms(40);
+        if (cmd[0] != 'p')
+            held_btn &= ~(1u << i);
+        run_ms(cmd[0] == 't' ? 40 : 2);
+    } else if (!strcmp(cmd, "key") || !strcmp(cmd, "tapkey")) {
+        int k = key_of(a);
+        if (cmd[0] == 't') {
+            held_keys |= 1u << k;
+            run_ms(60);
+            held_keys &= ~(1u << k);
+            run_ms(30);
+        } else {
+            if (!strcmp(b, "down"))
+                held_keys |= 1u << k;
+            else
+                held_keys &= ~(1u << k);
+            run_ms(2);
+        }
+    } else if (!strcmp(cmd, "strum")) {          /* strum A B [MS]: a finger across the white keys */
+        int x = atoi(a), y = atoi(b), gap = c[0] ? atoi(c) : 25, s = y >= x ? 1 : -1;
+        for (;; x += s) {
+            held_keys |= 1u << WHITE_K[x & 15];
+            run_ms((uint32_t)gap);
+            held_keys &= ~(1u << WHITE_K[x & 15]);
+            if (x == y)
+                break;
+        }
+        run_ms(2);
+    } else if (!strcmp(cmd, "turn")) {
+        int e = find_name(ENC_N, NE, a), n = atoi(b), s = n > 0 ? 1 : -1;
+        uint32_t gap = c[0] ? (uint32_t)atoi(c) : 80u;
+        if (e < 0) {
+            printf("line %d: no encoder %s\n", lineno, a);
+            return 2;
+        }
+        for (; n; n -= s) {
+            enc_acc[e] += s;
+            run_ms(gap);
+        }
+    } else if (!strcmp(cmd, "spin")) {
+        int e = find_name(ENC_N, NE, a);
+        if (e < 0) {
+            printf("line %d: no encoder %s\n", lineno, a);
+            return 2;
+        }
+        enc_acc[e] += atoi(b);
+        accel_off = 1;
+        run_ms(1);
+        accel_off = 0;
+    } else if (!strcmp(cmd, "master"))
+        master = (uint32_t)atoi(a);
+    else if (!strcmp(cmd, "midi")) {
+        uint32_t s = (uint32_t)strtoul(a, 0, 16), d1 = (uint32_t)strtoul(b, 0, 16), d2 = (uint32_t)strtoul(c, 0, 16);
+        uint32_t cin = s >= 0xF0 ? 0x0F : s >> 4;
+        min_q[mi_w++ % MQ] = cin | s << 8 | d1 << 16 | d2 << 24;
+    } else if (!strcmp(cmd, "wav")) {
+        snprintf(out, sizeof out, "%s/%s", dir, a);
+        wav_open(out);
+    } else if (!strcmp(cmd, "wavstop"))
+        wav_close();
+    else if (!strcmp(cmd, "peakreset"))
+        peak_out = 0.0f;
+    else if (!strcmp(cmd, "shot")) {
+        snprintf(out, sizeof out, "%s/%s", dir, a);
+        png_write(out);
+    } else if (!strcmp(cmd, "leds")) {
+        int i;
+        printf("  leds: buttons");
+        for (i = 0; i < NB; i++)
+            if (lit_btn >> i & 1u)
+                printf(" %s", BTN_N[i]);
+        printf(" | white ");
+        for (i = 0; i < 16; i++)
+            printf("%c", (lit_keys >> WHITE_K[i] & 1u) ? '#' : (dim_keys >> WHITE_K[i] & 1u) ? '+' : '.');
+        printf(" black ");
+        for (i = 0; i < 11; i++)
+            printf("%c", (lit_keys >> BLACK_K[i] & 1u) ? '#' : (dim_keys >> BLACK_K[i] & 1u) ? '+' : '.');
+        printf("\n");
+    } else if (!strcmp(cmd, "expect"))
+        *fails += expect(a, b);
+    else if (!strcmp(cmd, "oldproject")) {   /* a FiMba-1 project in the store (another magic): ignored */
+        project_defaults();
+        proj.magic = 0x41424C4Bu;
+        proj.par[P_METAL] = 2;
+        plat_store_save(OBJ_PROJ, &proj, sizeof proj);
+    } else if (!strcmp(cmd, "v1project")) {  /* saved before Feel: it takes its default, whatever is there */
+        project_defaults();
+        proj.format = 1u;
+        proj.par[P_FEEL] = FEEL_CLASSIC;
+        plat_store_save(OBJ_PROJ, &proj, sizeof proj);
+    } else if (!strcmp(cmd, "torn"))
+        torn_after = atoi(a);
+    else if (!strcmp(cmd, "rename")) {
+        char *q;
+        for (q = b; *q; q++)
+            if (*q == '_')
+                *q = ' ';
+        if (ct_slot_rename(atoi(a), b))
+            printf("  rename %s %s: refused\n", a, b);
+    } else if (!strcmp(cmd, "ctcopy") || !strcmp(cmd, "ctbad")) {   /* through content.h, as the web would */
+        static uint8_t buf[PLAT_STORE_MAX];
+        int from = atoi(a), to = cmd[2] == 'b' ? from : atoi(b), n = ct_read(from, 0, buf, sizeof buf), rc = -1;
+        uint32_t off;
+        if (n > 0 && ct_write_begin(to, (uint32_t)n, plat_crc32(0u, buf, (uint32_t)n) ^ (cmd[2] == 'b')) == 0) {
+            for (off = 0, rc = 0; off < (uint32_t)n && !rc; off += 200u)   /* in pieces, as over a cable */
+                rc = ct_write_data(off, buf + off, (uint32_t)n - off < 200u ? (uint32_t)n - off : 200u);
+            rc = rc ? rc : ct_write_commit();
+        }
+        printf("  %s %s %s: %d (%d bytes)\n", cmd, a, b, rc, n);
+    } else if (!strcmp(cmd, "reboot")) {
+        memset(&proj, 0, sizeof proj);
+        boot();
+    } else if (!strcmp(cmd, "sysex")) {               /* a frame for the content manager; its reply printed */
+        static uint8_t f[2048];
+        if (host_sysex(f, hex_bytes(line + 5, f, sizeof f))) {
+            printf("  reply: ");
+            hex_print(stdout, ed_rx, ed_rx_n);
+        } else {
+            printf("  no reply\n");
+        }
+    } else if (!strcmp(cmd, "echo"))
+        printf("%s", line + 5);
+    else {
+        printf("line %d: unknown command %s\n", lineno, cmd);
+        return 2;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     FILE *sc;
-    char line[512], out[400];
-    const char *dir = argc > 2 ? argv[2] : ".";
+    static char line[4096];
     int lineno = 0, fails = 0;
     if (argc < 2) {
-        fprintf(stderr, "usage: hp1_host SCRIPT [OUTDIR]\n");
+        fprintf(stderr, "usage: hp1_host SCRIPT [OUTDIR] | hp1_host --pipe\n");
         return 2;
     }
+    if (!strcmp(argv[1], "--pipe")) {                  /* the content manager's frames, for a test's page client */
+        boot();
+        run_ms(100);
+        while (fgets(line, sizeof line, stdin)) {
+            if ((line[0] == 'F' || line[0] == 'f') && line[1] == '0') {
+                static uint8_t f[2048];
+                if (host_sysex(f, hex_bytes(line, f, sizeof f)))
+                    hex_print(stdout, ed_rx, ed_rx_n);
+                else
+                    printf("-\n");
+                run_ms(20);
+            } else {
+                if (line[0] != '\n' && script_line(line, ++lineno, &fails))
+                    fprintf(stderr, "pipe: cannot run %s", line);
+                printf("ok %d\n", fails);
+            }
+            fflush(stdout);
+        }
+        return fails ? 1 : 0;
+    }
+    if (argc > 2)
+        dir = argv[2];
     sc = fopen(argv[1], "r");
     if (!sc) {
         perror(argv[1]);
@@ -461,117 +772,9 @@ int main(int argc, char **argv)
     snprintf(out, sizeof out, "%s/midi_out.txt", dir);
     midi_log = fopen(out, "w");
     boot();
-    while (fgets(line, sizeof line, sc)) {
-        char cmd[32] = {0}, a[256] = {0}, b[64] = {0}, c[64] = {0};
-        lineno++;
-        if (line[0] == '#' || sscanf(line, "%31s %255s %63s %63s", cmd, a, b, c) < 1)
-            continue;
-        if (!strcmp(cmd, "wait"))
-            run_ms((uint32_t)atoi(a));
-        else if (!strcmp(cmd, "press") || !strcmp(cmd, "release") || !strcmp(cmd, "tap")) {
-            int i = find_name(BTN_N, NB, a);
-            if (i < 0) {
-                printf("line %d: no button %s\n", lineno, a);
-                return 2;
-            }
-            if (cmd[0] != 'r')
-                held_btn |= 1u << i;
-            if (cmd[0] == 't')
-                run_ms(40);
-            if (cmd[0] != 'p')
-                held_btn &= ~(1u << i);
-            run_ms(cmd[0] == 't' ? 40 : 2);
-        } else if (!strcmp(cmd, "key") || !strcmp(cmd, "tapkey")) {
-            int k = key_of(a);
-            if (cmd[0] == 't') {
-                held_keys |= 1u << k;
-                run_ms(60);
-                held_keys &= ~(1u << k);
-                run_ms(30);
-            } else {
-                if (!strcmp(b, "down"))
-                    held_keys |= 1u << k;
-                else
-                    held_keys &= ~(1u << k);
-                run_ms(2);
-            }
-        } else if (!strcmp(cmd, "strum")) {          /* strum A B [MS]: a finger across the white keys */
-            int x = atoi(a), y = atoi(b), gap = c[0] ? atoi(c) : 25, s = y >= x ? 1 : -1;
-            for (;; x += s) {
-                held_keys |= 1u << WHITE_K[x & 15];
-                run_ms((uint32_t)gap);
-                held_keys &= ~(1u << WHITE_K[x & 15]);
-                if (x == y)
-                    break;
-            }
-            run_ms(2);
-        } else if (!strcmp(cmd, "turn")) {
-            int e = find_name(ENC_N, NE, a), n = atoi(b), s = n > 0 ? 1 : -1;
-            uint32_t gap = c[0] ? (uint32_t)atoi(c) : 80u;
-            if (e < 0) {
-                printf("line %d: no encoder %s\n", lineno, a);
-                return 2;
-            }
-            for (; n; n -= s) {
-                enc_acc[e] += s;
-                run_ms(gap);
-            }
-        } else if (!strcmp(cmd, "spin")) {
-            int e = find_name(ENC_N, NE, a);
-            if (e < 0) {
-                printf("line %d: no encoder %s\n", lineno, a);
-                return 2;
-            }
-            enc_acc[e] += atoi(b);
-            accel_off = 1;
-            run_ms(1);
-            accel_off = 0;
-        } else if (!strcmp(cmd, "master"))
-            master = (uint32_t)atoi(a);
-        else if (!strcmp(cmd, "midi")) {
-            uint32_t s = (uint32_t)strtoul(a, 0, 16), d1 = (uint32_t)strtoul(b, 0, 16), d2 = (uint32_t)strtoul(c, 0, 16);
-            uint32_t cin = s >= 0xF0 ? 0x0F : s >> 4;
-            min_q[mi_w++ % MQ] = cin | s << 8 | d1 << 16 | d2 << 24;
-        } else if (!strcmp(cmd, "wav")) {
-            snprintf(out, sizeof out, "%s/%s", dir, a);
-            wav_open(out);
-        } else if (!strcmp(cmd, "wavstop"))
-            wav_close();
-        else if (!strcmp(cmd, "peakreset"))
-            peak_out = 0.0f;
-        else if (!strcmp(cmd, "shot")) {
-            snprintf(out, sizeof out, "%s/%s", dir, a);
-            png_write(out);
-        } else if (!strcmp(cmd, "leds")) {
-            int i;
-            printf("  leds: buttons");
-            for (i = 0; i < NB; i++)
-                if (lit_btn >> i & 1u)
-                    printf(" %s", BTN_N[i]);
-            printf(" | white ");
-            for (i = 0; i < 16; i++)
-                printf("%c", (lit_keys >> WHITE_K[i] & 1u) ? '#' : (dim_keys >> WHITE_K[i] & 1u) ? '+' : '.');
-            printf(" black ");
-            for (i = 0; i < 11; i++)
-                printf("%c", (lit_keys >> BLACK_K[i] & 1u) ? '#' : (dim_keys >> BLACK_K[i] & 1u) ? '+' : '.');
-            printf("\n");
-        } else if (!strcmp(cmd, "expect"))
-            fails += expect(a, b);
-        else if (!strcmp(cmd, "oldproject")) {   /* a FiMba-1 project in the store (another magic): ignored */
-            project_defaults();
-            proj.magic = 0x41424C4Bu;
-            proj.par[P_METAL] = 2;
-            plat_store_save(OBJ_PROJ, &proj, sizeof proj);
-        } else if (!strcmp(cmd, "reboot")) {
-            memset(&proj, 0, sizeof proj);
-            boot();
-        } else if (!strcmp(cmd, "echo"))
-            printf("%s", line + 5);
-        else {
-            printf("line %d: unknown command %s\n", lineno, cmd);
+    while (fgets(line, sizeof line, sc))
+        if (script_line(line, ++lineno, &fails))
             return 2;
-        }
-    }
     wav_close();
     if (midi_log)
         fclose(midi_log);
@@ -580,4 +783,4 @@ int main(int argc, char **argv)
            fails ? ", EXPECTATIONS FAILED" : "");
     return fails ? 1 : 0;
 }
-#endif /* OM_WEB */
+#endif /* OM_WEB, OM_HOST_LIB */
