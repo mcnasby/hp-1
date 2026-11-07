@@ -22,6 +22,9 @@ The steps for every GitHub issue or new feature, from the first look to the rele
 
 - Unit tests go in `tests/host/handpan_test.c`. Whole-app behavior goes in a scenario,
   `tests/scenarios/<name>.kal` (`tap`, `spin`, `tapkey`, `expect`, `shot`): add one for a new feature.
+- The sound must not move by accident: `golden` renders a fixed performance against
+  `tests/host/golden.txt`. Regenerate it (`build/host/golden_test tests/host/golden.txt write`) only for a
+  change meant to move the sound, and say so in the commit.
 - Run `tests/run_tests.sh`. Everything must pass (update-loader is skipped locally without
   `AC79_SDK`). When a change moves existing behavior, update the scenarios that assumed the old way.
 - Make sure a new check can fail: break one expectation, see it fail, put it back.

@@ -28,6 +28,10 @@ run trs sh -c "$CC -O2 -w -Ifirmware/src -Ifirmware/hal -o $OUT/trs_test tests/h
 # no -lm: a libm call that crept into the engine fails to link here, as it would on the device
 run handpan sh -c "$CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Wdouble-promotion -Werror -DOM_HOST -Ifirmware/src/dsp \
     -o $OUT/handpan_test tests/host/handpan_test.c firmware/src/dsp/handpan.c && $OUT/handpan_test $OUT/materials"
+# the sound held still: a fixed performance on every metal against tests/host/golden.txt (regenerate it
+# with "golden_test tests/host/golden.txt write" only when the sound is meant to change)
+run golden sh -c "$CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Wdouble-promotion -Werror -DOM_HOST -Ifirmware/src/dsp \
+    -o $OUT/golden_test tests/host/golden_test.c firmware/src/dsp/handpan.c && $OUT/golden_test tests/host/golden.txt"
 run storage sh -c "$CC -O2 -o $OUT/storage_test tests/storage_test.c && $OUT/storage_test"
 # the update path, against the firmware package (Felucca's tests; needs ./build.sh)
 if [ -f build/hp1.fwsc ]; then
