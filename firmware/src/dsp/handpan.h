@@ -26,7 +26,7 @@
  *   FX      a chorus and a granular cloud on the dry sound, a ping-pong delay, a plate reverb
  *           (Dattorro's, from FoMni); then on everything a filter and a tape (wow, flutter, lo-fi).
  *   GROOVE  patterns over the pan's notes and its percussion, on a cycle of 12 pulses (3 a beat), at a
- *           tempo or following MIDI clock.
+ *           tempo or following MIDI clock, or pulse by pulse from the app's transport (km_groove_pulse).
  *   MUSIC   handpan scales (ding + tone fields, as the makers build them), the key layouts and the
  *           second pan that coordinates with the first: pure functions, used by the UI and the tests.
  *
@@ -61,6 +61,11 @@ enum {
     P_PATTERN, P_PTEMPO,                             /* Groove page */
     P_TUNE, P_MIDICH, P_MIDIOUT, P_THEME,            /* Setup page */
     P_FEEL,                                          /* Feel page (the keys' touch: the UI's) */
+    /* the UI's: the arpeggiator, the sequencer's settings (seq.c), the groove with the transport */
+    P_AMODE, P_ARATE, P_AOCT, P_AGATE,               /* Arp page */
+    P_ASWING, P_ACHANCE, P_AHOLD, P_AORDER,          /* Arp 2 page */
+    P_QUANT, P_COUNTIN, P_CLICK,                     /* Tempo page (with P_PTEMPO) */
+    P_GROOVE,                                        /* Groove page: it plays with the transport */
     P_NPARAMS
 };
 typedef struct {
@@ -77,6 +82,10 @@ enum { PAT_HEART, PAT_CASCADE, PAT_HEMIOLA, PAT_BACKBEAT, PAT_N };
 enum { TUNE_EQUAL, TUNE_JUST, TUNE_N };
 enum { THEME_DARK, THEME_LIGHT, THEME_N };
 enum { FEEL_EXPRESSIVE, FEEL_CLASSIC, FEEL_N };
+enum { ARP_OFF, ARP_UP, ARP_DOWN, ARP_UPDN, ARP_RANDOM, ARP_REPEAT, ARP_N };
+/* note values (the arp's Rate, a pattern's division; Quantize is Off and the first six) */
+enum { DIV_4, DIV_8, DIV_16, DIV_32, DIV_8T, DIV_16T, DIV_2, DIV_1, DIV_2BAR, DIV_4BAR, DIV_N };
+#define CLICK_LEVELS 10                /* Click: 0 Off, 1..10 while recording, 11..20 always (the level) */
 enum { GP_DOWN12, GP_DOWN7, GP_UNISON, GP_UP7, GP_UP12, GP_UP19, GP_SHIMMER, GP_REVERSE, GP_N };
 #define KM_NSCALE 11
 extern const char *const KM_NOTE_NAME[12];
@@ -171,6 +180,12 @@ void km_sustain(int on);                           /* the pedal (CC64): km_damp 
 void km_bend(int v);                               /* pitch bend, -8192..8191: +-2 semitones */
 void km_freeze(int on);                            /* the grain buffer stops recording */
 void km_pattern(int on);
+/* the groove driven from outside (the app's transport): its pulse (0..11) played delay_ms from now. The
+ * groove's own clock (km_pattern) stays off meanwhile */
+void km_groove_pulse(int pulse, int delay_ms);
+/* a finger on that field delay_ms from now (the sequencer's and the arp's notes ending): unlike km_damp
+ * it never takes back a strike still to come */
+void km_release(int cents, int delay_ms);
 /* MIDI clock in: tick (F8), start (FA), continue (FB), stop (FC). While ticks come (the last within
  * ~0.5 s) the groove follows them, 8 a pulse; otherwise its own Tempo */
 enum { KM_CLK_TICK, KM_CLK_START, KM_CLK_CONTINUE, KM_CLK_STOP };

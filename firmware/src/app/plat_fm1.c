@@ -72,8 +72,7 @@ int plat_midi_in(uint32_t *pkt)
 }
 void plat_midi_out(uint32_t pkt) { midi_out_event(pkt); }
 
-int plat_store_load(uint32_t obj, void *dst, uint32_t max) { return flash_ok ? st_load(obj, dst, max) : -1; }
-int plat_store_save(uint32_t obj, const void *src, uint32_t len) { return flash_ok ? st_save(obj, src, len) : -9; }
+#include "plat_store.c"                         /* the storage calls, over storage.c (the host's too) */
 
 static volatile uint32_t audio_cpu_pct, audio_xruns;
 uint32_t plat_cpu_pct(void) { return audio_cpu_pct; }

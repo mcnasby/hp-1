@@ -3,7 +3,8 @@
 #  10 Delay 11 Time 12 Tape 13 Lo-fi 14 Chorus 15 Filter 16 Grains 17 Grain ms 18 Density 19 Pitch
 #  20 Spray 21 Feedback 22 Width 23 Layout 24 Scale 25 Key 26 Black 27 Duo 28 Duo level 29 Percussion
 #  30 Octave 31 Worn 32 Humanize 33 Tuning 34 Release 35 Groove 36 Tempo 37 Tune 38 MIDI ch 39 MIDI out
-#  40 Theme 41 Feel)
+#  40 Theme 41 Feel 42 Mode 43 Rate 44 Octaves 45 Gate 46 Swing 47 Chance 48 Hold 49 Order 50 Quantize
+#  51 Count-in 52 Click 53 Groove on)
 wav first.wav
 wait 300
 shot hello.png
@@ -62,7 +63,7 @@ tap ENV
 expect view 2
 shot touch.png
 tap ENV
-expect view 11
+expect view 18
 wait 50
 shot feel.png
 tap ENV
@@ -97,18 +98,36 @@ shot groove.png
 tap GLO
 expect view 10
 shot setup.png
+# EDIT: every page in turn (Setup, Projects, then round to Pan)
 tap EDIT
-expect view 11
+expect view 17
 tap EDIT
 expect view 0
 tap EDIT
 expect view 1
-# ARP held: the Groove page, and the groove left as it was
-press ARP
-wait 700
-release ARP
+# ARP: the arp's two pages; SEQ: the groove's, then the sequencer's; GLO: Setup, Projects
+tap ARP
+expect view 11
+tap ARP
+expect view 12
+tap ARP
+expect view 11
+tap SEQ
+expect view 9
+tap SEQ
+expect view 13
+tap SEQ
+expect view 14
+tap SEQ
+expect view 15
+tap SEQ
+expect view 16
+tap SEQ
 expect view 9
 expect pat 0
+tap GLO
+tap GLO
+expect view 17
 tap GLO
 # the encoders: SELECT metal, ALGORITHM scale (in the key it's usually made in), PRESETS key
 turn SELECT 1

@@ -56,7 +56,7 @@ wavstop
 tap ENV
 expect view 2
 tap ENV
-expect view 11
+expect view 18
 spin K1 1
 expect par41 1
 wait 50
@@ -93,6 +93,6 @@ expect par41 0
 wait 1500
 tap ENV
 tap ENV
-expect view 11
+expect view 18
 wait 50
 shot feel.png

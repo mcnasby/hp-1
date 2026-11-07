@@ -72,17 +72,48 @@ __attribute__((used, visibility("default"))) uint32_t web_blits(void) { return b
 __attribute__((used, visibility("default"))) uint32_t web_now(void) { return now_ms; }
 __attribute__((used, visibility("default"))) uint32_t web_cpu(void) { return cpu_pct; }
 
-/* saved objects: the page keeps them (localStorage) and gives them back before boot */
-__attribute__((used, visibility("default"))) uint8_t *web_store(uint32_t obj) { return obj < OBJ_NOBJ ? store[obj] : 0; }
-__attribute__((used, visibility("default"))) int web_store_len(uint32_t obj) { return obj < OBJ_NOBJ ? store_len[obj] : -1; }
+/* saved objects: the page keeps them (localStorage) and gives them back before boot. The simulated flash
+ * runs the device's own storage (host/hp1_host.c); an object passes through this buffer: web_store_len
+ * reads the object into it (its length, -1 none), web_store_set_len saves what the page put there. */
+static uint8_t web_obj[PLAT_STORE_MAX];
+__attribute__((used, visibility("default"))) uint8_t *web_store(uint32_t obj) { return obj < OBJ_NOBJ ? web_obj : 0; }
+__attribute__((used, visibility("default"))) int web_store_len(uint32_t obj)
+{
+    return obj < OBJ_NOBJ ? plat_store_load(obj, web_obj, sizeof web_obj) : -1;
+}
 __attribute__((used, visibility("default"))) void web_store_set_len(uint32_t obj, int n)
 {
-    if (obj < OBJ_NOBJ)
-        store_len[obj] = n < 0 ? -1 : n > (int)PLAT_STORE_MAX ? (int)PLAT_STORE_MAX : n;
+    if (obj < OBJ_NOBJ && n >= 0)
+        plat_store_save(obj, web_obj, n > (int)PLAT_STORE_MAX ? PLAT_STORE_MAX : (uint32_t)n);
 }
 __attribute__((used, visibility("default"))) uint32_t web_store_writes(void) { return store_writes; }
 __attribute__((used, visibility("default"))) uint32_t web_nobj(void) { return OBJ_NOBJ; }
 __attribute__((used, visibility("default"))) uint32_t web_store_max(void) { return PLAT_STORE_MAX; }
+
+/* the content manager's calls (firmware/src/app/content.h), for a page: bytes pass through web_ct_buf */
+static uint8_t ct_buf[4096];
+static ct_info_t ct_one;
+__attribute__((used, visibility("default"))) uint8_t *web_ct_buf(void) { return ct_buf; }
+__attribute__((used, visibility("default"))) uint32_t web_ct_count(void) { return CT_N; }
+__attribute__((used, visibility("default"))) ct_info_t *web_ct_info(int id) { return ct_info(id, &ct_one) == 0 ? &ct_one : 0; }
+__attribute__((used, visibility("default"))) int web_ct_read(int id, uint32_t off, uint32_t n)
+{
+    return ct_read(id, off, ct_buf, n > sizeof ct_buf ? (uint32_t)sizeof ct_buf : n);
+}
+__attribute__((used, visibility("default"))) int web_ct_begin(int id, uint32_t size, uint32_t crc) { return ct_write_begin(id, size, crc); }
+__attribute__((used, visibility("default"))) int web_ct_write(uint32_t off, uint32_t n)
+{
+    return ct_write_data(off, ct_buf, n > sizeof ct_buf ? (uint32_t)sizeof ct_buf : n);
+}
+__attribute__((used, visibility("default"))) int web_ct_commit(void) { return ct_write_commit(); }
+__attribute__((used, visibility("default"))) void web_ct_abort(void) { ct_write_abort(); }
+__attribute__((used, visibility("default"))) int web_ct_slot_save(int slot) { return ct_slot_save(slot); }
+__attribute__((used, visibility("default"))) int web_ct_slot_load(int slot) { return ct_slot_load(slot); }
+__attribute__((used, visibility("default"))) int web_ct_slot_rename(int slot)   /* the name: a C string in web_ct_buf */
+{
+    ct_buf[CT_NAME - 1] = 0;
+    return ct_slot_rename(slot, (const char *)ct_buf);
+}
 
 /* how the pan spells its accidentals (km_sharps: bit p, pitch class p a sharp), for the page's labels */
 __attribute__((used, visibility("default"))) uint32_t web_sharps(void) { return km_sharps(proj.par[P_SCALE], proj.par[P_KEY]); }

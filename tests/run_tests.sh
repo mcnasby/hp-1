@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # HP-1 host tests: the maths, the platform pieces kept from Felucca / X0X / FoMni, the instrument
 # (built without libm, as on the device), and the whole firmware app in the simulator
-# (tests/scenarios/*.kal: the pan, the steel, the duo, MIDI, FX, persistence), with screenshots and audio in
+# (tests/scenarios/*.kal: the pan, the steel, the duo, MIDI, FX, persistence, the arp, the sequencer, songs,
+# project slots), with screenshots and audio in
 # build/scenarios/ and one WAV per metal in build/host/materials/.
 #   tests/run_tests.sh
 set -u
@@ -32,6 +33,9 @@ run handpan sh -c "$CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Wdouble-pro
 # with "golden_test tests/host/golden.txt write" only when the sound is meant to change)
 run golden sh -c "$CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Wdouble-promotion -Werror -DOM_HOST -Ifirmware/src/dsp \
     -o $OUT/golden_test tests/host/golden_test.c firmware/src/dsp/handpan.c && $OUT/golden_test tests/host/golden.txt"
+# the clock, the arpeggiator, the sequencer, recording and songs (firmware/src/app/seq.c), on their own
+run seq sh -c "$CC -O2 -ffp-contract=off -std=c99 -Wall -Wextra -Werror -DOM_HOST -Ifirmware/src -Ifirmware/src/dsp \
+    -o $OUT/seq_test tests/host/seq_test.c firmware/src/dsp/handpan.c && $OUT/seq_test"
 run storage sh -c "$CC -O2 -o $OUT/storage_test tests/storage_test.c && $OUT/storage_test"
 # the update path, against the firmware package (Felucca's tests; needs ./build.sh)
 if [ -f build/hp1.fwsc ]; then

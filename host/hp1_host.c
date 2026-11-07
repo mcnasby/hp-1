@@ -33,6 +33,15 @@
  *   reboot                       re-run boot from the simulated flash (persistence test)
  *   oldproject                   put a FiMba-1 project in the simulated flash (it must not load)
  *   v1project                    put a format 1 project (before Feel) in the flash, Feel's place not 0
+ *   torn N                       the next save stops after N flash programs (a power cut)
+ *   rename SLOT NAME             rename slot 0..3 (content.h, as the web manager would; _ for a space)
+ *   ctcopy FROM TO               copy content object FROM into TO through content.h's staged write
+ *   ctbad TO                     a staged write of TO with a wrong CRC (refused: the old one stays)
+ * expect, the sequencer: run armed rec wait count seqpat playpat nev patevP (events in pattern P)
+ *   stepS (cents or hit of step S of the chosen pattern, -1 a rest) steplenS (its length, sub-steps)
+ *   outn (notes the sequencer and the arp played) outlast (the last one's cents or hit) arpheld bpm
+ *   slotK (slot K holds a project) slotnameK (the first letter of its name, 0 none) undo section
+ *   seqdirty click (clicks posted)
  */
 #define OM_HOST 1
 #ifndef _POSIX_C_SOURCE
@@ -116,29 +125,53 @@ void plat_midi_out(uint32_t pkt)
         fprintf(midi_log, "%u ms: %02X %02X %02X\n", now_ms, (pkt >> 8) & 0xFF, (pkt >> 16) & 0xFF, (pkt >> 24) & 0xFF);
 }
 
-/* flash: one buffer per object, kept across a simulated reboot */
-static uint8_t store[OBJ_NOBJ][PLAT_STORE_MAX];
-static int store_len[OBJ_NOBJ] = {-1, -1};
+/* flash: a simulated NOR (erase -> 0xFF, programming only clears bits), kept across a simulated reboot,
+ * with the device's own storage.c over it. "torn N" makes the next save stop after N programs. */
+static uint8_t nor[0x100000];
+static int nor_init_done, torn_after = -1;
 static uint32_t store_writes;
-int plat_store_load(uint32_t obj, void *dst, uint32_t max)
+static const uint8_t flash_ok = 1;
+static void nor_init(void)
 {
-    int n;
-    if (obj >= OBJ_NOBJ || (n = store_len[obj]) < 0)
-        return -1;
-    if ((uint32_t)n > max)
-        n = (int)max;
-    memcpy(dst, store[obj], (size_t)n);
-    return n;
+    if (!nor_init_done) {
+        memset(nor, 0xFF, sizeof nor);
+        nor_init_done = 1;
+    }
 }
-int plat_store_save(uint32_t obj, const void *src, uint32_t len)
+static int st_read(uint32_t off, void *dst, uint32_t n)
 {
-    if (obj >= OBJ_NOBJ || len > PLAT_STORE_MAX)
+    nor_init();
+    if (off >= sizeof nor || n > sizeof nor - off)
         return -1;
-    memcpy(store[obj], src, len);
-    store_len[obj] = (int)len;
-    store_writes++;
+    memcpy(dst, nor + off, n);
     return 0;
 }
+static int st_erase(uint32_t off)
+{
+    nor_init();
+    if (!((off >= 0x97000u && off + 4096u <= 0xE0000u) || (off >= 0xFC000u && off + 4096u <= 0xFF000u)) || (off & 0xFFFu))
+        return -8;                                    /* (as FL_STORE_OK on the device) */
+    memset(nor + off, 0xFF, 4096);
+    return 0;
+}
+static int st_prog(uint32_t off, const void *src, uint32_t n)
+{
+    const uint8_t *s = src;
+    uint32_t i;
+    nor_init();
+    if (torn_after == 0)
+        return -9;                                    /* (the power cut) */
+    if (torn_after > 0)
+        torn_after--;
+    if ((off & 0xFFu) + n > 256u || off + n > sizeof nor)
+        return -1;
+    for (i = 0; i < n; i++)
+        nor[off + i] &= s[i];
+    return 0;
+}
+#define PLAT_STORE_DONE(rc) (store_writes += (rc) == 0, torn_after = -1)
+#include "../firmware/src/storage.c"
+#include "../firmware/src/app/plat_store.c"
 
 static uint32_t cpu_pct;
 uint32_t plat_cpu_pct(void) { return cpu_pct; }
@@ -147,6 +180,9 @@ uint32_t plat_xruns(void) { return 0; }
 /* -------------------------------------------------------------- app --- */
 #include "../firmware/src/app/app.h"
 #include "../firmware/src/app/project.c"
+#include "../firmware/src/app/seq.c"
+#include "../firmware/src/app/click.c"
+#include "../firmware/src/app/content.c"
 #include "../firmware/src/app/ui.c"
 
 /* ---------------------------------------------------------- outputs --- */
@@ -285,6 +321,8 @@ static void boot(void)
     km_init();
     project_load();
     project_apply();
+    seq_load();
+    ct_refresh();
     lcd_fill(0, 0, 240, 240, 0);
     ui_init();
 }
@@ -298,6 +336,7 @@ static void run_ms(uint32_t ms)
         while (audio_due_ms <= (double)now_ms) {      /* 256-frame blocks, as the device renders them */
             double t0 = now_ns(), dt;
             km_render(blk, 256, master);
+            click_mix(blk, 256, master);
 #ifdef OM_WEB
             web_audio(blk, 256);
 #endif
@@ -388,8 +427,50 @@ static int expect(const char *what, const char *val)
         got = (int)(km_cavity_level * 1000.0f);
     else if (!strcmp(what, "dropped"))
         got = (int)km_dropped;
-    else if (!strcmp(what, "pat"))                /* the groove: 3 = the UI and the engine agree it runs */
-        got = ui.pat_on + 2 * km_pat_on;
+    else if (!strcmp(what, "pat"))                /* the groove: 3 = it plays with the transport */
+        got = groove_on() ? 3 : 0;
+    else if (!strcmp(what, "run"))
+        got = seq_running();
+    else if (!strcmp(what, "armed"))
+        got = seq_armed();
+    else if (!strcmp(what, "rec"))
+        got = seq_recording();
+    else if (!strcmp(what, "wait"))
+        got = seq_waiting();
+    else if (!strcmp(what, "count"))
+        got = seq_counting();
+    else if (!strcmp(what, "seqpat"))
+        got = sq.h.cur;
+    else if (!strcmp(what, "playpat"))
+        got = seq_playing_pat();
+    else if (!strcmp(what, "section"))
+        got = seq_section();
+    else if (!strcmp(what, "nev"))
+        got = sq.h.nev;
+    else if (!strncmp(what, "patev", 5))
+        got = seq_used(atoi(what + 5));
+    else if (!strncmp(what, "steplen", 7)) {
+        int e = seq_step_ev(sq.h.cur, atoi(what + 7));
+        got = e < 0 ? -1 : sq.ev[e].len;
+    } else if (!strncmp(what, "step", 4)) {
+        int e = seq_step_ev(sq.h.cur, atoi(what + 4));
+        got = e < 0 ? -1 : sq.ev[e].val & 0x3FFF;
+    } else if (!strcmp(what, "outn"))
+        got = (int)ui.out_n;
+    else if (!strcmp(what, "outlast"))
+        got = ui.out_last;
+    else if (!strcmp(what, "arpheld"))
+        got = seq_arp_held();
+    else if (!strcmp(what, "bpm"))
+        got = seq_bpm();
+    else if (!strcmp(what, "seqdirty"))
+        got = seq_dirty();
+    else if (!strcmp(what, "click"))
+        got = (int)click_w;
+    else if (!strncmp(what, "slotname", 8))
+        got = ct_slot_name(atoi(what + 8))[0];
+    else if (!strncmp(what, "slot", 4))
+        got = ct_slot_used(atoi(what + 4));
     else if (!strcmp(what, "duocount"))           /* how many second pans go with this one */
         got = km_duo_count(proj.par[P_SCALE], proj.par[P_KEY]);
     else if (!strcmp(what, "pulse"))
@@ -574,6 +655,25 @@ int main(int argc, char **argv)
             proj.format = 1u;
             proj.par[P_FEEL] = FEEL_CLASSIC;
             plat_store_save(OBJ_PROJ, &proj, sizeof proj);
+        } else if (!strcmp(cmd, "torn"))
+            torn_after = atoi(a);
+        else if (!strcmp(cmd, "rename")) {
+            char *q;
+            for (q = b; *q; q++)
+                if (*q == '_')
+                    *q = ' ';
+            if (ct_slot_rename(atoi(a), b))
+                printf("  rename %s %s: refused\n", a, b);
+        } else if (!strcmp(cmd, "ctcopy") || !strcmp(cmd, "ctbad")) {   /* through content.h, as the web would */
+            static uint8_t buf[PLAT_STORE_MAX];
+            int from = atoi(a), to = cmd[2] == 'b' ? from : atoi(b), n = ct_read(from, 0, buf, sizeof buf), rc = -1;
+            uint32_t off;
+            if (n > 0 && ct_write_begin(to, (uint32_t)n, plat_crc32(0u, buf, (uint32_t)n) ^ (cmd[2] == 'b')) == 0) {
+                for (off = 0, rc = 0; off < (uint32_t)n && !rc; off += 200u)   /* in pieces, as over a cable */
+                    rc = ct_write_data(off, buf + off, (uint32_t)n - off < 200u ? (uint32_t)n - off : 200u);
+                rc = rc ? rc : ct_write_commit();
+            }
+            printf("  %s %s %s: %d (%d bytes)\n", cmd, a, b, rc, n);
         } else if (!strcmp(cmd, "reboot")) {
             memset(&proj, 0, sizeof proj);
             boot();

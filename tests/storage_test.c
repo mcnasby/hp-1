@@ -30,7 +30,7 @@ static int st_prog(uint32_t off, const void *src, uint32_t n)
 }
 #include "../firmware/src/app/plat.h"     /* OMNI: the object map */
 #include "../firmware/src/storage.c"
-#define OBJ_PROJECT0 OBJ_PROJ                  /* OMNI has two objects: the project and the panel */
+#define OBJ_PROJECT0 OBJ_PROJ                  /* HP-1: the project, the panel, the sequence, the slots */
 #define OBJ_SETTINGS OBJ_PANEL
 
 static int check(const char *what, int ok)
@@ -90,19 +90,91 @@ int main(void)
     nor[st_sector(OBJ_PANEL, 0) + 8] ^= 0x01;    /* both headers broken */
     nor[st_sector(OBJ_PANEL, 1) + 8] ^= 0x01;
     bad += check("both headers broken -> nothing", st_load(OBJ_PANEL, got, sizeof got) < 0);
-    {   /* OMNI map: every object in a data region, none in the sample slots (0xA0000..0xDBFFF), no overlaps */
+    {   /* HP-1 map: every copy inside Felucca's data area (or its globals), none over the panel's, none
+         * reaching the update loader's staging (0xE0000..), no overlaps */
         uint32_t o, p, ok = 1;
         for (o = 0; o < OBJ_NOBJ; o++) {
-            uint32_t a0 = st_sector(o, 0), a1 = st_sector(o, 1) + 4096;
-            int in_data = (a0 >= 0x97000 && a1 <= 0xA0000) || (a0 >= 0xDC000 && a1 <= 0xE0000) ||
-                          (a0 >= 0xFC000 && a1 <= 0xFF000);
-            if (!in_data || a1 - a0 != 8192)
+            uint32_t a0 = st_sector(o, 0), a1 = st_sector(o, 1) + st_nsec(o) * 4096;
+            int in_data = (a0 >= 0x97000 && a1 <= 0xE0000) || (a0 >= 0xFC000 && a1 <= 0xFF000);
+            if (!in_data || a1 - a0 != 2 * st_nsec(o) * 4096)
+                ok = 0;
+            if (o != OBJ_PANEL && a0 < 0xDE000 && 0xDC000 < a1)
                 ok = 0;
             for (p = 0; p < o; p++)
-                if (a0 < st_sector(p, 1) + 4096 && st_sector(p, 0) < a1)
+                if (a0 < st_sector(p, 1) + st_nsec(p) * 4096 && st_sector(p, 0) < a1)
                     ok = 0;
         }
-        bad += check("objects in data regions, clear of the sample slots", (int)ok);
+        bad += check("objects in the data area, apart", (int)ok);
+        bad += check("the sequence at 0xC0000, four sectors a copy", st_sector(OBJ_SEQ, 0) == 0xC0000 && st_sector(OBJ_SEQ, 1) == 0xC4000);
+        bad += check("slot D at 0xB6000, five sectors a copy",
+                     st_sector(OBJ_SLOT0 + 3, 0) == 0xB6000 && st_sector(OBJ_SLOT0 + 3, 1) == 0xBB000);
+    }
+    {   /* objects of several sectors: whole, torn, from pieces, read at an offset */
+        static uint8_t big[20224], big2[20224], back[20224];
+        uint32_t i, len, crc;
+        st_part_t part[3];
+        for (i = 0; i < sizeof big; i++) {
+            big[i] = (uint8_t)(i * 7u + (i >> 8));
+            big2[i] = (uint8_t)(i * 13u + 5u);
+        }
+        memset(nor, 0xFF, sizeof nor);
+        bad += check("sequence: 16128 bytes fit, 16129 don't", st_cap(OBJ_SEQ) == 16128 && st_save(OBJ_SEQ, big, 16129) == -1);
+        bad += check("sequence: save 16000 bytes", st_save(OBJ_SEQ, big, 16000) == 0);
+        n = st_load(OBJ_SEQ, back, sizeof back);
+        bad += check("... loads them all", n == 16000 && !memcmp(back, big, 16000));
+        fail_after = 40;                                 /* 40 pages of 63 written, then the power goes */
+        st_save(OBJ_SEQ, big2, 16000);
+        fail_after = -1;
+        n = st_load(OBJ_SEQ, back, sizeof back);
+        bad += check("torn save across sectors keeps the old copy", n == 16000 && !memcmp(back, big, 16000));
+        fail_after = 63;                                 /* every page, not the header */
+        st_save(OBJ_SEQ, big2, 16000);
+        fail_after = -1;
+        n = st_load(OBJ_SEQ, back, sizeof back);
+        bad += check("... and with only its header missing", n == 16000 && !memcmp(back, big, 16000));
+        part[0].p = big2;
+        part[0].n = 100;
+        part[1].p = big2 + 100;
+        part[1].n = 9000;
+        part[2].p = big2 + 9100;
+        part[2].n = 11124;
+        bad += check("slot: save 20224 bytes from three pieces", st_savev(OBJ_SLOT0 + 2, part, 3) == 0);
+        n = st_load(OBJ_SLOT0 + 2, back, sizeof back);
+        bad += check("... loads as one", n == 20224 && !memcmp(back, big2, 20224));
+        n = st_load_at(OBJ_SLOT0 + 2, 12345, back, 100);
+        bad += check("... read at an offset", n == 100 && !memcmp(back, big2 + 12345, 100));
+        bad += check("... read past the end: 0", st_load_at(OBJ_SLOT0 + 2, 20224, back, 10) == 0);
+        bad += check("... its size and CRC", st_info(OBJ_SLOT0 + 2, &len, &crc) == 0 && len == 20224 && crc == st_crc32(big2, 20224));
+        bad += check("the other slots untouched", st_load(OBJ_SLOT0 + 1, back, 10) < 0 && st_load(OBJ_SLOT0 + 3, back, 10) < 0);
+        bad += check("the sequence untouched", st_load(OBJ_SEQ, back, sizeof back) == 16000 && !memcmp(back, big, 16000));
+        nor[st_sector(OBJ_SLOT0 + 2, 0) + 4096 * 3 + 77] ^= 0x04;   /* rot in its fourth sector */
+        nor[st_sector(OBJ_SLOT0 + 2, 1) + 4096 * 3 + 77] ^= 0x04;
+        bad += check("rot past the first sector: caught", st_load(OBJ_SLOT0 + 2, back, sizeof back) < 0);
+
+        /* staged writes (content.h): pieces at any offsets, the old copy in charge until the commit */
+        bad += check("stage: begin", st_stage_begin(OBJ_SEQ, 5000, st_crc32(big2, 5000)) == 0);
+        bad += check("stage: pieces out of order", st_stage_write(3000, big2 + 3000, 2000) == 0 && st_stage_write(0, big2, 3000) == 0);
+        bad += check("stage: past the end refused", st_stage_write(4990, big2, 20) != 0);
+        bad += check("stage: a save of it meanwhile refused", st_save(OBJ_SEQ, big, 10) == -10);
+        n = st_load(OBJ_SEQ, back, sizeof back);
+        bad += check("stage: the old copy still in charge", n == 16000 && !memcmp(back, big, 16000));
+        bad += check("stage: commit", st_stage_commit() == 0);
+        n = st_load(OBJ_SEQ, back, sizeof back);
+        bad += check("stage: the new one loads", n == 5000 && !memcmp(back, big2, 5000));
+        bad += check("stage: a wrong CRC refused at commit",
+                     st_stage_begin(OBJ_SEQ, 100, 0x12345678u) == 0 && st_stage_write(0, big, 100) == 0 && st_stage_commit() == -11);
+        n = st_load(OBJ_SEQ, back, sizeof back);
+        bad += check("... and the old one kept", n == 5000 && !memcmp(back, big2, 5000));
+        bad += check("stage: a missing piece refused",
+                     st_stage_begin(OBJ_SEQ, 600, st_crc32(big, 600)) == 0 && st_stage_write(0, big, 300) == 0 && st_stage_commit() != 0);
+        st_stage_begin(OBJ_SEQ, 600, st_crc32(big, 600));
+        st_stage_write(0, big, 600);
+        st_stage_abort();
+        bad += check("stage: aborted, nothing published", st_stage_commit() != 0 && st_load(OBJ_SEQ, back, sizeof back) == 5000);
+        bad += check("stage: a byte written twice, differently, refused",
+                     st_stage_begin(OBJ_SEQ, 300, 0u) == 0 && st_stage_write(0, big, 300) == 0 && st_stage_write(10, big2 + 10, 1) != 0);
+        st_stage_abort();
+        bad += check("a save after them all", st_save(OBJ_SEQ, big, 700) == 0 && st_load(OBJ_SEQ, back, sizeof back) == 700);
     }
     printf("%s\n", bad ? "STORAGE TEST FAILED" : "storage test passed");
     return bad != 0;

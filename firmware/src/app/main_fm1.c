@@ -36,6 +36,7 @@ static void render_block(int32_t *o)                /* ALNK0: one half, measured
         uint32_t k;
         for (k = 0; k < HALF_FRAMES; k += REND_FRAMES) {
             km_render(o + 2u * k, REND_FRAMES, master_q12);
+            click_mix(o + 2u * k, REND_FRAMES, master_q12);   /* the sequencer's click, after the instrument */
 #if FELUCCA_UAC
             uac_tap(o + 2u * k, REND_FRAMES);       /* the USB audio input: the same master output */
 #endif
@@ -287,6 +288,8 @@ static void fm1_main(void)
     km_init();
     project_load();                                 /* defaults when nothing (or another format) is saved */
     project_apply();
+    seq_load();                                     /* the patterns and the song (empty when none) */
+    ct_refresh();                                   /* the project slots' names */
     audio_init();
     usb_start();
 #if OM_TRS
