@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         km_set(P_DELAY, 30);
         km_set(P_GRAIN, 25);
         km_pan_notes(0, 2, 0, pan);
-        km_duo_notes(0, 2, 0, 0, duo);
+        km_duo_notes(0, 2, 0, 0, 0, duo);
         for (i = 0; i < KM_NPAN; i++)
             all[i] = pan[i];
         for (i = 0; i < KM_NDUO; i++)

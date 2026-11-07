@@ -97,3 +97,29 @@ expect par27 0
 turn PRESET 1
 expect par27 0
 expect dropped 0
+# Black: Duo key: the second pan in another key than the first. D Kurd's best: G Celtic, its ding G3,
+# every note in D Kurd's; the match starts afresh
+spin K2 -1
+expect par24 0
+expect par25 2
+spin K4 1
+expect par26 2
+expect par27 0
+expect duo0 5500
+expect duokey5 5500
+expect duokey6 6200
+tapkey b5
+wait 30
+expect note5500 >3
+wait 50
+shot duo_key.png
+# the matches step on as before (each in another key: the unit test checks every pan)
+tap SEL
+spin K1 3
+expect par27 3
+tap SEL
+spin K4 -1
+expect par26 1
+expect par27 0
+expect duo0 5000
+expect dropped 0

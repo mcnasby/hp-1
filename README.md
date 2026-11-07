@@ -10,7 +10,7 @@ C code compiled to WebAssembly, with mouse, touch, computer keyboard and MIDI in
 
 ![HP-1 in the browser](docs/img/browser.png)
 
-![The pan at rest](docs/img/home.png) ![Fields ringing](docs/img/ringing.png) ![A thwap on the left shoulder](docs/img/thwap.png) ![The second pan](docs/img/duo.png)
+![The pan at rest](docs/img/home.png) ![Fields ringing](docs/img/ringing.png) ![A thwap on the left shoulder](docs/img/thwap.png) ![The second pan](docs/img/duo.png) ![Duo key: a second pan in another key](docs/img/duo_key.png)
 
 > **Status: beta.** HP-1 builds into a real FM-1 package, and every test passes: the engine, the
 > whole app in a simulator, the browser build, and the installer against the package. It hasn't been
@@ -139,6 +139,11 @@ first: the same ding in another scale, then a fifth up, a fourth, the relative m
 starts on **Auto**, the best match, and goes back to it whenever you change the scale or key. For D
 Kurd that's D Celtic.
 
+**Duo key:** the same second pan, but never on the first pan's root: the matches are only pans in
+another key, a fifth up, a fourth, the relative major or minor, so the two pans answer each other from
+different roots while every note still fits. **Duo** (SEL → Duo, KNOB 1) steps through them the same
+way. For D Kurd the best is G Celtic (G3 / D F G A Bb C D F).
+
 ![Pygmy on a stainless pan](docs/img/pygmy.png) ![The Gu](docs/img/gu.png)
 
 ### Buttons
@@ -217,7 +222,7 @@ reverb (amount, room), a ping-pong delay (level, time 40–740 ms, feedback), ta
 one-knob filter (low-pass left, high-pass right), a granular cloud (level, grain length, density,
 pitch, spray) and the stereo width. Every effect fades in and out without a click.
 
-**SEL → Keys**: Layout, Scale, Key, Black (Kit, Duo).
+**SEL → Keys**: Layout, Scale, Key, Black (Kit, Duo, Duo key).
 
 **SEL → Duo** (press SEL again)
 

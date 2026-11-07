@@ -4,6 +4,13 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.5.1
+
+- **Duo key**, a new setting for the black keys (SEL → Keys, Black): a second pan that never shares
+  the first pan's root. It's in a coordinating key instead: a fifth up, a fourth, the relative major
+  or minor. Every note still fits the first pan's scale. For D Kurd, the best match is G Celtic. The
+  Duo page's knob steps through the other matches. **Duo** works as before.
+
 ## 0.5.0
 
 - **Feel: an expressive touch, on by default.** The FM-1's keys only sense on and off, so HP-1 reads

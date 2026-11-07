@@ -500,7 +500,7 @@ static int expect(const char *what, const char *val)
     else if (!strncmp(what, "slot", 4))
         got = ct_slot_used(atoi(what + 4));
     else if (!strcmp(what, "duocount"))           /* how many second pans go with this one */
-        got = km_duo_count(proj.par[P_SCALE], proj.par[P_KEY]);
+        got = km_duo_count(proj.par[P_SCALE], proj.par[P_KEY], proj.par[P_BLACK] == BLK_DUOKEY);
     else if (!strcmp(what, "pulse"))
         got = km_pat_pulse;
     else if (!strcmp(what, "ext"))

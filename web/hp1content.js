@@ -289,7 +289,7 @@ export function parseProject(b) {
   const at = (i, d) => (i < n ? par[i] : d);
   return { format: v.getUint32(4, true), par, metal: METALS[at(P.METAL, 0)] || "?", scale: SCALES[at(P.SCALE, 0)] || "?",
            key: KEYS[((at(P.KEY, 2) % 12) + 12) % 12], feel: v.getUint32(4, true) >= 2 && at(P.FEEL, 0) ? "Classic" : "Expressive",
-           tempo: at(P.TEMPO, 84), black: at(P.BLACK, 0) ? "Duo" : "Kit" };
+           tempo: at(P.TEMPO, 84), black: ["Kit", "Duo", "Duo key"][at(P.BLACK, 0)] || "Kit" };
 }
 
 const SEQ_HEAD = 236;
