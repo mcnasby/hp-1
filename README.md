@@ -24,6 +24,9 @@ C code compiled to WebAssembly, with mouse, touch, computer keyboard and MIDI in
 
 - [Pick it up and play](#pick-it-up-and-play)
 - [The controls](#the-controls)
+- [The arpeggiator](#the-arpeggiator)
+- [Sequencer and songs](#sequencer-and-songs)
+- [Project slots](#project-slots)
 - [The scales](#the-scales)
 - [How the handpan works](#how-the-handpan-works)
 - [MIDI](#midi)
@@ -43,7 +46,9 @@ C code compiled to WebAssembly, with mouse, touch, computer keyboard and MIDI in
 3. **The white keys at the ends are the steel.** The end keys are palm thwaps, the next ones in are
    fingertip taks, each on its own side of the shell. The black keys are a kit: castanets, shakers,
    the pan's own hits and a splash cymbal.
-4. **Tap ARP** for a groove (ding, fields, taks and thwaps), and play over it.
+4. **Press PLAY** with Groove on (SEQ, KNOB 4) for a groove (ding, fields, taks and thwaps), and play
+   over it. Tap **REC** and play to record a pattern; turn the **arp** on (ARP, KNOB 1) and hold a few
+   keys to hear them in turn.
 5. **Turn ALGORITHM** to change the scale (it comes in the key makers usually build it in) and
    **PRESETS** to move it to any key. **SELECT** changes the metal.
 
@@ -145,13 +150,14 @@ show which page you're on.
 | **FX**                            | Space → Color | Reverb and delay; tape, lo-fi, chorus, filter                                                  |
 | **LFO**                           | Grain → Spread | The grain cloud; its scatter, the echoes' feedback, the stereo width                          |
 | **SEL**                           | Keys → Duo  | Layout, scale, key, black keys; the second pan, its level, the percussion level, the octave      |
-| **SEQ**                           | Groove      | The groove's settings                                                                            |
-| **GLO**                           | Setup       | Tuning, MIDI, the theme; the version and CPU load                                                |
+| **ARP**                           | Arp → Arp 2 | The arpeggiator ([below](#the-arpeggiator)). Flashes on the beat while it's on                   |
+| **SEQ**                           | Groove → Pattern → Steps → Tempo → Song | The groove; the pattern, its steps, the tempo and recording, the song ([below](#sequencer-and-songs)) |
+| **GLO**                           | Setup → Projects | Tuning, MIDI, the theme; the project slots ([below](#project-slots))                        |
 | **EDIT**                          |             | Every page in turn                                                                               |
-| **ARP**                           |             | **Tap:** the groove on and off. Lit while it runs, dark on each beat. **Hold:** the Groove page. |
-| **PLAY**                          |             | Freeze the grain cloud; again to go live                                                         |
-| **REC**                           |             | Palm mute                                                                                        |
-| **OCT− / OCT+**                   |             | Move the pan an octave down or up                                                                |
+| **PLAY**                          |             | **Tap:** play and stop (the pattern, or the song; the groove with it). Lit while it plays, dark on each beat. **Hold ½ s:** freeze the grain cloud; again to go live |
+| **REC**                           |             | **Tap:** arm recording, and again to stop. Lit while recording, blinking while it waits. **Hold ½ s:** palm mute. **Hold with PLAY:** record after the count-in |
+| **SEQ held**                      |             | White keys 1–16 choose patterns 1–16 (playing: from the loop's end). **OCT−** clears the pattern (twice), **OCT+** copies it into the next empty one, **EDIT** undoes the last take |
+| **OCT− / OCT+**                   |             | Move the pan an octave down or up (Projects page: load / save the slot)                          |
 | **SAVE**                          |             | Save now (settings also save themselves a few seconds after a change). Hold 1.5 s: reset.        |
 | **OCT− + OCT+, held 5 s**         |             | Update mode (to install firmware)                                                                |
 | **OCT− + OCT+, held at power-on** |             | Hardware calibration                                                                             |
@@ -213,15 +219,20 @@ pitch, spray) and the stereo width. Every effect fades in and out without a clic
 | Percussion | 0–100 (70)          | The level of every hit on the steel                               |
 | Octave     | −1–+1 (0)           | The same as OCT− / OCT+                                           |
 
-**SEQ → Groove** (or hold ARP)
+**ARP → Arp**, **ARP → Arp 2**: the arpeggiator ([below](#the-arpeggiator)).
 
-![A groove running](docs/img/groove.png)
+**SEQ → Groove**
+
+![The Groove page](docs/img/groove.png)
 
 | Knob       | Range (default)                                   | What it does                                   |
 | ---------- | ------------------------------------------------- | ---------------------------------------------- |
-| Groove     | Heartbeat, Cascade, 3 over 2, Backbeat (Heartbeat) | Which groove ARP plays ([below](#grooves))     |
-| Tempo      | 40–200 BPM (84)                                   | Three pulses a beat. MIDI clock takes over while it comes in. |
+| Groove     | Heartbeat, Cascade, 3 over 2, Backbeat (Heartbeat) | Which groove plays ([below](#grooves))        |
+| Tempo      | 40–240 BPM (84)                                   | The one tempo: the groove, the arp, the sequencer. MIDI clock takes over while it comes in. |
 | Percussion | 0–100 (70)                                        | The same as on the Duo page                    |
+| Groove on  | Off, On (Off)                                     | On: PLAY starts the groove with the transport  |
+
+**SEQ → Pattern**, **Steps**, **Tempo**, **Song**: the sequencer ([below](#sequencer-and-songs)).
 
 **GLO → Setup**
 
@@ -234,6 +245,8 @@ pitch, spray) and the stereo width. Every effect fades in and out without a clic
 
 The header shows the firmware version and the audio load (**CPU %**), and counts any dropouts.
 
+**GLO → Projects**: the four project slots ([below](#project-slots)).
+
 **Reset to the defaults:** hold SAVE for 1.5 s, then press SAVE again. Any other button, or 5 s
 of nothing, keeps everything. The Setup page is kept either way.
 
@@ -241,8 +254,10 @@ of nothing, keeps everything. The Setup page is kept either way.
 
 ![The Light theme](docs/img/light.png) ![Setup](docs/img/setup.png)
 
-- **Header:** the page, its dots, tags (**FRZ** frozen grains, **GRV** a groove, bright on the beat,
-  **DAMP**), and the pan: "D Kurd".
+- **Header:** the page, its dots, tags (**FRZ** frozen grains, **GRV** the groove, bright on the beat,
+  **DAMP**), and the pan: "D Kurd". While the transport plays, where it is takes the pan's place: "P2
+  3.1" (pattern 2, bar 3, beat 1), "S4 1.2" (the song's section 4), **REC 1.3** recording, **WAIT 2.4**
+  armed and waiting for the pattern's start, **IN 3** the count-in's beats to go, **REC** armed.
 - **The pan from above**, shaded in its metal. Each field shows its note, glows as it rings, and
   sends a ripple out when struck. A thwap or tak lights the rim on that side; the Gu breathes in a
   ring round the ding. With Duo, the second pan stands to the right.
@@ -251,6 +266,123 @@ of nothing, keeps everything. The Setup page is kept either way.
   each lights as it sounds. With Duo it shows only the two end keys (castanets, Gu): the second pan
   shows its own notes, and their place in the strip stays empty.
 - **The knobs:** the page's four values. The one you turned is highlighted for a moment.
+
+## The arpeggiator
+
+Turn **Mode** on (ARP, KNOB 1) and the notes you hold, on the white keys and on the second pan's
+black keys, play one after another at the **Rate**, over as many **Octaves** as you like (an octave up
+of a pan note is still in its scale). The steel and the kit still play at once. It runs whether the
+transport plays or not, at the Tempo or following MIDI clock; while the transport plays it falls on
+its grid. Recording, what the arp plays is what's recorded. ARP flashes on each beat while it's on.
+(After Melodee's arpeggiator.)
+
+![The Arp page](docs/img/arp.png)
+
+**ARP → Arp**
+
+| Knob    | Range (default)                                                    | What it does                                     |
+| ------- | ------------------------------------------------------------------ | ------------------------------------------------ |
+| Mode    | Off, Up, Down, Up-down, Random, Repeat (Off)                       | The order: Repeat plays the last note held, again |
+| Rate    | 1/4, 1/8, 1/16, 1/32, 1/8T, 1/16T, 1/2, 1/1, 2 bars, 4 bars (1/16) | How often                                        |
+| Octaves | 1–4 (1)                                                            | The held notes, then an octave up, and so on     |
+| Gate    | 1–127 (64)                                                         | How long each note is held: its length when recorded, and when it's damped with Release on Damp (on Ring it rings, as a strike does) |
+
+**ARP → Arp 2**
+
+| Knob   | Range (default)      | What it does                                                         |
+| ------ | -------------------- | -------------------------------------------------------------------- |
+| Swing  | 0–100 (0)            | Every second note later                                              |
+| Chance | 0–127 (127)          | How likely each step is to play (127: always)                        |
+| Hold   | Off, On (Off)        | On: the notes keep playing after you let go; the next chord replaces them |
+| Order  | Note, Played (Note)  | Low to high, or in the order the keys went down                      |
+
+## Sequencer and songs
+
+One clock runs the arp, the sequencer and the groove: the Tempo (SEQ → Tempo or Groove), or MIDI
+clock while it comes in (Start plays from the top, Stop stops). The project holds **16 patterns**,
+each up to 64 steps long with its own step length and swing, and a **song** of up to 64 sections.
+Everything the instrument plays goes in a pattern: the pan's notes, the second pan's, and the hits on
+the steel and the kit, recorded as you played them (time within the step, how long you held it, how
+hard), up to about a thousand notes in all.
+
+**Recording.** Tap **REC** to arm it. Stopped, the first key you play starts the transport and is
+recorded at the pattern's start. Hold REC and press PLAY to start with the count-in (1 or 2 bars,
+Tempo page). Armed while it plays, it waits for the pattern's next start (**WAIT**), then records
+loop after loop: each pass adds to what's there, and a note played where the same note already is
+replaces it. Tap REC again, or stop, to end the take; **Quantize** then moves the take's notes to the
+grid. **SEQ + EDIT** undoes the last take. The **click** counts the beats while recording (Rec) or
+always (On); a count-in clicks either way. (After Melodee's recording and transport.)
+
+**Patterns.** Hold **SEQ** and press white key 1–16 to choose a pattern (while playing, it starts at
+the end of the loop). With SEQ held, **OCT−** clears it (press it twice), **OCT+** copies it into the
+next empty pattern. An empty pattern records from scratch.
+
+![The Steps page](docs/img/steps.png) ![The Song page](docs/img/song.png)
+
+**SEQ → Pattern**
+
+| Knob     | Range (default)                     | What it does                                     |
+| -------- | ----------------------------------- | ------------------------------------------------ |
+| Pattern  | 1–16 (1)                            | The pattern played and edited                    |
+| Length   | 1–64 steps (16)                     | How many steps                                   |
+| Division | as the arp's Rate (1/16)            | A step's length                                  |
+| Swing    | 0–100 (0)                           | Every second step later                          |
+
+**SEQ → Steps**: the pattern as a grid of its steps (a note teal, a hit gold, a held note's steps
+tinted, the step playing lit). Stopped, a key you play writes its note at the cursor and moves it on
+(keys held together: a chord).
+
+| Knob     | Range                                    | What it does                                          |
+| -------- | ---------------------------------------- | ----------------------------------------------------- |
+| Step     | 1 to the pattern's length                | The cursor                                            |
+| Note     | Rest, the notes the keys reach, the second pan's (Duo), every hit | The step's note                |
+| Length   | 1–16 steps                               | How long it's held                                    |
+| Velocity | 1–127                                    | How hard                                              |
+
+**SEQ → Tempo**
+
+| Knob     | Range (default)                              | What it does                                       |
+| -------- | -------------------------------------------- | -------------------------------------------------- |
+| Tempo    | 40–240 BPM (84)                              | The same as on the Groove page                     |
+| Quantize | Off, 1/4, 1/8, 1/16, 1/32, 1/8T, 1/16T (Off) | Where a take's notes go when it ends               |
+| Count-in | Off, 1 bar, 2 bars (Off)                     | Before REC + PLAY records (not under MIDI clock)   |
+| Click    | Off, Rec 1–10, On 1–10 (Off)                 | When it clicks (recording, or always) and how loud. It's added after the instrument, which it never changes |
+
+**SEQ → Song**: Song On, PLAY plays the sections in order, each its pattern so many times; at **End**
+(or after section 64) it stops, or with **Loop** goes round again.
+
+| Knob    | Range (default)        | What it does                    |
+| ------- | ---------------------- | ------------------------------- |
+| Section | 1–64                   | The section shown               |
+| Pattern | 1–16, End (End)        | What it plays                   |
+| Repeats | 1–16 (1)               | How many times                  |
+| Song    | Off, On, Loop (Off)    | Off: PLAY plays the pattern     |
+
+The sequence saves itself as the settings do, a few seconds after a change, never while the transport
+plays.
+
+## Project slots
+
+**GLO → Projects** keeps four whole projects, **A** to **D**: the sound and the settings, the
+patterns and the song, and a name. The screen lists the slots and their names.
+
+![The Projects page](docs/img/projects.png)
+
+| Knob      | Range      | What it does                                                     |
+| --------- | ---------- | ---------------------------------------------------------------- |
+| Slot      | A–D        | Which slot                                                       |
+| Letter    | 1–15       | Which letter of the project's name the next knob sets            |
+| Character | A–Z, 0–9, -, space | That letter                                              |
+
+- **OCT+**, twice: save the working project, with its name, into the slot.
+- **OCT−**, twice: load the slot into the working project (the transport stops). The Setup page's
+  values (tuning, MIDI, the theme) stay as they are.
+
+The working project and its sequence, the four slots, and the panel's calibration each keep two
+copies in the FM-1's flash, and a save writes the older one, its header last: a save cut short by a
+power cut leaves the last good one in charge. A content manager (such as a web page) can list, read,
+write and rename them through the same code (`firmware/src/app/content.h`): a write is checked whole
+before it replaces anything.
 
 ## The scales
 
@@ -393,7 +525,8 @@ The **castanets** are a click into the shells' short ring. **Percussion** sets t
 
 ### Grooves
 
-ARP plays a groove over the pan: a cycle of 12 pulses, three to a beat. Each pulse plays the ding, a
+With **Groove on** (SEQ → Groove, KNOB 4), PLAY starts a groove with the transport: a cycle of 12
+pulses, three to a beat. Each pulse plays the ding, a
 field (counted up from the ding), or a hit on the steel. The first pulse is accented and no two
 strikes are quite the same strength. The white keys play over it.
 
@@ -418,7 +551,7 @@ MIDI comes in over USB and the TRS jack, on the Setup page's channel (Omni by de
 | CC 120, CC 123                   | Damp everything                                                                  |
 | Program change                   | Metal (0–3, wrapping)                                                            |
 | Pitch bend                       | ±2 semitones, on every ringing note                                              |
-| Clock, Start, Continue, Stop     | The groove follows the clock                                                     |
+| Clock, Start, Continue, Stop     | The transport follows: the clock sets the tempo (the arp, the sequencer, the groove), Start plays from the top, Continue plays on, Stop stops |
 
 **Out** (off by default; Setup KNOB 3): the keys are sent as notes on the Setup channel.
 
@@ -433,8 +566,8 @@ right now (its note, or its hit), and the computer key that plays it.
 - **Computer keyboard:** <kbd>Space</kbd>, <kbd>G</kbd> or <kbd>H</kbd> for the ding; out along the
   home row (<kbd>F</kbd> <kbd>J</kbd> <kbd>D</kbd> <kbd>K</kbd> <kbd>S</kbd> <kbd>L</kbd> <kbd>A</kbd>
   <kbd>;</kbd>), then <kbd>R</kbd> <kbd>U</kbd>; tak <kbd>E</kbd> <kbd>I</kbd>, thwap <kbd>W</kbd>
-  <kbd>O</kbd>. Black keys <kbd>1</kbd>–<kbd>0</kbd> and <kbd>-</kbd>. <kbd>B</kbd> groove, <kbd>Enter</kbd> mute,
-  <kbd>`</kbd> freeze, <kbd>Esc</kbd> HOME, <kbd>Z</kbd>/<kbd>X</kbd> octave, <kbd>↑</kbd>/<kbd>↓</kbd>
+  <kbd>O</kbd>. Black keys <kbd>1</kbd>–<kbd>0</kbd> and <kbd>-</kbd>. <kbd>`</kbd> PLAY (hold: freeze),
+  <kbd>Enter</kbd> REC (hold: mute), <kbd>B</kbd> ARP, <kbd>N</kbd> SEQ, <kbd>Esc</kbd> HOME, <kbd>Z</kbd>/<kbd>X</kbd> octave, <kbd>↑</kbd>/<kbd>↓</kbd>
   metal, <kbd>←</kbd>/<kbd>→</kbd> scale, <kbd>[</kbd>/<kbd>]</kbd> key.
 - **MIDI:** "Connect MIDI" uses Web MIDI (Chrome or Edge).
 - **Saving:** SAVE keeps your settings in that browser.
@@ -460,6 +593,13 @@ python3 tools/fm1_install.py build/hp1.fwsc
   octave and fifth, the shimmer (3–9 Hz) and the decays measured pans have, damping, sympathy, every hit (its side, the Gu's pitch against the
   size, the mute, the slap, the harmonic), the effects, that nothing clicks, the grooves and MIDI
   clock, and a 20-minute run. It writes one WAV per metal to `build/host/materials/`.
+- **The sound held still** (`tests/host/golden_test.c`): a fixed performance rendered on every metal
+  against `tests/host/golden.txt`.
+- **The sequencer test** (`tests/host/seq_test.c`) checks the clock (no drift, MIDI clock), the arp's
+  orders, octaves, rate, swing, gate, chance and hold, recording (timing, length, overdub, quantize,
+  undo), swing and divisions in playback, pattern changes, songs, the count-in, the click and the
+  groove's pulses. **The storage test** checks objects of several sectors, a torn save across them,
+  saves from pieces, and the staged writes the web uses.
 - **The host simulator** (`build/host/hp1_host SCRIPT OUTDIR`) runs the whole firmware from a
   script (`tests/scenarios/*.kal`). The screenshots in this README are its output.
 - **GitHub Actions** tests everything, builds the firmware and the web app, and publishes the site.
@@ -489,6 +629,7 @@ the second pan, the grooves, the screen, the pages and the tests.
 | [Felucca](https://github.com/hugelton/Felucca), Leo Kuroshita (@kurogedelic), Hügelton Instruments | The platform: hardware layer, USB, storage, update loader, OTA, MIDI, LCD, drawing, build and install tools | GPL-3.0-only |
 | [X0X](https://github.com/charlesvestal/fm1-x0x), Charles Vestal                                    | The platform adapted for another instrument, the host simulator                             | GPL-3.0-only |
 | [FoMni](https://github.com/charlesvestal/fm1-fomni), Charles Vestal                                | Boot, safe mode, panel map, project storage, the UI's frame, the maths library, the plate reverb, the browser emulator | GPL-3.0-only |
+| [Melodee](https://github.com/keremimo/melodee), Kerem Kilic (Ellic Studio)                         | The arpeggiator, the recording and transport gestures, the song's sections and the click's voice (adapted for one instrument) | GPL-3.0-only |
 | Jon Dattorro, "Effect Design, Part 1" (JAES, 1997)                                                 | The plate reverb's design                                                                   | —            |
 | Barlow (The Barlow Project Authors), Terminus (Dimitar Toshkov Zhekov)                             | The screen's fonts                                                                          | SIL OFL 1.1  |
 | JieLi AC79 SDK                                                                                     | Three small files placed in the package at build time (not in this repository)              | Apache-2.0   |
