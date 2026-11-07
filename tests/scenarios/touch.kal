@@ -7,10 +7,10 @@ spin K3 -50
 expect par6 0
 expect par41 0
 wav touch.wav
-# a quick tap: at ~1.5 s, far down (Classic: ~40)
+# a quick tap: at ~1.5 s, a little down (Classic: ~40)
 tapkey w9
 wait 1440
-expect level5700 <20
+expect level5700 <33
 wait 4000
 # held: nothing for ~0.3 s, then the hand presses in, all of it by ~1.5 s; let go, it comes off
 key w9 down

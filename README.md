@@ -345,7 +345,7 @@ only takes channel pressure from another controller, as vibrato). So with **Feel
 
 - **every strike** is a lighter, quicker fingertip: a touch harder contact, a little more ping and
   skin (as Strike +14);
-- **a quick tap** (let go within 0.18 s) rings about 0.6 as long (the ding ~0.75). It's still a
+- **a quick tap** (let go within 0.14 s) rings about 0.8 as long (the ding ~0.88). It's still a
   ring, not a damp, and with Release on Damp, letting go damps as it always does;
 - **a key held** past 0.3 s is a hand resting on the field. It presses in smoothly, all the way by
   1.5 s, and the note grows fuller and darker: the octave decays about twice as fast, the fifth three

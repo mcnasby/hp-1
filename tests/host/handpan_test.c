@@ -770,7 +770,7 @@ static void test_feel(void)
     feel_note(5700, 0, 0, 1);                          /* a quick tap */
     late[2] = rms(bufl, 256 + 44100, 4410);
     printf("  feel: a quick tap at 1 s %+.1f dB (a damp: below -26)\n", (double)db(late[2] / late[0]));
-    CHECK(db(late[2] / late[0]) < -6.0f && db(late[2] / late[0]) > -24.0f, "staccato: %.1f dB at 1 s (shorter, not damped)",
+    CHECK(db(late[2] / late[0]) < -2.0f && db(late[2] / late[0]) > -10.0f, "staccato: %.1f dB at 1 s (a little shorter, not damped)",
           (double)db(late[2] / late[0]));
     for (p = 0; p < 2; p++) {                          /* the lighter strike: brighter */
         feel_note(5700, p ? 100 : 0, 0, 0);

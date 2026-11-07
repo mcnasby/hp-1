@@ -600,7 +600,7 @@ static int is_ding(int cents)
  * higher the partial the more: the octave a little, the fifth more, the double octave, the stray mode and
  * the ping the most; and the fundamental, held under it, rings on longer: the note fuller and darker
  * the harder and longer it's held. The ding under a palm stays round (gentler on all of it). A quick tap
- * let go (km_staccato) rings ~0.6 as long; the ding, ~0.75. Only the decays move: the waves
+ * let go (km_staccato) rings ~0.8 as long; the ding, ~0.88. Only the decays move: the waves
  * carry on as they are (no click). */
 #define PRESS_UP 2.0f                                  /* at full pressure the fifth's T60 / 3 */
 #define PRESS_FUND 0.35f                               /* ...and the fundamental's x 1.35 */
@@ -608,7 +608,7 @@ static void touch_t60(const voice_t *v, float *tk)
 {
     static const float UP[KM_NMODE] = {0.0f, 0.55f, 0.55f, 1.0f, 1.0f, 1.4f, 1.8f, 1.8f, 1.8f, 1.8f, 1.8f};
     const float p = v->press, up = PRESS_UP * p * (v->ding ? 0.4f : 1.0f),
-                st = v->stacc ? (v->ding ? 0.75f : 0.6f) : 1.0f;
+                st = v->stacc ? (v->ding ? 0.88f : 0.8f) : 1.0f;
     int k;
     tk[M_FUND] *= (1.0f + PRESS_FUND * p * (v->ding ? 1.4f : 1.0f)) * st;
     for (k = 1; k < KM_NMODE; k++)

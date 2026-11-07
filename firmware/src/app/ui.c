@@ -348,7 +348,7 @@ static int human_ms(void) { return proj.par[P_HUMAN] > 50 ? (int)(ui_rnd() % (ui
  * PRESS_RISE_MS (an S), and lifting with the key: the note fuller and darker (km_press; MIDI out: poly
  * pressure). Over MIDI, the controller's own pressure: poly (A0) on its note, channel (D0) on every
  * note held. Classic: none of it, the sound as it always was. */
-#define TAP_MS 180u
+#define TAP_MS 140u
 #define PRESS_MS 300u
 #define PRESS_RISE_MS 1200u
 #define PRESS_STEP 4                   /* sent as it moves this much (of 127): ~30 messages a press */
