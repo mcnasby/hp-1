@@ -449,8 +449,10 @@ the middle over the port, and you strike it with a thumb or a palm. So it sounds
 a soft, longer contact with little click or metallic ping, a fuller fundamental that rings about 30%
 longer, the fifth and double octave tucked in, and it moves the air inside the most. Strike it again
 while it rings and nothing stops it, so each strike adds to what's ringing and the ding builds the
-more you play it (about 4 to 6 dB over four strikes). Those later strikes land softer still, with
-less attack the more it rings, as a hand meets steel that's already moving. An ordinary field is stopped under the fingertip
+more you play it. Each strike keeps its attack (a hand bounces off steel that's already moving, a
+touch quicker), and wakes the ding's harmonics more: the octave, the fifth, the double octave and its
+fifth harmonic come up and ring longer, so it grows fuller and shinier with every strike, as a recorded
+ding struck nine times in a row does (its fifth up ~18 dB, its double octave ~25). An ordinary field is stopped under the fingertip
 first. The second pan's ding works the same way.
 
 **The high fields are rougher**, as on a real pan. They're small and stiff, and the tuner can't

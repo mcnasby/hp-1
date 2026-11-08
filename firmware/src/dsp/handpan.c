@@ -533,6 +533,7 @@ typedef struct {
     uint16_t live;                                    /* the modes still sounding (bit k): the rest are skipped */
     float hx;                                         /* how high and small the field is (high_x) */
     uint8_t ding;                                     /* it's a ding (the pan's, or the second pan's) */
+    float bloom;                                      /* a ding struck again and again: its harmonics building (0..1) */
     float press;                                      /* a hand resting on it (km_press), 0..1 */
     uint8_t stacc;                                    /* let go of quickly (km_staccato): it rings shorter */
 } voice_t;
@@ -653,7 +654,7 @@ static void voice_coefs(voice_t *v)
           /* Sustain: a quarter to four times the metal's own; a thicker shell rings on longer, a bigger
            * pan's fields are bigger and ring a little longer too */
           dscale = fm_exp2f((float)(par[P_SUSTAIN] - 50) * 0.04f) * fm_powf(th, 0.8f) * fm_powf(size_f(), -0.5f), t1,
-          lvl = 1.0f, spread = 1.0f, ostretch = 0.0f, ratio[KM_NMODE], amp[KM_NMODE], tk[KM_NMODE], bo, bf, hx;
+          lvl = 1.0f, spread = 1.0f, ostretch = 0.0f, ratio[KM_NMODE], amp[KM_NMODE], tk[KM_NMODE], bo, bf, hx, bl;
     int k, nm = 0;
     if (worn > 0.0f) {                                  /* this field's quirks */
         f0 *= fm_exp2f(worn * 10.0f * wear(v->cents, 0) * (1.0f / 1200.0f));
@@ -668,26 +669,27 @@ static void voice_coefs(voice_t *v)
     bf = m->beat * spread * (1.25f + 0.35f * wear(v->cents, 7));
     t1 = m->t60 * dscale * fm_powf(f0 * (1.0f / 146.83f), -m->pitch_k) * (v->ding ? 1.3f : 1.0f);
     hx = v->hx = v->ding ? 0.0f : high_x(f0);
+    bl = v->ding ? v->bloom : 0.0f;
     ratio[M_FUND] = 1.0f;
     amp[M_FUND] = 1.0f;
     tk[M_FUND] = t1;
     /* (up top: the octave louder, a little shorter, 2 to 10 cents flat; the fifth weaker, shorter, 5 to
      * 25 cents flat; the double octave fading) */
     ratio[M_OCT] = 2.0f * (1.0f + ostretch) * (1.0f - hx * (0.0035f + 0.0023f * wear(v->cents, 8)));
-    amp[M_OCT] = m->oct * harm * (1.0f + 0.25f * hx) * (v->ding ? 0.9f : 1.0f);
-    tk[M_OCT] = t1 * m->oct_t * (1.0f - 0.2f * hx);    /* the octave often outlasts the fundamental */
+    amp[M_OCT] = m->oct * harm * (1.0f + 0.25f * hx) * (v->ding ? 0.9f + 0.3f * bl : 1.0f);
+    tk[M_OCT] = t1 * m->oct_t * (1.0f - 0.2f * hx) * (1.0f + 0.6f * bl);    /* the octave often outlasts the fundamental */
     ratio[M_OCT2] = ratio[M_OCT] + bo / f0;
     amp[M_OCT2] = amp[M_OCT] * m->depth;
     tk[M_OCT2] = tk[M_OCT];
     ratio[M_FIFTH] = 3.0f * (1.0f + 0.5f * ostretch) * (1.0f - hx * (0.0087f + 0.0058f * wear(v->cents, 9)));
-    amp[M_FIFTH] = m->fifth * harm * (1.0f - 0.45f * fm_minf(hx, 1.0f)) * (v->ding ? 0.75f : 1.0f);
-    tk[M_FIFTH] = t1 * m->fifth_t * (1.0f - 0.4f * fm_minf(hx, 1.0f));
+    amp[M_FIFTH] = m->fifth * harm * (1.0f - 0.45f * fm_minf(hx, 1.0f)) * (v->ding ? 0.75f + 1.25f * bl : 1.0f);
+    tk[M_FIFTH] = t1 * m->fifth_t * (1.0f - 0.4f * fm_minf(hx, 1.0f)) * (1.0f + 0.6f * bl);
     ratio[M_FIFTH2] = ratio[M_FIFTH] - bf / f0;
     amp[M_FIFTH2] = amp[M_FIFTH] * m->depth;
     tk[M_FIFTH2] = tk[M_FIFTH];
     ratio[M_DBL] = 4.0f * (1.0f + ostretch);
-    amp[M_DBL] = m->dbl * harm * th * (1.0f - 0.5f * fm_minf(hx, 1.0f)) * (v->ding ? 0.6f : 1.0f);
-    tk[M_DBL] = t1 * 0.5f;
+    amp[M_DBL] = m->dbl * harm * th * (1.0f - 0.5f * fm_minf(hx, 1.0f)) * (v->ding ? 0.6f + 2.4f * bl : 1.0f);
+    tk[M_DBL] = t1 * 0.5f * (1.0f + 0.6f * bl);
     for (k = 0; k < 4; k++) {                           /* (thicker steel: a higher, longer ping) */
         ratio[M_PING + k] = PING_RATIO[k] * fm_powf(th, 0.15f);
         amp[M_PING + k] = m->ping * PING_AMP[k] * th * (v->ding ? 0.3f : 1.0f);
@@ -696,6 +698,12 @@ static void voice_coefs(voice_t *v)
     ratio[M_STRAY] = 2.5f + 0.08f * wear(v->cents, 10);
     amp[M_STRAY] = 0.16f * harm * hx;                   /* (~-16 dB at the top; none below C4) */
     tk[M_STRAY] = t1 * 0.3f;
+    if (v->ding) {                                      /* (the ding has none: there, the shine of its fifth
+                                                         * harmonic, which a ding struck again and again wakes) */
+        ratio[M_STRAY] = 5.0f;
+        amp[M_STRAY] = 0.1f * harm * bl;
+        tk[M_STRAY] = t1 * 0.45f;
+    }
     if (v->press > 0.0f || v->stacc)
         touch_t60(v, tk);
     for (k = 0; k < KM_NMODE; k++) {
@@ -798,8 +806,13 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->ding = (uint8_t)is_ding(cents);
     ring = v->ding && v->on ? fm_clampf(v->level * 3.0f, 0.0f, 1.0f) : 0.0f;
     if (v->ding) {                                      /* a thumb or a palm: a soft, long contact */
-        tp = 0.0024f * fm_exp2f(-1.0f * hard) * (1.0f + 0.8f * ring);   /* (softer still into a ringing ding:
-                                                         * the hand meets steel already moving) */
+        /* Struck again while it rings, the hand meets steel already moving: it bounces off quicker (a
+         * firmer contact: the attack stays), and each strike wakes the ding's harmonics more, the
+         * octave, the fifth, the double octave and its fifth harmonic ringing longer: it builds, fuller
+         * and shining (as a recorded ding struck nine times in a row does: its upper harmonics up 10 to
+         * 30 dB, its attack as bright or brighter) */
+        tp = 0.0024f * fm_exp2f(-1.0f * hard) * (1.0f - 0.35f * ring);
+        v->bloom = v->on ? fm_minf(ring * (v->bloom + 0.3f), 1.0f) : 0.0f;
         again = 0;                                      /* (and nothing stops what rings: below) */
     }
     if (!v->on)
@@ -843,7 +856,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     {   /* the ping: the instant of contact, steel on steel through the skin, too short for the finger's
          * pulse to carry. An impulse into the field's higher modes (a firm strike rings them more) */
         const float ap = a * (0.3f + 0.7f * hard) * (emph == EMPH_ALL ? 1.0f : emph == EMPH_HARMONIC ? 0.6f : 0.0f) *
-                         (1.0f - 0.75f * ring);
+                         (1.0f + 0.3f * v->bloom * v->ding);
         for (k = M_PING; k < KM_NMODE; k++)
             v->y1[k] += v->amp[k] * v->s0[k] * ap;     /* (an impulse: it rings at amp x ap) */
     }
@@ -852,7 +865,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->ex_amp = a * (FM_PI * 0.5f) / n;                 /* area a: the first mode rings at ~a */
     v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * m->touch * hard * (0.5f + 0.5f * hard) * 0.9f *
                                                                (1.0f + 0.5f * v->hx) * (v->ding ? 0.35f : 1.0f) *
-                                                               (1.0f - 0.75f * ring) : 0.0f;
+                                                               (1.0f + 0.3f * v->bloom * v->ding) : 0.0f;
     v->click_dec = fm_expf(-1.0f / ((0.007f - 0.004f * hard) * KM_SR));
     v->click_a = fm_minf(0.12f + 0.4f * hard + 0.2f * v->hx, 0.8f);   /* its low-pass: ~0.9 to ~4 kHz (more up top) */
     a = ((float)pan * 0.01f * width + 1.0f) * (FM_PI * 0.25f);   /* pan: equal power */

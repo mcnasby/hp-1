@@ -458,7 +458,9 @@ static void test_kit(void)
 }
 
 /* the ding: a softer, rounder strike than a field (less above 2 kHz at the attack, against its own
- * note), and struck again and again it builds, where a field is stopped under the fingertip first */
+ * note), and struck again and again it builds, where a field is stopped under the fingertip first: its
+ * attack stays, and its harmonics (the fifth, the double octave) come up against its fundamental, as a
+ * recorded ding struck nine times in a row does */
 static float attack_bright(int cents)
 {
     fresh();
@@ -470,7 +472,8 @@ static float attack_bright(int cents)
     return db(band_e(256, 1024, 2000.0f, 9000.0f) / band_e(256 + 4410, 4096, hz(cents) * 0.98f, hz(cents) * 1.02f));
 }
 
-static float after_strikes(int cents, int n)          /* the note's level at 1.4 s, struck n times 0.3 s apart, the last at 0.9 s */
+static float after_strikes_at(int cents, int n, float mult)   /* its partial mult x at 1.4 s, struck n times 0.3 s
+                                                                 * apart, the last at 0.9 s */
 {
     int i;
     fresh();
@@ -483,8 +486,9 @@ static float after_strikes(int cents, int n)          /* the note's level at 1.4
         render((uint32_t)i * 13230u, 13230);
     }
     render(52920, 8820);
-    return mag(52920 + 8820 - 8192, 8192, hz(cents));
+    return mag(52920 + 8820 - 8192, 8192, find_pitch(52920 + 8820 - 8192, 8192, hz(cents) * mult));
 }
+static float after_strikes(int cents, int n) { return after_strikes_at(cents, n, 1.0f); }
 
 static void test_ding(void)
 {
@@ -496,7 +500,16 @@ static void test_ding(void)
     CHECK(ding_build > 3.0f && ding_build > field_build + 2.0f, "the ding builds: %.1f dB after four strikes (a field %.1f)",
           (double)ding_build, (double)field_build);
     CHECK(!nan_seen && peak < 0.95f, "the ding struck four times: peak %.3f", (double)peak);
-    {   /* struck again while it rings, its attack softer still (the hand meets steel already moving) */
+    {   /* its shine: the fifth and the double octave against the fundamental, four strikes against one */
+        const float one = after_strikes(5000, 1), four = after_strikes(5000, 4);
+        const float f1 = db(after_strikes_at(5000, 1, 3.0f) / one), f4 = db(after_strikes_at(5000, 4, 3.0f) / four),
+                    d1 = db(after_strikes_at(5000, 1, 4.0f) / one), d4 = db(after_strikes_at(5000, 4, 4.0f) / four);
+        printf("  ding: the fifth %.1f -> %.1f dB, the double octave %.1f -> %.1f dB (one strike -> four)\n", (double)f1,
+               (double)f4, (double)d1, (double)d4);
+        CHECK(f4 > f1 + 4.0f && d4 > d1 + 6.0f, "the ding's shine builds: fifth %.1f -> %.1f, double octave %.1f -> %.1f",
+              (double)f1, (double)f4, (double)d1, (double)d4);
+    }
+    {   /* struck again while it rings, its attack stays (the hand bounces off steel already moving) */
         float first, again;
         fresh();
         km_set(P_PORT, 0);
@@ -509,7 +522,7 @@ static void test_ding(void)
         first = band_e(256, 1024, 2000.0f, 9000.0f);
         again = band_e(256 + 13230, 1024, 2000.0f, 9000.0f);
         printf("  ding: attack above 2 kHz, struck again %.1f dB against the first\n", (double)db(again / first));
-        CHECK(db(again / first) < -4.0f, "the ding struck again: its attack %.1f dB against the first", (double)db(again / first));
+        CHECK(db(again / first) > -1.5f, "the ding struck again: its attack %.1f dB against the first", (double)db(again / first));
     }
 }
 
