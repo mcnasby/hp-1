@@ -4,6 +4,14 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.5.2
+
+- **The ding builds the way a real one does.** Strike it again and again and each hit keeps its attack
+  (it no longer softens). The ding grows fuller with every strike as its harmonics come up and ring
+  on: the octave, the fifth, the double octave and a fifth-harmonic shine. Before, repeated hits lost
+  their attack and only the low end grew. It's tuned against a recording of a ding struck nine times
+  in a row.
+
 ## 0.5.1
 
 - **Duo key**, a new setting for the black keys (SEL → Keys, Black): a second pan that never shares
