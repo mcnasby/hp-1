@@ -142,8 +142,11 @@ are either side of the ding's one key. They record and play back like any other 
 The pan's own notes are the ding and its 7 to 9 fields. The outer note keys carry the scale on up, as
 the extra fields of an extended ("mutant") pan do. The screen shows every note the keys play on the
 pan: the ding in the middle and every other note in one ring round it, evenly spaced, climbing in the
-same zigzag from the player's side (the extra notes' labels a little quieter). The ding's keys glow dimly so you can
-find the center without looking.
+same zigzag from the player's side (the extra notes' labels a little quieter). The ding's keys and
+its field's keys beside them always glow dimly, so you can find the center without looking.
+
+The key lights keep the kinds of key apart: a note's key lights fully as it rings; the ding's field
+keys never past 60 %; a thwap (the end keys, the thwap bar) never past 80 %.
 
 ### Black keys: the kit, the second pan
 
@@ -340,7 +343,9 @@ of nothing, keeps everything. The Setup page is kept either way.
 - **The black-key strip:** what each black key does now, above the pan, as the black keys sit above
   the white. The hand percussion (castanets, shakers, splash) is amber, the steel's kit and the thwap
   bar teal, and each lights as it sounds. With Duo it shows only the two end keys (castanets, Gu): the second pan
-  shows its own notes, and their place in the strip stays empty.
+  shows its own notes, and their place in the strip stays empty. With Thwap the strip is gone: the pan
+  is drawn bigger, and each thwap ripples out from where it lands on it (by the ding for the shoulder,
+  between the fields, out at the rim for the edge).
 - **The knobs:** the page's four values. The one you turned is highlighted for a moment.
 
 ## The arpeggiator

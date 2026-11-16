@@ -1696,12 +1696,29 @@ static void draw_field(spot_t s, int cents, int age, float lv, int ding, uint16_
     }
 }
 
-/* The pan, with Duo the second pan beside it, centered in the space y0..y1 */
+/* where on the pan a thwap of the thwap bar lands, as it's played: side -1 / 1, position 0 (the shoulder
+ * by the ding, above the fields) .. 4 (the outer edge, below them); a ripple and a glow there */
+static void draw_thwap(int32_t cx, int32_t cy, int32_t R, int side, int pos, int age, uint16_t dark, uint16_t light)
+{
+    /* out from the ding (0.3 R) to the rim (0.88 R), and down round the side: above the fields at the
+     * shoulder (115 degrees from straight down), level with them between, below them at the edge */
+    const float a = (115.0f - 13.0f * (float)pos) * (FM_PI / 180.0f), rr = (float)R * (0.30f + 0.145f * (float)pos);
+    const int32_t x = cx + (int32_t)((float)side * rr * fm_sinf(a)), y = cy + (int32_t)(rr * fm_cosf(a));
+    const uint16_t base = mix(dark, light, 6);
+    const int fade = age * 16 / (int)RIPPLE_FR, r0 = 3 + pos;
+    cv_disc(x, y, r0 + 2 - age / 4, mix(K_GLOW, base, fade));          /* the hand landing */
+    cv_ring(x, y, r0 + age * 2 - 1, r0 + age * 2, 0, mix(K_GLOW, base, fade));   /* the steel ringing out */
+    if (age > 3)
+        cv_ring(x, y, r0 + (age - 3) * 2 - 1, r0 + (age - 3) * 2, 0, mix(K_GLOW, base, fade + (16 - fade) / 2));
+}
+
+/* The pan, with Duo the second pan beside it, centered in the space y0..y1 (Black: Thwap, the pan bigger:
+ * the black keys' strip gives it its room, and its thwaps show where they land) */
 static void draw_pan(int32_t y0, int32_t y1)
 {
     int n[KM_NPAN], own = pan_notes(n), all = notes_reached(), i;
-    const int duo = duo_on(), first = proj.par[P_LAYOUT] == LAY_PANREV ? -1 : 1;
-    const int32_t R = duo ? 52 : 55, cx = duo ? 90 : 120, cy = (y0 + y1) / 2;   /* (the second pan beside it: over) */
+    const int duo = duo_on(), first = proj.par[P_LAYOUT] == LAY_PANREV ? -1 : 1, big = proj.par[P_BLACK] == BLK_THWAP;
+    const int32_t R = duo ? 52 : big ? 69 : 55, cx = duo ? 90 : 120, cy = (y0 + y1) / 2;   /* (the second pan beside it: over) */
     const uint16_t dark = METAL->dark, light = METAL->light, ink = METAL->ink;
     int glow[2];
     for (i = 0; i < 2; i++)                           /* the rim, where a thwap or a tak just landed */
@@ -1710,7 +1727,7 @@ static void draw_pan(int32_t y0, int32_t y1)
     {   /* the Gu: the air inside, breathing round the ding */
         int g = ui.rim[2];
         if (g > 1)
-            cv_ring(cx, cy, 15 + g / 4, 16 + g / 4, 0, mix(mix(dark, light, 8), K_GLOW, g));
+            cv_ring(cx, cy, (15 + g / 4) * R / 55, (16 + g / 4) * R / 55, 0, mix(mix(dark, light, 8), K_GLOW, g));
     }
     /* every note the keys play: the ding, and round it in one ring, evenly spaced, the fields climbing
      * in the zigzag, the low ones the biggest; the notes past the pan's own fields (an extended pan's)
@@ -1718,10 +1735,16 @@ static void draw_pan(int32_t y0, int32_t y1)
     for (i = 0; i < all; i++) {
         int c = tune(n[i]);
         spot_t s = i ? ring_spot(i - 1, all - 1, first, cx, cy, R * (all > 10 ? 58 : 54) / 100,
-                                 all > 10 ? 8 - (i - 1) / 5 : 9 - (i - 1) / 4)
-                     : (spot_t){(int16_t)cx, (int16_t)cy, 13};
+                                 (all > 10 ? 8 - (i - 1) / 5 : 9 - (i - 1) / 4) * (int)R / 55)
+                     : (spot_t){(int16_t)cx, (int16_t)cy, (int16_t)(13 * R / 55)};
         draw_field(s, c, (int)ripple_age(ui.ripple[i]), note_level(c), i == 0, dark, light, ink, i < own ? 1 : 2);
     }
+    if (big)                                          /* the thwap bar's thwaps, where they land */
+        for (i = 0; i < 10; i++) {
+            const int age = (int)ripple_age(ui.hit_t[HIT_SHLD_L + i]);
+            if (age < (int)RIPPLE_FR)
+                draw_thwap(cx, cy, R, i < 5 ? -1 : 1, i % 5, age, dark, light);
+        }
     if (duo) {   /* the second pan, smaller, to the right: its ding and eight fields, evenly round it */
         const int32_t dx = 200, dy = cy - 6, dr = 34;
         draw_shell(dx, dy, dr, dark, light, (int[2]){0, 0});
@@ -1945,6 +1968,11 @@ static void draw_main(void)
         return;
     ui.sig[1] = h;
     cv_begin(240, MAIN_H, K_BG);
+    if (proj.par[P_BLACK] == BLK_THWAP && ui.view != V_STEPS && ui.view != V_SONG && ui.view != V_PROJECTS) {
+        draw_pan(1, MAIN_H);                         /* the thwap bar: no strip, the pan bigger */
+        cv_blit(0, MAIN_Y);
+        return;
+    }
     draw_black(1);                                   /* the black keys over the pans (the keys' upper row) */
     if (ui.view == V_STEPS)
         draw_steps(32);
@@ -2066,7 +2094,7 @@ static void leds(void)
         k = 1u << WHITE_K[sq.h.cur];
         if (seq_next_pat() >= 0 && beat < SEQ_PPQ / 2u)
             k |= 1u << WHITE_K[seq_next_pat()];
-        plat_leds(b, k | ui.keys, d & ~k);
+        plat_leds(b, k | ui.keys, d & ~k, 0, 0);
         return;
     }
     for (i = 0; i < NWHITE; i++)                     /* the notes that ring, the steel just struck */
@@ -2078,7 +2106,21 @@ static void leds(void)
         if (is_duo_key((int)i) ? note_level(duo_cents(duo_index((int)i))) > 0.08f : ripple_age(ui.hit_t[black_hit((int)i)]) < 12u)
             k |= 1u << BLACK_K[i];
     k |= ui.keys;
-    plat_leds(b, k, ding_keys());
+    {   /* the ding's field always faintly lit, never past 60 %; a thwap (the end keys, the thwap bar) never
+         * past 80 %: the notes always the brightest */
+        uint32_t f = 0, t = 1u << WHITE_K[0] | 1u << WHITE_K[NWHITE - 1];
+        for (i = 0; i < NWHITE; i++)
+            if (km_white_field(proj.par[P_LAYOUT], (int)i) >= 0)
+                f |= 1u << WHITE_K[i];
+        if (proj.par[P_BLACK] == BLK_THWAP) {
+            for (i = 0; i < NBLACK; i++)
+                if (i == B_TOP)
+                    f |= 1u << BLACK_K[i];          /* (its top: the field's too) */
+                else
+                    t |= 1u << BLACK_K[i];
+        }
+        plat_leds(b, k & ~f & ~t, ding_keys() | f, k & t, k & f);
+    }
 }
 
 /* AUTOSAVE: a few seconds after a change, when nothing rings and nothing is touched: a flash erase

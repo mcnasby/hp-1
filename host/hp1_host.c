@@ -91,7 +91,7 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 
 static uint32_t now_ms, held_btn, held_keys, master = 2048;
 static int32_t enc_acc[NE];
-static uint32_t lit_btn, lit_keys, dim_keys;
+static uint32_t lit_btn, lit_keys, dim_keys, lit80_keys, lit60_keys;
 
 uint32_t plat_ms(void) { return now_ms; }
 uint32_t plat_buttons(void) { return held_btn; }
@@ -103,12 +103,20 @@ int32_t plat_enc(int role)
     return v;
 }
 uint32_t plat_master(void) { return master; }
-void plat_leds(uint32_t b, uint32_t k, uint32_t d)
+void plat_leds(uint32_t b, uint32_t k, uint32_t d, uint32_t k80, uint32_t k60)
 {
     lit_btn = b;
-    lit_keys = k;
-    dim_keys = d & ~k;                           /* (a lit key is lit, not dim: plat_fm1.c) */
+    lit_keys = k;                                /* (the brightest wins: plat_fm1.c) */
+    lit80_keys = k80 & ~k;
+    lit60_keys = k60 & ~k & ~k80;
+    dim_keys = d & ~k & ~k80 & ~k60;
 }
+/* key q's LED: 100, 80, 60, 20 (dim) or 0 */
+static int key_level(uint32_t q)
+{
+    return lit_keys >> q & 1u ? 100 : lit80_keys >> q & 1u ? 80 : lit60_keys >> q & 1u ? 60 : dim_keys >> q & 1u ? 20 : 0;
+}
+static char key_mark(uint32_t q) { return "#86+."[key_level(q) == 100 ? 0 : key_level(q) == 80 ? 1 : key_level(q) == 60 ? 2 : key_level(q) ? 3 : 4]; }
 
 #define MQ 256
 static uint32_t min_q[MQ], mi_w, mi_r;
@@ -538,6 +546,10 @@ static int expect(const char *what, const char *val)
                 got = q;
     } else if (!strcmp(what, "litkeys"))         /* the keys lit (bit per key) */
         got = (int)lit_keys;
+    else if (!strncmp(what, "ledw", 4))           /* ledwW / ledbB: white key W's, black key B's LED: 100 80 60 20 0 */
+        got = key_level(WHITE_K[atoi(what + 4) & 15]);
+    else if (!strncmp(what, "ledb", 4))
+        got = key_level(BLACK_K[atoi(what + 4) % 11]);
     else if (!strncmp(what, "luma", 4)) {         /* lumaY: the screen's brightness at (2, Y) */
         uint16_t p = fb[(atoi(what + 4) % 240) * 240 + 2];
         p = (uint16_t)((p >> 8) | (p << 8));
@@ -688,10 +700,10 @@ static int script_line(char *line, int lineno, int *fails)
                 printf(" %s", BTN_N[i]);
         printf(" | white ");
         for (i = 0; i < 16; i++)
-            printf("%c", (lit_keys >> WHITE_K[i] & 1u) ? '#' : (dim_keys >> WHITE_K[i] & 1u) ? '+' : '.');
+            printf("%c", key_mark(WHITE_K[i]));
         printf(" black ");
         for (i = 0; i < 11; i++)
-            printf("%c", (lit_keys >> BLACK_K[i] & 1u) ? '#' : (dim_keys >> BLACK_K[i] & 1u) ? '+' : '.');
+            printf("%c", key_mark(BLACK_K[i]));
         printf("\n");
     } else if (!strcmp(cmd, "expect"))
         *fails += expect(a, b);

@@ -1181,6 +1181,26 @@ static void test_field(void)
         printf("  field: the fifth across, the fundamental %.1f / %.1f dB more at 0.05 s than on the same side\n",
                (double)db(fund[2] / fund[0]), (double)db(fund[3] / fund[1]));
     }
+    {   /* the field against the ding's dome, as recorded (alternating, then rolls): about as loud, its
+         * fundamental and octave a few dB under the dome's, the steel above 2 kHz well over it */
+        float fd[2], hd[2];
+        for (i = 0; i < 2; i++) {
+            fresh();
+            give_pan(0, 2);
+            render(0, 256);
+            if (i)
+                km_hit(HIT_FIELD, 100, 0);
+            else
+                km_pluck_x(5000, 100, 0, 0, 100);
+            render(0, 8820);
+            fd[i] = mag(0, 2048, f);
+            hd[i] = bright(bufl, 1024);
+        }
+        CHECK(fd[1] < fd[0] && fd[1] > 0.4f * fd[0], "the field's fundamental under the dome's: %.1f dB", (double)db(fd[1] / fd[0]));
+        CHECK(hd[1] > 2.0f * hd[0], "the field brighter than the dome: %.1f dB", (double)db(hd[1] / hd[0]));
+        printf("  field: against the dome, the fundamental %.1f dB, the steel %+.1f dB\n", (double)db(fd[1] / fd[0]),
+               (double)db(hd[1] / hd[0]));
+    }
     fresh();                                     /* the ding ringing, a finger lands on it: its fundamental damped */
     give_pan(0, 2);
     km_pluck(5000, 100, 0, 0);

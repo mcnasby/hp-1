@@ -12,7 +12,7 @@ expect view 7
 spin K4 3
 expect par26 3
 key b0 down
-wait 10
+wait 60
 expect hitlast 38
 expect shellL >5
 shot thwap_bar.png
@@ -31,8 +31,9 @@ wait 30
 expect hitlast 35
 wait 400
 tapkey b4
-wait 30
+wait 60
 expect hitlast 34
+shot thwap_shoulder.png
 wait 400
 tapkey b5
 wait 30
@@ -98,6 +99,16 @@ expect hitlast 43
 expect shellR >5
 key b10 up
 wait 400
+# the lights: a thwap to 80 %, the top (the ding's field's) dim, to 60 % when struck
+tapkey b8
+wait 30
+expect ledb8 80
+expect ledb5 20
+expect ledw6 20
+tapkey b5
+wait 30
+expect ledb5 60
+expect ledw6 60
 # a thwap on the left, the field on the left: the same side
 tapkey w3
 tapkey b2

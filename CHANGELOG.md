@@ -12,6 +12,16 @@ taken from its section below. Add the section in the same pull request as the `V
   side singing. At the ends is the pan's outer edge below the fields: the loudest, the shell ringing
   hard. The keys between blend them. The middle key is still the top of the ding's field. The heel,
   fingers, closed and both-palms thwaps are still there over MIDI and in the sequencer.
+- **With the thwap bar on, the screen shows where each thwap lands.** The black-key labels are gone and
+  the pan is bigger. Each thwap ripples out from its spot: by the ding for the shoulder, between the
+  fields, out at the rim for the edge.
+- **The ding's field blends with the ding.** Struck on the keyboard, it was too loud against the
+  ding's dome. Now, as in a recording of the two played back and forth and rolled, it's about as loud
+  as the dome, its fundamental a few dB under and its steel brighter, so it colors the ding instead of
+  covering it. A roll on the field holds the fundamental instead of drifting to the fifth.
+- **Clearer key lights.** The ding's field keys always glow dimly and never light past 60 %, and the
+  thwaps (the end keys and the thwap bar) never past 80 %, so the notes' keys are always the
+  brightest. The dim glow is a little dimmer than before.
 
 ## 0.5.3
 
