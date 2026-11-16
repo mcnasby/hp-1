@@ -77,12 +77,14 @@ static const uint8_t HIT_OF[NBLACK] = {HIT_CASTANET, HIT_SHAKE_L, HIT_GU, HIT_GH
 static const char *const HIT_NAME[HIT_N] = {"Thwp", "Tak", "Gu", "Gho", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwp",
                                             "Spl", "Shk", "Shk", "Cas", "Heel", "Fngr", "Shut", "Shut", "Fngr", "Heel",
                                             "Both", "Fld", "Fld", "Fld", "Fld", "Ding", "Ding", "Top", "Ding",
-                                            "Fld", "Fld", "Fld", "Fld"};
-/* the thwap bar (Black: Thwap): each side's thwaps on its own half, the deepest at the ends, the tak by
- * the ding; in the middle, over the ding, its field's top and bottom (B_TOP) */
+                                            "Fld", "Fld", "Fld", "Fld", "Shld", "Up", "Mid", "Low", "Edge", "Shld",
+                                            "Up", "Mid", "Low", "Edge"};
+/* the thwap bar (Black: Thwap): each side's half a hand moving across its shoulder, from the shoulder by
+ * the ding (the keys beside the middle) out to the pan's outer edge below the fields (the end keys); in
+ * the middle, over the ding, its field's top and bottom (B_TOP) */
 #define B_TOP 5
-static const uint8_t THWAP_OF[NBLACK] = {HIT_THWAP_L, HIT_HEEL_L, HIT_FING_L, HIT_CLOSED_L, HIT_TAK_L, HIT_FIELD_FUND,
-                                         HIT_TAK_R, HIT_CLOSED_R, HIT_FING_R, HIT_HEEL_R, HIT_THWAP_R};
+static const uint8_t THWAP_OF[NBLACK] = {HIT_EDGE_L, HIT_LOWER_L, HIT_BETW_L, HIT_UPPER_L, HIT_SHLD_L, HIT_FIELD_FUND,
+                                         HIT_SHLD_R, HIT_UPPER_R, HIT_BETW_R, HIT_LOWER_R, HIT_EDGE_R};
 /* the black keys a second pan (Duo: it shares the first's root, Duo key: in another key) */
 static int duo_on(void) { return proj.par[P_BLACK] == BLK_DUO || proj.par[P_BLACK] == BLK_DUOKEY; }
 static int duo_other(void) { return proj.par[P_BLACK] == BLK_DUOKEY; }
@@ -553,13 +555,13 @@ static void set_freeze(int on)
 static void hit_seen(int kind)
 {
     ui.hit_t[kind] = ui.frame + 1u;
-    if (kind == HIT_SLAP || kind == HIT_HARM || kind >= HIT_FIELD)
+    if (kind == HIT_SLAP || kind == HIT_HARM || (kind >= HIT_FIELD && kind <= HIT_FIFTH_XL))
         ui.ripple[0] = ui.frame + 1u;
 }
 
 static void strike_hit(int kind, int rec)
 {
-    const int vel = human_vel(kind >= HIT_FIELD ? 100 : 104);   /* (the ding's field: as its keys) */
+    const int vel = human_vel(kind >= HIT_FIELD && kind <= HIT_FIFTH_XL ? 100 : 104);   /* (the ding's field: as its keys) */
     km_hit(kind, vel, 0);
     hit_seen(kind);
     if (rec)
@@ -751,7 +753,9 @@ static const char *const HIT_LONG[HIT_N] = {"Thwap L", "Tak L", "Gu", "Ghost", "
                                             "Heel L", "Fingers L", "Closed L", "Closed R", "Fingers R", "Heel R",
                                             "Both", "Field", "Field shut", "Field oct", "Field 5th", "Ding oct",
                                             "Ding 5th", "Field top", "Ding fund", "Field fund", "Field 5th L",
-                                            "5th across", "5th acr. L"};
+                                            "5th across", "5th acr. L", "Shoulder L", "Upper L", "Between L",
+                                            "Lower L", "Edge L", "Shoulder R", "Upper R", "Between R", "Lower R",
+                                            "Edge R"};
 #define NCHOICE (1 + KM_NPAN + KM_NDUO + HIT_N)
 
 /* what a step can hold: a rest, the notes the keys reach, the second pan's (Duo), the hits */
@@ -1243,6 +1247,16 @@ static int drum_hit(uint32_t note)
     case 78: return HIT_FIFTH_L;                           /* cuicas, triangle */
     case 79: return HIT_FIFTH_XR;
     case 80: return HIT_FIFTH_XL;
+    case 27: return HIT_SHLD_L;                            /* GM2's 27-34, the surdos: the thwap bar */
+    case 28: return HIT_UPPER_L;
+    case 29: return HIT_BETW_L;
+    case 30: return HIT_LOWER_L;
+    case 31: return HIT_EDGE_L;
+    case 32: return HIT_SHLD_R;
+    case 33: return HIT_UPPER_R;
+    case 34: return HIT_BETW_R;
+    case 86: return HIT_LOWER_R;
+    case 87: return HIT_EDGE_R;
     default: return -1;
     }
 }

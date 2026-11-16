@@ -134,6 +134,12 @@ enum {
     HIT_FIFTH_XR,                      /* left on the ding, the right edge: the finger further off, the
                                         * fundamental a moment longer, the fifth longer and softer */
     HIT_FIFTH_XL,                      /* right on the ding, the left edge */
+    /* the thwap bar's thwaps (0.5.4), as a hand moves across a shoulder (recordings of each): from the
+     * shoulder above the fields, by the ding (soft: the ding's octave and fifth ring on), through
+     * between two fields (bright and quick, the fields either side singing), to the pan's outer edge
+     * below the fields (the loudest: the shell's own modes ring hard) */
+    HIT_SHLD_L, HIT_UPPER_L, HIT_BETW_L, HIT_LOWER_L, HIT_EDGE_L,
+    HIT_SHLD_R, HIT_UPPER_R, HIT_BETW_R, HIT_LOWER_R, HIT_EDGE_R,
     HIT_N
 };
 

@@ -276,10 +276,12 @@ const DIVT = [384, 192, 96, 48, 128, 64, 768, 1536, 3072, 6144];      // seq.c: 
 const HIT_NAMES = ["Thwap L", "Tak L", "Gu", "Ghost", "Slap", "Tak", "Harmonic", "Rim", "Mute", "Tak R", "Thwap R", "Splash", "Shaker", "Shaker back", "Castanets",
   "Heel L", "Fingers L", "Closed L", "Closed R", "Fingers R", "Heel R", "Both palms",
   "Field", "Field closed", "Field octave", "Field fifth", "Ding octave", "Ding fifth",
-  "Field top", "Ding fundamental", "Field fundamental", "Field fifth L", "Fifth across R", "Fifth across L"];
+  "Field top", "Ding fundamental", "Field fundamental", "Field fifth L", "Fifth across R", "Fifth across L",
+  "Shoulder L", "Upper L", "Between L", "Lower L", "Edge L", "Shoulder R", "Upper R", "Between R", "Lower R", "Edge R"];
 // the hits on General MIDI drum notes: ui.c's drum_hit() read backwards (Mute has none there: a muted conga)
 export const HIT_GM = [38, 54, 36, 51, 39, 42, 53, 37, 62, 46, 41, 49, 69, 70, 85,
-  45, 48, 61, 60, 50, 47, 63, 65, 66, 68, 67, 77, 76, 73, 74, 75, 78, 79, 80];
+  45, 48, 61, 60, 50, 47, 63, 65, 66, 68, 67, 77, 76, 73, 74, 75, 78, 79, 80,
+  27, 28, 29, 30, 31, 32, 33, 34, 86, 87];
 
 const dv = (b) => new DataView(b.buffer, b.byteOffset, b.byteLength);
 const cstr = (b, o, n) => { let s = ""; for (let i = 0; i < n && b[o + i]; i++) s += String.fromCharCode(b[o + i]); return s; };

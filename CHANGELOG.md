@@ -4,6 +4,15 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.5.4
+
+- **The thwap bar, tuned against recordings.** Each half of the bar is now a hand moving across that
+  shoulder. Next to the middle key is the shoulder by the ding: a soft thwap that sets the ding's
+  octave and fifth ringing. Halfway out is between two fields: bright and quick, the fields either
+  side singing. At the ends is the pan's outer edge below the fields: the loudest, the shell ringing
+  hard. The keys between blend them. The middle key is still the top of the ding's field. The heel,
+  fingers, closed and both-palms thwaps are still there over MIDI and in the sequencer.
+
 ## 0.5.3
 
 - **The ding's field, and a finger resting on it.** The white keys either side of the ding's keys now

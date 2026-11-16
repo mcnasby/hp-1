@@ -917,7 +917,7 @@ static float knock[BLK];                              /* the strikes' force: it 
 static float knock_amt = 0.5f;                         /* how much of a strike reaches the air (Port) */
 
 /* how a strike wakes the modes */
-enum { EMPH_ALL, EMPH_HARMONIC, EMPH_FUND, EMPH_OCT, EMPH_FIFTH };
+enum { EMPH_ALL, EMPH_HARMONIC, EMPH_FUND, EMPH_OCT, EMPH_FIFTH, EMPH_SHOULDER };
 static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph, int fing)
 {
     const km_metal_t *m = km_metal(par[P_METAL]);
@@ -948,11 +948,12 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
             v->y1[k] = v->y2[k] = 0.0f;
     for (k = 0; k < KM_NMODE; k++) {
         /* (the ping's modes take no part in the pulse: the contact's impulse rings them, below) */
-        static const float E[5][KM_NMODE] = {{1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1},
+        static const float E[6][KM_NMODE] = {{1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1},
                                              {0.06f, 1.4f, 1.4f, 1.3f, 1.3f, 0.8f, 0, 0, 0, 0, 0.5f},   /* a finger on the center */
                                              {1, 0.1f, 0.05f, 0.06f, 0.03f, 0, 0, 0, 0, 0, 0},       /* sympathy: one partial */
                                              {0.1f, 1, 1, 0.08f, 0.04f, 0, 0, 0, 0, 0, 0},
-                                             {0.08f, 0.08f, 0.04f, 1, 1, 0, 0, 0, 0, 0, 0}};
+                                             {0.08f, 0.08f, 0.04f, 1, 1, 0, 0, 0, 0, 0, 0},
+                                             {0.03f, 1.2f, 1.2f, 0.6f, 0.6f, 0.2f, 0, 0, 0, 0, 0.2f}};   /* a thwap by it */
         v->emph[k] = fp ? fp->e[k] : E[emph][k];
     }
     v->cents = (int16_t)cents;
@@ -1200,6 +1201,16 @@ static inline float burst_run(burst_t *b)
  * (written into this chunk's excitation; a pulse longer than what's left of the chunk carries on in the
  * next through hit_tail) */
 static float tail_l, tail_r, tail_c, tail_inc, tail_ph = 0.5f;
+/* ...and how bright: a harder, narrower hand drives the shell's upper modes harder (the pan's outer
+ * edge, thwapped: its 1.3-1.9 kHz modes ring over the low ones) */
+static const float SH_HI[NSHELL] = {0.0f, 1.41f, 3.27f, 4.68f, 6.63f, 8.64f, 11.19f, 13.86f, 17.73f, 22.11f};
+static float sh_hb[NSHELL];
+static void pulse_bright(float b)
+{
+    int k;
+    for (k = 0; k < NSHELL; k++)
+        sh_hb[k] = b * SH_HI[k];
+}
 static void pulse(float l, float r, float c, float ms)
 {
     float n = ms * 0.001f * KM_SR;
@@ -1437,32 +1448,49 @@ static void kit_quiet(void)
 
 /* The percussion: per hit, where it lands (-1 left, 0 middle, 1 right), the contact (ms: a flat palm is
  * long and deep, a fingertip short and bright), how much reaches the shell and the air, the skin's
- * burst (level, center Hz, q, decay ms), and how much the fields around it ring along. */
+ * burst (level, center Hz, q, decay ms), how much the fields around it ring along, and how much the
+ * ding's harmonics do (a thwap by the ding: its octave and fifth, not its fundamental); how bright in the
+ * shell (pulse_bright) */
 typedef struct {
     int8_t side;
-    float ms, shell, cav, noise, nhz, nq, nms, sym;
+    float ms, shell, cav, noise, nhz, nq, nms, sym, dsym, bright;
 } hit_t;
 static const hit_t HITS[HIT_N] = {
-    {-1, 3.2f, 1.00f, 0.75f, 0.38f, 1700.0f, 0.8f, 26.0f, 0.55f},    /* thwap, left */
-    {-1, 0.35f, 0.55f, 0.12f, 0.55f, 3900.0f, 1.3f, 8.0f, 0.15f},    /* tak, left edge */
-    {0, 7.0f, 0.22f, 1.80f, 0.14f, 380.0f, 0.7f, 34.0f, 0.30f},      /* gu */
-    {0, 0.5f, 0.16f, 0.07f, 0.22f, 3100.0f, 1.0f, 6.0f, 0.0f},       /* ghost */
-    {0, 1.2f, 0.30f, 0.70f, 0.30f, 1500.0f, 0.9f, 15.0f, 0.0f},      /* slap (and the ding, below) */
-    {0, 0.3f, 0.42f, 0.10f, 0.48f, 4300.0f, 1.3f, 7.0f, 0.10f},      /* tak, by the ding */
-    {0, 0.3f, 0.06f, 0.05f, 0.10f, 5200.0f, 1.0f, 3.0f, 0.0f},       /* harmonic (and the ding, below) */
-    {0, 1.4f, 0.35f, 0.20f, 0.42f, 880.0f, 2.6f, 18.0f, 0.0f},       /* rim: a knuckle on the seam */
-    {0, 2.5f, 0.0f, 0.15f, 0.10f, 600.0f, 0.7f, 30.0f, 0.0f},        /* mute: a palm landing */
-    {1, 0.35f, 0.55f, 0.12f, 0.55f, 4100.0f, 1.3f, 8.0f, 0.15f},     /* tak, right edge */
-    {1, 3.2f, 1.00f, 0.75f, 0.38f, 1850.0f, 0.8f, 26.0f, 0.55f},     /* thwap, right */
+    {-1, 3.2f, 1.00f, 0.75f, 0.38f, 1700.0f, 0.8f, 26.0f, 0.55f, 0.0f, 0.0f},    /* thwap, left */
+    {-1, 0.35f, 0.55f, 0.12f, 0.55f, 3900.0f, 1.3f, 8.0f, 0.15f, 0.0f, 0.0f},    /* tak, left edge */
+    {0, 7.0f, 0.22f, 1.80f, 0.14f, 380.0f, 0.7f, 34.0f, 0.30f, 0.0f, 0.0f},      /* gu */
+    {0, 0.5f, 0.16f, 0.07f, 0.22f, 3100.0f, 1.0f, 6.0f, 0.0f, 0.0f, 0.0f},       /* ghost */
+    {0, 1.2f, 0.30f, 0.70f, 0.30f, 1500.0f, 0.9f, 15.0f, 0.0f, 0.0f, 0.0f},      /* slap (and the ding, below) */
+    {0, 0.3f, 0.42f, 0.10f, 0.48f, 4300.0f, 1.3f, 7.0f, 0.10f, 0.0f, 0.0f},      /* tak, by the ding */
+    {0, 0.3f, 0.06f, 0.05f, 0.10f, 5200.0f, 1.0f, 3.0f, 0.0f, 0.0f, 0.0f},       /* harmonic (and the ding, below) */
+    {0, 1.4f, 0.35f, 0.20f, 0.42f, 880.0f, 2.6f, 18.0f, 0.0f, 0.0f, 0.0f},       /* rim: a knuckle on the seam */
+    {0, 2.5f, 0.0f, 0.15f, 0.10f, 600.0f, 0.7f, 30.0f, 0.0f, 0.0f, 0.0f},        /* mute: a palm landing */
+    {1, 0.35f, 0.55f, 0.12f, 0.55f, 4100.0f, 1.3f, 8.0f, 0.15f, 0.0f, 0.0f},     /* tak, right edge */
+    {1, 3.2f, 1.00f, 0.75f, 0.38f, 1850.0f, 0.8f, 26.0f, 0.55f, 0.0f, 0.0f},     /* thwap, right */
     {0}, {0}, {0}, {0},                                              /* the kit (above) */
-    {-1, 6.5f, 0.60f, 1.70f, 0.20f, 900.0f, 0.8f, 30.0f, 0.60f},     /* heel, left: deep, the air */
-    {-1, 1.6f, 0.85f, 0.12f, 0.50f, 2600.0f, 0.9f, 15.0f, 0.40f},    /* fingers, left */
-    {-1, 3.0f, 1.00f, 0.60f, 0.40f, 1600.0f, 0.8f, 14.0f, 0.25f},    /* closed, left (choked: below) */
-    {1, 3.0f, 1.00f, 0.60f, 0.40f, 1750.0f, 0.8f, 14.0f, 0.25f},     /* closed, right */
-    {1, 1.6f, 0.85f, 0.12f, 0.50f, 2800.0f, 0.9f, 15.0f, 0.40f},     /* fingers, right */
-    {1, 6.5f, 0.60f, 1.70f, 0.20f, 950.0f, 0.8f, 30.0f, 0.60f},      /* heel, right */
-    {0, 3.4f, 1.00f, 1.00f, 0.38f, 1750.0f, 0.8f, 26.0f, 0.55f},     /* both palms */
-    {0}, {0}, {0}, {0}, {0}, {0},                                    /* the ding's field (field()) */
+    {-1, 6.5f, 0.60f, 1.70f, 0.20f, 900.0f, 0.8f, 30.0f, 0.60f, 0.0f, 0.0f},     /* heel, left: deep, the air */
+    {-1, 1.6f, 0.85f, 0.12f, 0.50f, 2600.0f, 0.9f, 15.0f, 0.40f, 0.0f, 0.0f},    /* fingers, left */
+    {-1, 3.0f, 1.00f, 0.60f, 0.40f, 1600.0f, 0.8f, 14.0f, 0.25f, 0.0f, 0.0f},    /* closed, left (choked: below) */
+    {1, 3.0f, 1.00f, 0.60f, 0.40f, 1750.0f, 0.8f, 14.0f, 0.25f, 0.0f, 0.0f},     /* closed, right */
+    {1, 1.6f, 0.85f, 0.12f, 0.50f, 2800.0f, 0.9f, 15.0f, 0.40f, 0.0f, 0.0f},     /* fingers, right */
+    {1, 6.5f, 0.60f, 1.70f, 0.20f, 950.0f, 0.8f, 30.0f, 0.60f, 0.0f, 0.0f},      /* heel, right */
+    {0, 3.4f, 1.00f, 1.00f, 0.38f, 1750.0f, 0.8f, 26.0f, 0.55f, 0.0f, 0.0f},     /* both palms */
+    {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0},      /* the ding's field (field()) */
+    /* the thwap bar, shoulder to edge. Recorded on a pan: on the shoulder by the ding, the ding's
+     * octave and fifth ringing ~3 s, the attack soft (the steel above 700 Hz 15 dB under the rest);
+     * between the fields, bright (most of it 0.7-2.5 kHz and up), gone in ~0.2 s, the fields either
+     * side singing; at the outer edge, ~15 dB louder, the shell's modes (630 Hz, 1.3-1.9 kHz) ringing
+     * ~0.5 s, and a little air */
+    {-1, 4.0f, 0.30f, 0.04f, 0.12f, 1200.0f, 0.8f, 20.0f, 0.35f, 3.0f, 0.0f},      /* shoulder, left */
+    {-1, 2.0f, 0.55f, 0.08f, 0.22f, 1800.0f, 0.85f, 14.0f, 0.75f, 1.8f, 0.5f},     /* upper, left */
+    {-1, 0.8f, 0.36f, 0.10f, 0.50f, 2400.0f, 0.9f, 9.0f, 1.20f, 0.6f, 1.0f},       /* between the fields, left */
+    {-1, 0.6f, 0.55f, 0.12f, 0.48f, 2700.0f, 0.9f, 10.0f, 0.80f, 0.25f, 1.8f},      /* lower, left */
+    {-1, 0.4f, 0.72f, 0.15f, 0.50f, 3000.0f, 0.9f, 11.0f, 0.45f, 0.0f, 2.6f},       /* the outer edge, left */
+    {1, 4.0f, 0.30f, 0.04f, 0.12f, 1260.0f, 0.8f, 20.0f, 0.35f, 3.0f, 0.0f},       /* shoulder, right */
+    {1, 2.0f, 0.55f, 0.08f, 0.22f, 1890.0f, 0.85f, 14.0f, 0.75f, 1.8f, 0.5f},      /* upper, right */
+    {1, 0.8f, 0.36f, 0.10f, 0.50f, 2520.0f, 0.9f, 9.0f, 1.20f, 0.6f, 1.0f},        /* between the fields, right */
+    {1, 0.6f, 0.55f, 0.12f, 0.48f, 2830.0f, 0.9f, 10.0f, 0.80f, 0.25f, 1.8f},       /* lower, right */
+    {1, 0.4f, 0.72f, 0.15f, 0.50f, 3150.0f, 0.9f, 11.0f, 0.45f, 0.0f, 2.6f},        /* the outer edge, right */
 };
 
 /* the ding's own field struck (HIT_FIELD ...): the ding's voice, at the note's own level (not the
@@ -1483,7 +1511,7 @@ static void hit(int kind, int vel)
     float vg = (float)vel * (1.0f / 127.0f), a = vg * vg * perc_lvl,
           l = h->side < 0 || both ? 1.0f : h->side > 0 ? 0.15f : 0.7f, r = h->side > 0 || both ? 1.0f : h->side < 0 ? 0.15f : 0.7f;
     int ding = pan_n ? pan_c[0] : 5000;
-    if (kind >= HIT_FIELD && kind < HIT_N) {           /* the ding's field: a note, not percussion */
+    if (kind >= HIT_FIELD && kind <= HIT_FIFTH_XL) {           /* the ding's field: a note, not percussion */
         field(kind, vel);
         return;
     }
@@ -1495,6 +1523,7 @@ static void hit(int kind, int vel)
     default: break;
     }
     pulse(a * h->shell * l * 0.55f, a * h->shell * r * 0.55f, a * h->cav * port_lvl * 1.6f, h->ms);
+    pulse_bright(h->bright);
     if (h->noise > 0.0f) {
         float jit = 1.0f + 0.12f * rnds();                /* never quite the same hand twice */
         if (h->side <= 0)
@@ -1524,10 +1553,20 @@ static void hit(int kind, int vel)
                                                          * nearest the hand (odd fields right, even left) */
         int i, sv = (int)((float)vel * h->sym * (0.4f + 0.6f * sym_amt) * 0.45f * fm_minf(perc_lvl * 1.43f, 1.0f));
         if (sv >= 4) {
-            symp_ring(ding, sv, kind == HIT_GU ? EMPH_ALL : EMPH_FUND);
+            if (h->dsym <= 0.0f)                        /* (by the ding: its harmonics, below) */
+                symp_ring(ding, sv, kind == HIT_GU ? EMPH_ALL : EMPH_FUND);
             for (i = 1; i < pan_n && i < 5; i++)
                 if (h->side == 0 || (h->side > 0) == (i & 1))
                     pend_add(PD_SYMP, pan_c[i], sv * 2 / 3, 0, EMPH_FUND, (uint32_t)(0.004f * KM_SR) + (rnd() & 127u));
+        }
+    }
+    if (h->dsym > 0.0f && pan_n) {                      /* a thwap by the ding: its octave and fifth ring on */
+        const int dv = (int)((float)vel * h->dsym * (0.4f + 0.6f * sym_amt) * 0.45f * fm_minf(perc_lvl * 1.43f, 1.0f));
+        voice_t *v = voice_ringing(ding);               /* (ringing or not: thwap after thwap, it builds) */
+        if (dv >= 4 && (v || (v = voice_free()) != 0)) {
+            strike(v, ding, dv > 127 ? 127 : dv, 0, 0.0f, EMPH_SHOULDER, FG_NONE);
+            v->ex_inc *= 0.5f;                          /* (through the steel: a softer push) */
+            v->ex_amp *= 0.5f;
         }
     }
 }
@@ -2448,17 +2487,20 @@ static void render_shell(uint32_t n)
         return;                                         /* silent, nothing coming: (the device's CPU) */
     }
     for (j = 0; j < n; j++) {
-        float el = knock[j] * 0.005f, er = el, ec = knock[j] * knock_amt * 0.5f, sl = 0.0f, sr = 0.0f, c;
+        float el = knock[j] * 0.005f, er = el, ec = knock[j] * knock_amt * 0.5f, sl = 0.0f, sr = 0.0f, c, pl = 0.0f, pr = 0.0f;
         if (tail_ph < 0.5f) {                           /* a hit's pulse */
             float s = fm_sin_turns(tail_ph);
-            el += tail_l * s;
-            er += tail_r * s;
+            pl = tail_l * s;
+            pr = tail_r * s;
+            el += pl;
+            er += pr;
             ec += tail_c * s;
             tail_ph += tail_inc;
         }
         for (k = 0; k < NSHELL; k++) {
             shmode_t *m = &sh[k];
-            float yl = m->b1 * m->y1l + m->b2 * m->y2l + m->gl * el, yr = m->b1 * m->y1r + m->b2 * m->y2r + m->gr * er;
+            float yl = m->b1 * m->y1l + m->b2 * m->y2l + m->gl * (el + pl * sh_hb[k]),
+                  yr = m->b1 * m->y1r + m->b2 * m->y2r + m->gr * (er + pr * sh_hb[k]);
             m->y2l = m->y1l * mute;
             m->y1l = yl * mute;
             m->y2r = m->y1r * mute;

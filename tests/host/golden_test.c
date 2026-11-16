@@ -38,7 +38,7 @@ static void play(uint32_t f, const int *pan, const int *duo)
     if (f == 300)
         km_damp(pan[2]);
     if (f >= 320 && f < 320 + 6 * (HIT_N - HIT_HEEL_L) && f % 6 == 2)
-        km_hit(HIT_HEEL_L + (int)(f - 320) / 6, 104, 0);   /* the thwap bar, the ding's field (0.5.3) */
+        km_hit(HIT_HEEL_L + (int)(f - 320) / 6, 104, 0);   /* the thwap bar, the ding's field (0.5.3, 0.5.4) */
 }
 
 int main(int argc, char **argv)
