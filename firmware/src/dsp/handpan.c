@@ -138,22 +138,31 @@ int km_white_index(int layout, int w)
     return w < 7 ? 2 * (6 - w) - 1 : 2 * (w - 9);
 }
 
-/* the ding's field struck: the other side of it held closes it; a finger on the ding lets a harmonic
- * ring out, the octave from its bottom edge (the left key), the fifth from its right edge */
-int km_field_hit(int side, int ding_held, int other_held)
+/* the ding's field struck: the other side of it held closes it; a finger on the ding lets the fifth
+ * ring out (the field's left or right edge), as the hands sit: the finger on the ding's near side or
+ * across it */
+int km_field_hit(int side, int ding, int other_held)
 {
     if (other_held)
         return HIT_FIELD_CLOSED;
-    if (ding_held)
-        return side ? HIT_FIELD_FIFTH : HIT_FIELD_OCT;
-    return HIT_FIELD;
+    if (ding < 0)
+        return HIT_FIELD;
+    if (ding > 1)
+        ding = side ? 1 : 0;
+    if (ding == side)
+        return side ? HIT_FIELD_FIFTH : HIT_FIFTH_L;
+    return side ? HIT_FIFTH_XR : HIT_FIFTH_XL;
 }
 
 int km_ding_hit(int held) { return held < 0 ? -1 : held ? HIT_DING_FIFTH : HIT_DING_OCT; }
 
-/* the field's top and bottom, where the fundamental lives: struck there, it comes forward; a finger
- * resting there damps the harmonics and leaves it ringing */
-int km_top_hit(int other_held) { return other_held ? HIT_FIELD_PURE : HIT_FIELD_FUND; }
+/* the field's top and bottom, where the fundamental lives: struck there, it comes forward; struck there
+ * with a finger on the ding, the octave rings out (the fundamental damped under the finger); with a
+ * finger on the field, or resting there itself, the harmonics damped and the fundamental ringing */
+int km_top_hit(int ding_held, int field_held)
+{
+    return ding_held ? HIT_FIELD_OCT : field_held ? HIT_FIELD_PURE : HIT_FIELD_FUND;
+}
 int km_top_held_hit(int ding) { return ding ? HIT_DING_FUND : HIT_FIELD_PURE; }
 
 int km_white_cents(int layout, int s, int key, int octave, int w)
@@ -598,9 +607,9 @@ static const float PING_RATIO[4] = {5.21f, 6.83f, 8.62f, 11.27f}, PING_AMP[4] = 
  * the modes it sits on and leaves the others to ring, as the recordings do:
  *   open        struck alone: the ding's note, brighter, the octave and the fifth up, more steel
  *   closed      a finger on one side, struck on the other: all of it dies in a moment (a pitched tok)
- *   field oct   a finger on the ding, the field's bottom edge struck: the fundamental gone in ~0.15 s,
+ *   field oct   a finger on the ding, the field's top or bottom struck: the fundamental gone in ~0.15 s,
  *               the octave ringing on ~2 s, the double octave and the 7.25 mode singing (a bell)
- *   field fifth a finger on the ding, the field's right edge struck: the fundamental and the octave
+ *   field fifth a finger on the ding, the field's left or right edge struck: the fundamental and the octave
  *               gone, the fifth alone ringing ~4 s: a clear harmonic
  *   ding oct    the ding struck (the thumb), a finger on the field's inner left edge: the octave rings
  *   ding fifth  ...a finger on its outer right edge: the fifth rings
@@ -609,17 +618,21 @@ static const float PING_RATIO[4] = {5.21f, 6.83f, 8.62f, 11.27f}, PING_AMP[4] = 
  *   ding fund   a finger there, the ding struck: the octave and the fifth damped, the fundamental full
  *               and long
  *   pure        a finger there and a strike elsewhere on the field (or the reverse): the fundamental
+ *   fifth L, across  field fifth as the hands sit: struck on the left edge, a little of the octave left;
+ *               the finger across the ding from the strike, further from it: the fundamental lingers a
+ *               moment, the octave a touch, the fifth longer and softer
  * Per pattern: struck by the thumb (the ding's contact) or a finger; how much of each mode the strike
  * wakes (the six partials, the stray); each mode's T60 (> 0 s: a finger on it, never longer than it
  * would ring; < 0: free, times the fundamental's T60; 0 as it is); the field's modes; the skin; sympathy;
  * how much it stirs the air inside (a finger on the steel: little) */
-enum { FG_NONE, FG_OPEN, FG_CLOSED, FG_FOCT, FG_FFIFTH, FG_DOCT, FG_DFIFTH, FG_TOP, FG_DFUND, FG_PURE };
+enum { FG_NONE, FG_OPEN, FG_CLOSED, FG_FOCT, FG_FFIFTH, FG_DOCT, FG_DFIFTH, FG_TOP, FG_DFUND, FG_PURE, FG_FFIFTH_L,
+       FG_FFIFTH_XR, FG_FFIFTH_XL };
 static const float FIELD_RATIO[4] = {5.53f, 7.25f, 8.14f, 9.96f};
 typedef struct {
     uint8_t thumb;
     float e[KM_NMODE], t60[KM_NMODE], ping[4], click, sym, air;
 } fing_t;
-static const fing_t FING[9] = {
+static const fing_t FING[12] = {
     {0, {1.0f, 0.6f, 0.6f, 1.3f, 1.3f, 1.2f, 0, 0, 0, 0, 1.0f},                         /* open */
      {0, 0, 0, 0, 0, 0, 0.60f, 0.40f, 0.50f, 0.35f, 0},
      {0.35f, 0.20f, 0.30f, 0.45f}, 2.5f, 1.0f, 1.0f},
@@ -647,6 +660,15 @@ static const fing_t FING[9] = {
     {0, {1.4f, 0.4f, 0.4f, 0.4f, 0.4f, 0.2f, 0, 0, 0, 0, 0},                              /* pure */
      {0, 0.30f, 0.30f, 0.18f, 0.18f, 0.15f, 0.30f, 0.20f, 0.12f, 0.10f, 0.15f},
      {0.40f, 0.20f, 0.30f, 0.40f}, 2.0f, 0.6f, 0.8f},
+    {0, {0.6f, 0.45f, 0.45f, 2.0f, 2.0f, 0.1f, 0, 0, 0, 0, 0.3f},                         /* fifth, left */
+     {0.12f, 0.35f, 0.35f, -0.75f, -0.75f, 0.15f, 0.55f, 0.70f, 0.25f, 0.20f, 0.30f},
+     {0.50f, 0.70f, 0.50f, 0.35f}, 2.0f, 0.5f, 0.25f},
+    {0, {0.8f, 0.5f, 0.5f, 1.8f, 1.8f, 0.15f, 0, 0, 0, 0, 0.4f},                         /* fifth across, right */
+     {0.20f, 0.45f, 0.45f, -0.9f, -0.9f, 0.25f, 0.60f, 0.75f, 0.25f, 0.20f, 0.40f},
+     {0.40f, 0.60f, 0.35f, 0.30f}, 1.6f, 0.6f, 0.35f},
+    {0, {0.8f, 0.6f, 0.6f, 1.8f, 1.8f, 0.2f, 0, 0, 0, 0, 0.4f},                          /* fifth across, left */
+     {0.20f, 0.50f, 0.50f, -0.85f, -0.85f, 0.25f, 0.55f, 0.70f, 0.25f, 0.20f, 0.40f},
+     {0.45f, 0.55f, 0.45f, 0.30f}, 1.6f, 0.6f, 0.35f},
 };
 
 static float cents_hz(int c) { return 8.17579892f * fm_exp2f((float)c * (1.0f / 1200.0f)) * tunefac * bendfac; }
@@ -1447,9 +1469,10 @@ static const hit_t HITS[HIT_N] = {
  * percussion's) */
 static void field(int kind, int vel)
 {
-    const int ding = pan_n ? pan_c[0] : 5000, fg = FG_OPEN + kind - HIT_FIELD;
+    const int ding = pan_n ? pan_c[0] : 5000, fg = FG_OPEN + kind - HIT_FIELD,
+              pan = kind == HIT_FIELD_FIFTH || kind == HIT_FIFTH_XR ? 18 : kind == HIT_FIFTH_L || kind == HIT_FIFTH_XL ? -18 : 0;
     voice_t *v = voice_for(ding);
-    strike(v, ding, vel, 0, fm_minf(strike_hard(vel) + (FING[fg - 1].thumb ? 0.0f : 0.15f), 1.0f), EMPH_ALL, fg);
+    strike(v, ding, vel, pan, fm_minf(strike_hard(vel) + (FING[fg - 1].thumb ? 0.0f : 0.15f), 1.0f), EMPH_ALL, fg);
     sympathy(ding, vel, FING[fg - 1].sym);
 }
 

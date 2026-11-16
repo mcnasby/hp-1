@@ -112,8 +112,13 @@ and bring out the ding's harmonics:
 | nothing         | the ding       | The ding, exactly as ever                                                     |
 | nothing         | a field key    | The field, open: the ding's note, struck with fingers: brighter, more steel   |
 | one field key   | the other      | Closed: a short, pitched tok, everything gone in a moment                     |
-| a ding key      | the left field | The fundamental dies; the octave rings on, with a bell-like high tone above   |
-| a ding key      | the right field| The fundamental and octave die; the fifth rings alone, a clear harmonic       |
+| a ding key      | a field key    | The fundamental and octave die; the fifth rings alone, a clear harmonic       |
+
+The fifth changes a little with how your hands sit. Same side (left ding key and left field key, or
+right and right): the finger is close to the strike, so the fifth is tight and pure. Across (left
+ding key, right field key, or the reverse): the finger is further off, so the fundamental lingers a
+moment, a touch of the octave stays, and the fifth rings longer and softer. Each sits a little toward
+the side you struck, and the left edge keeps a little more octave than the right.
 | the left field  | the ding       | The ding's thumb strike, its fundamental damped: the octave rings             |
 | the right field | the ding       | The same, the fifth rings                                                     |
 
@@ -123,9 +128,10 @@ fundamental forward:
 | You hold                  | You strike       | What you hear                                                    |
 | ------------------------- | ---------------- | ---------------------------------------------------------------- |
 | nothing                   | the middle black | The field struck at its top: the fundamental forward, the octave and fifth tucked in |
+| a ding key                | the middle black | The fundamental dies; the octave rings on, with a bell-like high tone above |
 | the middle black          | the ding         | The octave and fifth damped: the fundamental alone, full and long |
 | the middle black          | a field key      | The fundamental alone, struck with fingers                      |
-| a ding or field key       | the middle black | The same                                                         |
+| a field key               | the middle black | The same                                                         |
 
 Holding one field key and striking the other still closes it, the middle key held or not.
 
@@ -640,7 +646,7 @@ MIDI comes in over USB and the TRS jack, on the Setup page's channel (Omni by de
 | -------------------------------- | -------------------------------------------------------------------------------- |
 | Note on                          | Strikes the note of that pitch at that velocity (Tuning and Tune applied)        |
 | Note off                         | Damps it when Release is Damp                                                    |
-| Channel 10 notes (any MIDI ch)   | The steel and the kit: 35/36 Gu, 37 rim, 38/40 thwap left, 41/43 thwap right, 39 ding slap, 42/44 tak, 46 tak right, 49/55/57 splash, 53 harmonic, 51/59 ghost, 54 tak left, 69 shaker (pushed), 70 shaker (pulled), 85 castanets; the thwap bar: 45/47 heel left/right, 48/50 fingers left/right, 61/60 closed left/right, 63 both; the ding's field: 65 open, 66 closed, 68/67 field octave/fifth, 77/76 ding octave/fifth, 73 top, 74 ding fundamental, 75 field fundamental |
+| Channel 10 notes (any MIDI ch)   | The steel and the kit: 35/36 Gu, 37 rim, 38/40 thwap left, 41/43 thwap right, 39 ding slap, 42/44 tak, 46 tak right, 49/55/57 splash, 53 harmonic, 51/59 ghost, 54 tak left, 69 shaker (pushed), 70 shaker (pulled), 85 castanets; the thwap bar: 45/47 heel left/right, 48/50 fingers left/right, 61/60 closed left/right, 63 both; the ding's field: 65 open, 66 closed, 68/67 field octave/fifth, 77/76 ding octave/fifth, 73 top, 74 ding fundamental, 75 field fundamental, 78 fifth (left, same side), 79/80 fifth across (struck right/left); 67 is the right, same side |
 | CC 1 (mod wheel)                 | Sympathy                                                                         |
 | CC 64 (sustain)                  | Holds damps back until the pedal lifts                                           |
 | CC 72 / 73 / 74                  | Sustain / Strike / Harmonics                                                     |

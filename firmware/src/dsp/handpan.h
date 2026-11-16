@@ -119,8 +119,8 @@ enum {
      * steel damps the modes it sits on and leaves the rest ringing: */
     HIT_FIELD,                         /* the field struck, open */
     HIT_FIELD_CLOSED,                  /* a finger on one side of it, struck on the other: closed */
-    HIT_FIELD_OCT,                     /* a finger on the ding, its bottom edge struck: the octave sings */
-    HIT_FIELD_FIFTH,                   /* a finger on the ding, its right edge struck: the fifth sings */
+    HIT_FIELD_OCT,                     /* a finger on the ding, its top or bottom struck: the octave sings */
+    HIT_FIELD_FIFTH,                   /* a finger on the ding, its left or right edge struck: the fifth sings */
     HIT_DING_OCT,                      /* the ding struck, a finger on the field's inner left edge: the octave */
     HIT_DING_FIFTH,                    /* the ding struck, a finger on the field's outer right edge: the fifth */
     /* ...and its top and bottom (the thwap bar's middle key), where the fundamental lives: */
@@ -128,6 +128,12 @@ enum {
     HIT_DING_FUND,                     /* a finger resting there, the ding struck: its fundamental alone, full */
     HIT_FIELD_PURE,                    /* struck there with a finger resting elsewhere (or the reverse): the
                                         * fundamental, the harmonics damped */
+    /* the fifth (a finger on the ding, the field's edge struck) as the hands sit: HIT_FIELD_FIFTH is the
+     * right hand on the ding, the right edge struck; then the left on the left, and across: */
+    HIT_FIFTH_L,                       /* left on the ding, the left edge: the same, a little octave left */
+    HIT_FIFTH_XR,                      /* left on the ding, the right edge: the finger further off, the
+                                        * fundamental a moment longer, the fifth longer and softer */
+    HIT_FIFTH_XL,                      /* right on the ding, the left edge */
     HIT_N
 };
 
@@ -159,15 +165,17 @@ int km_white_cents(int layout, int scale, int key, int octave, int w);
 int km_white_hit(int w);                           /* what a steel key plays (HIT_*), -1 for a note's */
 /* a key of the ding's own field: 0 the one on the left, 1 on the right; -1 not. Pan, Pan rev: either
  * side of the ding's two keys; Linear: either side of its one. Struck alone, the field (HIT_FIELD); the
- * other one held, closed; a ding key held, the octave (left) or the fifth (right) sings. Held, a strike
+ * other one held, closed; a ding key held, the fifth sings (km_field_hit: as the hands sit). Held, a strike
  * of the ding: HIT_DING_OCT (left), HIT_DING_FIFTH (right) */
 int km_white_field(int layout, int w);
-int km_field_hit(int side, int ding_held, int other_held);   /* what a strike of it plays (HIT_*) */
+/* what a strike of it plays (HIT_*): ding, the ding's key held: -1 none, 0 the left, 1 the right, 2 its
+ * only one (Linear: as the struck side's) */
+int km_field_hit(int side, int ding, int other_held);
 int km_ding_hit(int held);                         /* the ding's key, the field's key `held` (0, 1) held:
                                                     * what it plays (HIT_*); -1 (none held): the ding */
-/* the field's top and bottom (Black: Thwap, the middle black key): a strike there, `other_held` another of
- * the ding's or the field's keys held; and what a ding or field key plays while it's held (-1: as without) */
-int km_top_hit(int other_held);
+/* the field's top and bottom (Black: Thwap, the middle black key): a strike there, a ding key or a field
+ * key held (a ding key: the octave sings); and what a ding or field key plays while it's held */
+int km_top_hit(int ding_held, int field_held);
 int km_top_held_hit(int ding);                     /* ding: the ding's key struck, else a field key */
 /* where on the instrument a field sits: -1 (left) .. +1 (right), for its pan */
 float km_white_pos(int layout, int w);

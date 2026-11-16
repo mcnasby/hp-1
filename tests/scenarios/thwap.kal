@@ -1,7 +1,7 @@
 # Black: Thwap, the thwap bar: every black key a thwap on the steel, the left half on the left shoulder,
 # the right half on the right, so a thwap sounds on the side of the fields beside it. Out from the ends:
 # thwap, heel, fingers, closed, tak; in the middle, over the ding, the top and bottom of its field: the
-# fundamental forward, and with the ding's keys, the fundamental alone.
+# fundamental forward; with a ding key held, the octave; with the field's, the fundamental alone.
 # (params: 26 Black; hits: 0 thwap L 1 tak L 9 tak R 10 thwap R 15 heel L 16 fingers L 17 closed L
 #  18 closed R 19 fingers R 20 heel R 28 field top 29 ding fund 30 field fund)
 wav thwap.wav
@@ -52,11 +52,12 @@ expect hitlast 30
 key b5 up
 wait 400
 # a finger on the ding or the field, the top struck
+# a finger on the ding, the top struck: the octave sings; a finger on the field: the fundamental
 key w8 down
 wait 30
 tapkey b5
 wait 30
-expect hitlast 30
+expect hitlast 24
 key w8 up
 key w6 down
 wait 30

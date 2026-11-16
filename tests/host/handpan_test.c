@@ -212,11 +212,15 @@ static void test_music(void)
         CHECK(km_white_cents(LAY_LINEAR, 0, 2, 0, i) == KURD[i - 3], "linear %d", i);
     /* what the ding's field plays: open; the other side held, closed; the ding held, a harmonic; and the
      * ding struck with the field held */
-    CHECK(km_field_hit(0, 0, 0) == HIT_FIELD && km_field_hit(1, 0, 0) == HIT_FIELD, "the field, open");
-    CHECK(km_field_hit(0, 0, 1) == HIT_FIELD_CLOSED && km_field_hit(1, 1, 1) == HIT_FIELD_CLOSED, "closed");
-    CHECK(km_field_hit(0, 1, 0) == HIT_FIELD_OCT && km_field_hit(1, 1, 0) == HIT_FIELD_FIFTH, "the ding held");
+    CHECK(km_field_hit(0, -1, 0) == HIT_FIELD && km_field_hit(1, -1, 0) == HIT_FIELD, "the field, open");
+    CHECK(km_field_hit(0, -1, 1) == HIT_FIELD_CLOSED && km_field_hit(1, 1, 1) == HIT_FIELD_CLOSED, "closed");
+    CHECK(km_field_hit(1, 1, 0) == HIT_FIELD_FIFTH && km_field_hit(0, 0, 0) == HIT_FIFTH_L &&
+          km_field_hit(1, 0, 0) == HIT_FIFTH_XR && km_field_hit(0, 1, 0) == HIT_FIFTH_XL, "the ding held: as the hands sit");
+    CHECK(km_field_hit(0, 2, 0) == HIT_FIFTH_L && km_field_hit(1, 2, 0) == HIT_FIELD_FIFTH && km_field_hit(0, -1, 0) == HIT_FIELD,
+          "Linear's one ding key: the near side");
     CHECK(km_ding_hit(-1) < 0 && km_ding_hit(0) == HIT_DING_OCT && km_ding_hit(1) == HIT_DING_FIFTH, "the field held");
-    CHECK(km_top_hit(0) == HIT_FIELD_FUND && km_top_hit(1) == HIT_FIELD_PURE, "the field's top struck");
+    CHECK(km_top_hit(0, 0) == HIT_FIELD_FUND && km_top_hit(0, 1) == HIT_FIELD_PURE && km_top_hit(1, 0) == HIT_FIELD_OCT &&
+          km_top_hit(1, 1) == HIT_FIELD_OCT, "the field's top struck");
     CHECK(km_top_held_hit(1) == HIT_DING_FUND && km_top_held_hit(0) == HIT_FIELD_PURE, "the field's top held");
     CHECK(km_white_pos(LAY_PAN, 7) == 0.0f && km_white_pos(LAY_PAN, 1) < -0.5f && km_white_pos(LAY_PAN, 14) > 0.5f, "pan position");
     CHECK(km_white_pos(LAY_PAN, 0) < -0.9f && km_white_pos(LAY_PAN, 15) > 0.9f, "the steel at the sides");
@@ -1062,7 +1066,7 @@ static void test_field(void)
 {
     const float f = hz(5000);
     float open_, closed, a1, a2, a3;
-    int k;
+    int k, i;
     fresh();
     give_pan(0, 2);
     render(0, 256);
@@ -1078,8 +1082,10 @@ static void test_field(void)
     render(0, 44100);
     closed = rms(bufl, 22050, 4410);
     CHECK(closed < 0.05f * open_, "field closed: %.1f dB under open at 0.5 s", (double)db(open_ / closed));
-    for (k = HIT_FIELD_OCT; k <= HIT_DING_FIFTH; k++) {
-        const float h = k == HIT_FIELD_OCT || k == HIT_DING_OCT ? 2.0f : 3.0f;
+    for (i = 0; i < 7; i++) {
+        static const uint8_t K[7] = {HIT_FIELD_OCT, HIT_FIELD_FIFTH, HIT_DING_OCT, HIT_DING_FIFTH, HIT_FIFTH_L, HIT_FIFTH_XR,
+                                     HIT_FIFTH_XL};
+        const float h = (k = K[i]) == HIT_FIELD_OCT || k == HIT_DING_OCT ? 2.0f : 3.0f;
         fresh();
         give_pan(0, 2);
         render(0, 256);
@@ -1119,6 +1125,24 @@ static void test_field(void)
             CHECK(a1 > 30.0f * mag(13230, 8192, 2.0f * f) && a1 > 30.0f * mag(13230, 8192, 3.0f * f) && a1 > 1e-3f,
                   "hit %d: the fundamental alone", k);
         }
+    }
+    {   /* the fifth as the hands sit: toward the side struck; across, the fundamental lingers a moment */
+        static const uint8_t K[4] = {HIT_FIELD_FIFTH, HIT_FIFTH_L, HIT_FIFTH_XR, HIT_FIFTH_XL};
+        float side[4], fund[4];
+        for (i = 0; i < 4; i++) {
+            fresh();
+            give_pan(0, 2);
+            render(0, 256);
+            km_hit(K[i], 100, 0);
+            render(0, 22050);
+            side[i] = rms(bufr, 0, 22050) / rms(bufl, 0, 22050);
+            fund[i] = mag(2205, 4096, f) / mag(2205, 4096, 3.0f * f);
+        }
+        CHECK(side[0] > 1.1f && side[2] > 1.1f && side[1] < 0.9f && side[3] < 0.9f, "the fifth sits toward the side struck (%.2f %.2f %.2f %.2f)", (double)side[0], (double)side[1], (double)side[2], (double)side[3]);
+        CHECK(fund[2] > 1.5f * fund[0] && fund[3] > 1.5f * fund[1], "across: the fundamental lingers (%.1f, %.1f dB more)",
+              (double)db(fund[2] / fund[0]), (double)db(fund[3] / fund[1]));
+        printf("  field: the fifth across, the fundamental %.1f / %.1f dB more at 0.05 s than on the same side\n",
+               (double)db(fund[2] / fund[0]), (double)db(fund[3] / fund[1]));
     }
     fresh();                                     /* the ding ringing, a finger lands on it: its fundamental damped */
     give_pan(0, 2);
