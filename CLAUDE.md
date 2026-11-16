@@ -70,3 +70,7 @@ The steps for every GitHub issue or new feature, from the first look to the rele
   starts no other run.
 - Afterwards, check: `gh release view vX.Y.Z`, and
   `curl -s https://mcnasby.github.io/hp-1/firmware/latest.json` shows the new version.
+- If the release went out but the Pages job failed (a GitHub outage: "Fetching artifact metadata
+  failed"), a re-run of that run fails too, now with "Multiple artifacts named github-pages". Merge
+  a change that leaves `VERSION` alone (docs, CI) instead: its run publishes the site with the
+  latest release's firmware.
