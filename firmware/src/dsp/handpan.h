@@ -123,6 +123,11 @@ enum {
     HIT_FIELD_FIFTH,                   /* a finger on the ding, its right edge struck: the fifth sings */
     HIT_DING_OCT,                      /* the ding struck, a finger on the field's inner left edge: the octave */
     HIT_DING_FIFTH,                    /* the ding struck, a finger on the field's outer right edge: the fifth */
+    /* ...and its top and bottom (the thwap bar's middle key), where the fundamental lives: */
+    HIT_FIELD_FUND,                    /* struck there, open: the fundamental forward */
+    HIT_DING_FUND,                     /* a finger resting there, the ding struck: its fundamental alone, full */
+    HIT_FIELD_PURE,                    /* struck there with a finger resting elsewhere (or the reverse): the
+                                        * fundamental, the harmonics damped */
     HIT_N
 };
 
@@ -160,6 +165,10 @@ int km_white_field(int layout, int w);
 int km_field_hit(int side, int ding_held, int other_held);   /* what a strike of it plays (HIT_*) */
 int km_ding_hit(int held);                         /* the ding's key, the field's key `held` (0, 1) held:
                                                     * what it plays (HIT_*); -1 (none held): the ding */
+/* the field's top and bottom (Black: Thwap, the middle black key): a strike there, `other_held` another of
+ * the ding's or the field's keys held; and what a ding or field key plays while it's held (-1: as without) */
+int km_top_hit(int other_held);
+int km_top_held_hit(int ding);                     /* ding: the ding's key struck, else a field key */
 /* where on the instrument a field sits: -1 (left) .. +1 (right), for its pan */
 float km_white_pos(int layout, int w);
 /* a pan's accidentals spelled as its scale spells them: bit p set, pitch class p is a sharp (C#), else

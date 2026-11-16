@@ -216,6 +216,8 @@ static void test_music(void)
     CHECK(km_field_hit(0, 0, 1) == HIT_FIELD_CLOSED && km_field_hit(1, 1, 1) == HIT_FIELD_CLOSED, "closed");
     CHECK(km_field_hit(0, 1, 0) == HIT_FIELD_OCT && km_field_hit(1, 1, 0) == HIT_FIELD_FIFTH, "the ding held");
     CHECK(km_ding_hit(-1) < 0 && km_ding_hit(0) == HIT_DING_OCT && km_ding_hit(1) == HIT_DING_FIFTH, "the field held");
+    CHECK(km_top_hit(0) == HIT_FIELD_FUND && km_top_hit(1) == HIT_FIELD_PURE, "the field's top struck");
+    CHECK(km_top_held_hit(1) == HIT_DING_FUND && km_top_held_hit(0) == HIT_FIELD_PURE, "the field's top held");
     CHECK(km_white_pos(LAY_PAN, 7) == 0.0f && km_white_pos(LAY_PAN, 1) < -0.5f && km_white_pos(LAY_PAN, 14) > 0.5f, "pan position");
     CHECK(km_white_pos(LAY_PAN, 0) < -0.9f && km_white_pos(LAY_PAN, 15) > 0.9f, "the steel at the sides");
     /* the ding between A2 and G#3, as the makers have it; the octave moves it */
@@ -1090,14 +1092,43 @@ static void test_field(void)
               k, (double)h, (double)db(a2 / a1), (double)db(a2 / a3), (double)(5.0f - h));
         printf("  field: hit %d at 0.3 s, x%.0f %.1f dB over the fundamental\n", k, (double)h, (double)db(a2 / a1));
     }
+    {   /* its top and bottom: the fundamental forward; a finger there (or the strike there): it alone */
+        float of, ot;
+        fresh();
+        give_pan(0, 2);
+        render(0, 256);
+        km_hit(HIT_FIELD, 100, 0);
+        render(0, 22050);
+        of = mag(4410, 8192, f) / mag(4410, 8192, 2.0f * f);
+        fresh();
+        give_pan(0, 2);
+        render(0, 256);
+        km_hit(HIT_FIELD_FUND, 100, 0);
+        render(0, 22050);
+        ot = mag(4410, 8192, f) / mag(4410, 8192, 2.0f * f);
+        CHECK(ot > 2.0f * of, "the top: the fundamental %.1f dB over the octave (the field open %.1f)",
+              (double)db(ot), (double)db(of));
+        printf("  field: the top, the fundamental %.1f dB over the octave (open %.1f)\n", (double)db(ot), (double)db(of));
+        for (k = HIT_DING_FUND; k <= HIT_FIELD_PURE; k++) {
+            fresh();
+            give_pan(0, 2);
+            render(0, 256);
+            km_hit(k, 100, 0);
+            render(0, 44100);
+            a1 = mag(13230, 8192, f);
+            CHECK(a1 > 30.0f * mag(13230, 8192, 2.0f * f) && a1 > 30.0f * mag(13230, 8192, 3.0f * f) && a1 > 1e-3f,
+                  "hit %d: the fundamental alone", k);
+        }
+    }
     fresh();                                     /* the ding ringing, a finger lands on it: its fundamental damped */
     give_pan(0, 2);
     km_pluck(5000, 100, 0, 0);
     render(0, 22050);
     a1 = mag(13230, 8192, f);
     km_hit(HIT_FIELD_FIFTH, 100, 0);
-    render(0, 22050);
-    CHECK(mag(22050 + 8820, 8192, f) < 0.05f * a1, "a finger on the ringing ding damps it");
+    render(22050, 22050);
+    CHECK(mag(22050 + 8820, 8192, f) < 0.05f * a1, "a finger on the ringing ding damps it (%.1f dB)",
+          (double)db(mag(22050 + 8820, 8192, f) / a1));
     fresh();
     km_set(P_PERC, 0);
     give_pan(0, 2);
