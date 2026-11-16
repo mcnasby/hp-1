@@ -29,8 +29,8 @@ expect white9 6500
 expect white14 7600
 wait 30
 expect ledw2 20
-expect ledw1 20
-expect ledw3 20
+expect ledw1 5
+expect ledw3 5
 shot linear.png
 tapkey w2
 tapkey w4

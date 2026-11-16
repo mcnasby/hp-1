@@ -39,9 +39,9 @@ static void led_pos_init(void)
                     led_pos[id] = (uint8_t)((p << 3) | r);
     }
 }
-void plat_leds(uint32_t buttons, uint32_t keys, uint32_t dim_keys, uint32_t keys80, uint32_t keys60)
+void plat_leds(uint32_t buttons, uint32_t keys, uint32_t dim_keys, uint32_t keys80, uint32_t keys40, uint32_t faint)
 {
-    uint8_t nl[FM1_NCOL] = {0}, nd[FM1_NCOL] = {0}, n8[FM1_NCOL] = {0}, n6[FM1_NCOL] = {0};
+    uint8_t nl[FM1_NCOL] = {0}, nd[FM1_NCOL] = {0}, n8[FM1_NCOL] = {0}, n4[FM1_NCOL] = {0}, nf[FM1_NCOL] = {0};
     uint32_t i, c;
     for (i = 0; i < NB + NKEYS; i++) {
         uint32_t id = i < NB ? panel.btn[i] : 14u + (i - NB), k = i - NB;
@@ -54,16 +54,19 @@ void plat_leds(uint32_t buttons, uint32_t keys, uint32_t dim_keys, uint32_t keys
             nl[q >> 3] |= m;
         else if (i >= NB && (keys80 >> k & 1u))
             n8[q >> 3] |= m;
-        else if (i >= NB && (keys60 >> k & 1u))
-            n6[q >> 3] |= m;
+        else if (i >= NB && (keys40 >> k & 1u))
+            n4[q >> 3] |= m;
         else if (i >= NB && (dim_keys >> k & 1u))
             nd[q >> 3] |= m;
+        else if (i >= NB && (faint >> k & 1u))
+            nf[q >> 3] |= m;
     }
     for (c = 0; c < FM1_NCOL; c++) {
         fm1_led[c] = nl[c];
         fm1_led_80[c] = n8[c];
-        fm1_led_60[c] = n6[c];
+        fm1_led_40[c] = n4[c];
         fm1_led_dim[c] = nd[c];
+        fm1_led_faint[c] = nf[c];
     }
 }
 

@@ -91,7 +91,7 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 
 static uint32_t now_ms, held_btn, held_keys, master = 2048;
 static int32_t enc_acc[NE];
-static uint32_t lit_btn, lit_keys, dim_keys, lit80_keys, lit60_keys;
+static uint32_t lit_btn, lit_keys, dim_keys, lit80_keys, lit40_keys, faint_keys;
 
 uint32_t plat_ms(void) { return now_ms; }
 uint32_t plat_buttons(void) { return held_btn; }
@@ -103,20 +103,26 @@ int32_t plat_enc(int role)
     return v;
 }
 uint32_t plat_master(void) { return master; }
-void plat_leds(uint32_t b, uint32_t k, uint32_t d, uint32_t k80, uint32_t k60)
+void plat_leds(uint32_t b, uint32_t k, uint32_t d, uint32_t k80, uint32_t k40, uint32_t f)
 {
     lit_btn = b;
     lit_keys = k;                                /* (the brightest wins: plat_fm1.c) */
     lit80_keys = k80 & ~k;
-    lit60_keys = k60 & ~k & ~k80;
-    dim_keys = d & ~k & ~k80 & ~k60;
+    lit40_keys = k40 & ~k & ~k80;
+    dim_keys = d & ~k & ~k80 & ~k40;
+    faint_keys = f & ~k & ~k80 & ~k40 & ~d;
 }
-/* key q's LED: 100, 80, 60, 20 (dim) or 0 */
+/* key q's LED: 100, 80, 40, 20 (dim), 5 (faint) or 0 */
 static int key_level(uint32_t q)
 {
-    return lit_keys >> q & 1u ? 100 : lit80_keys >> q & 1u ? 80 : lit60_keys >> q & 1u ? 60 : dim_keys >> q & 1u ? 20 : 0;
+    return lit_keys >> q & 1u ? 100 : lit80_keys >> q & 1u ? 80 : lit40_keys >> q & 1u ? 40 : dim_keys >> q & 1u ? 20
+         : faint_keys >> q & 1u ? 5 : 0;
 }
-static char key_mark(uint32_t q) { return "#86+."[key_level(q) == 100 ? 0 : key_level(q) == 80 ? 1 : key_level(q) == 60 ? 2 : key_level(q) ? 3 : 4]; }
+static char key_mark(uint32_t q)
+{
+    const int l = key_level(q);
+    return l == 100 ? '#' : l == 80 ? '8' : l == 40 ? '4' : l == 20 ? '+' : l ? '-' : '.';
+}
 
 #define MQ 256
 static uint32_t min_q[MQ], mi_w, mi_r;
@@ -546,7 +552,7 @@ static int expect(const char *what, const char *val)
                 got = q;
     } else if (!strcmp(what, "litkeys"))         /* the keys lit (bit per key) */
         got = (int)lit_keys;
-    else if (!strncmp(what, "ledw", 4))           /* ledwW / ledbB: white key W's, black key B's LED: 100 80 60 20 0 */
+    else if (!strncmp(what, "ledw", 4))           /* ledwW / ledbB: white key W's, black key B's LED: 100 80 40 20 5 0 */
         got = key_level(WHITE_K[atoi(what + 4) & 15]);
     else if (!strncmp(what, "ledb", 4))
         got = key_level(BLACK_K[atoi(what + 4) % 11]);

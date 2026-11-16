@@ -53,8 +53,10 @@ a { color: var(--accent); text-underline-offset: .15em; }
 .dim .keyface.black { fill: #d1c3b2; }
 .l80 .keyface.white { fill: #f2ca9a; }
 .l80 .keyface.black { fill: #eaaf63; }
-.l60 .keyface.white { fill: #eecfaa; }
-.l60 .keyface.black { fill: #e2b67d; }
+.l40 .keyface.white { fill: #ead5bb; }
+.l40 .keyface.black { fill: #dabd98; }
+.faint .keyface.white { fill: #e6ddd2; }
+.faint .keyface.black { fill: #ccc6c0; }
 .keyname { font-family: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif; font-weight: 700; pointer-events: none; }
 .keyname.w { fill: #2b221b; }
 .keyname.b { fill: #2b2f36; }
@@ -177,7 +179,7 @@ footer { margin: 2rem 0 0; color: var(--muted); font-size: .88rem; }
       <li>The <b>white key at each end</b> is the steel: a palm <b>thwap</b>, each on its own side of the shell.</li>
       <li>The <b>black keys</b> are the kit: <b>castanets</b> on the far left, then a <b>shaker</b> (an egg, pushed), <b>Gu</b> (a slap on the bottom port), <b>ghost</b> note, <b>ding slap</b>, <b>tak</b>, the ding's <b>harmonic</b>, <b>rim</b> knock, <b>mute</b>, the <b>shaker</b> pulled back, and a <b>splash</b> cymbal on the far right.</li>
       <li>Set <b>Black</b> to <b>Duo</b> (SEL) and the nine black keys between the castanets and the <b>Gu</b> (now far right) become a second handpan whose scale fits with the first, in the same register, laid out like the white keys: its ding in the middle, its notes alternating outward. Its notes show on its own pan on the screen. Or set it to <b>Duo key</b>: the second pan is then always in another key than the first (a fifth, a fourth, the relative major or minor), its notes still all in the first pan's scale.</li>
-      <li>Set <b>Black</b> to <b>Thwap</b> and the black keys are a <b>thwap bar</b>: the left half thwaps the left shoulder, the right half the right, so a thwap comes from the same side as the notes under it. Each half is a hand moving across that shoulder: next to the middle key, the <b>shoulder</b> by the ding (soft, the ding's octave and fifth ringing on); halfway out, <b>between</b> two fields (bright and quick, the fields either side singing); at the end, the pan's outer <b>edge</b> below the fields (the loudest, the shell ringing), and blends in between. The labels on that row are hidden and the screen shows the pan bigger, each thwap rippling from where it lands. The middle key, over the ding, strikes the <b>top</b> of the ding's field: the fundamental comes forward. Hold a ding key and strike it: the <b>octave</b> rings out. Hold it and strike the ding or a field key (or hold a field key and strike it), and the fundamental rings alone, the harmonics damped.</li>
+      <li>Set <b>Black</b> to <b>Thwap</b> and the black keys are a <b>thwap bar</b>: the left half thwaps the left shoulder, the right half the right, so a thwap comes from the same side as the notes under it. Each half is a hand moving across that shoulder: next to the middle key, the <b>shoulder</b> by the ding (soft, the ding's octave and fifth ringing on); halfway out, <b>between</b> two fields (bright and quick, the fields either side singing); at the end, the pan's outer <b>edge</b> below the fields (the end white keys' thwap, a hair fuller), and blends in between. The labels on that row are hidden and the screen shows the pan bigger, each thwap rippling from where it lands. The middle key, over the ding, strikes the <b>top</b> of the ding's field: the fundamental comes forward. Hold a ding key and strike it: the <b>octave</b> rings out. Hold it and strike the ding or a field key (or hold a field key and strike it), and the fundamental rings alone, the harmonics damped.</li>
       <li><b>PLAY</b> plays and stops the pattern (or the song) and the groove; hold it to freeze the grain cloud. <b>REC</b> arms recording: the first key you play starts it (hold REC to mute; hold REC and press PLAY for a count-in). <b>OCT−</b> / <b>OCT+</b> move the pan an octave.</li>
       <li><b>ARP</b>: the arpeggiator. Set its Mode and hold a few notes. Hold <b>SEQ</b> and press a white key to choose a pattern (1 to 16); with SEQ held, <b>OCT−</b> clears it (twice), <b>OCT+</b> copies it, <b>EDIT</b> undoes the last take.</li>
     </ul>
@@ -592,14 +594,15 @@ function drawScreen(fb) {
   }
   ctx.putImageData(img, 0, 0);
 }
-function drawLights(b, k, d, k80 = 0, k60 = 0) {
+function drawLights(b, k, d, k80 = 0, k40 = 0, faint = 0) {
   for (const x of Object.values(buttons)) x.g.classList.toggle("lit", !!(b & (1 << x.bit)));
   keys.forEach((x, i) => {
-    const on = k | k80 | k60;
-    x.g.classList.toggle("lit", !!(on & (1 << i)));
-    x.g.classList.toggle("l80", !(k & (1 << i)) && !!(k80 & (1 << i)));   // a thwap
-    x.g.classList.toggle("l60", !(k & (1 << i)) && !(k80 & (1 << i)) && !!(k60 & (1 << i)));   // the ding's field
-    x.g.classList.toggle("dim", !(on & (1 << i)) && !!(d & (1 << i)));   // the ding's keys and its field's
+    const bit = 1 << i, on = k | k80 | k40;
+    x.g.classList.toggle("lit", !!(on & bit));
+    x.g.classList.toggle("l80", !(k & bit) && !!(k80 & bit));                // a thwap
+    x.g.classList.toggle("l40", !(k & bit) && !(k80 & bit) && !!(k40 & bit));   // the ding's field
+    x.g.classList.toggle("dim", !(on & bit) && !!(d & bit));                 // the ding's keys
+    x.g.classList.toggle("faint", !(on & bit) && !(d & bit) && !!(faint & bit));   // its field's, at rest
   });
 }
 // what each key plays, as the firmware says: a note's name, or the hit on the steel
@@ -648,7 +651,7 @@ async function switchOn() {
         else if (m.type === "sysex") emuSysexReply(m);
         else if (m.type === "frame") {
           if (m.fb) drawScreen(m.fb);
-          drawLights(m.buttons, m.keys, m.dim, m.k80, m.k60);
+          drawLights(m.buttons, m.keys, m.dim, m.k80, m.k40, m.faint);
           if (m.labels) drawLabels(m.labels);
           if (m.load !== undefined) cpu.textContent = `The firmware uses ${m.load}% of this computer's time`;
           if (m.store) saveStore(m.store);

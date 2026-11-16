@@ -29,8 +29,8 @@ uint32_t plat_buttons(void);           /* held: bit B_* */
 uint32_t plat_keys(void);              /* held: bit k = key k (0 = F3) */
 int32_t plat_enc(int role);            /* detents since the last call, + = clockwise; EN_* */
 uint32_t plat_master(void);            /* MASTER pot, 0..4096 gain Q12 */
-/* lit: bit B_*, bit key; then keys at 80 %, at 60 %, and dim (the brightest of them wins) */
-void plat_leds(uint32_t buttons, uint32_t keys, uint32_t dim_keys, uint32_t keys80, uint32_t keys60);
+/* lit: bit B_*, bit key; then keys at 80 %, at 40 %, dim (20 %) and faint (~5 %): the brightest wins */
+void plat_leds(uint32_t buttons, uint32_t keys, uint32_t dim_keys, uint32_t keys80, uint32_t keys40, uint32_t faint);
 
 /* USB MIDI, 4-byte USB-MIDI event packets (cable 0) */
 int plat_midi_in(uint32_t *pkt);       /* 1 = got one (called from the audio ISR) */

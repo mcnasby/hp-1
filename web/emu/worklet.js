@@ -72,7 +72,7 @@ class Handpan extends AudioWorkletProcessor {
     const ex = this.ex;
     const blits = ex.web_blits();
     const msg = { type: "frame", buttons: ex.web_lit_buttons() >>> 0, keys: ex.web_lit_keys() >>> 0, dim: ex.web_dim_keys() >>> 0,
-                  k80: ex.web_lit80_keys() >>> 0, k60: ex.web_lit60_keys() >>> 0 };
+                  k80: ex.web_lit80_keys() >>> 0, k40: ex.web_lit40_keys() >>> 0, faint: ex.web_faint_keys() >>> 0 };
     if (this.frames >= 44100) {                       // the share of real time spent running the device
       msg.load = Math.round(100 * this.busy / (this.frames / 44.1));
       this.busy = this.frames = 0;

@@ -4,6 +4,18 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.5.5
+
+- **The ding's field responds to how you play it.** It was aggressive and loud on the first touch. Now,
+  struck from rest, it's a soft, round fingertip, under the ding. Struck again while it rings, it gets
+  firmer and brighter the more it rings, the way the ding's dome builds, so you can go from soft to
+  louder: a roll on it swells. This goes for every way of striking it (open, closed, the harmonics).
+- **The thwap bar's ends.** The end black key on each side is now the end white keys' thwap (a flat
+  palm on the outer edge), a hair louder and fuller. The key next to it blends from the bright thwap
+  between the fields to that one.
+- **Quieter field lights.** The ding's field keys are just lit at rest (about 5 %) and never light
+  past 40 %. The ding's own keys keep their dim glow, so they're still the easiest to find.
+
 ## 0.5.4
 
 - **The thwap bar, tuned against recordings.** Each half of the bar is now a hand moving across that

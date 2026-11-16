@@ -1058,41 +1058,55 @@ static void test_thwaps(void)
            (double)db(open_ / closed), (double)heel, (double)fing);
 }
 
-/* the thwap bar's positions, shoulder to edge (as recorded): each on its side; brighter the further out;
- * the edge the loudest; by the ding, the ding's octave rings on over its fundamental */
+/* the thwap bar's positions, shoulder to edge: each on its side; fuller from between the fields out to
+ * the edge, which is the end white keys' thwap a hair louder and fuller, in its tone; by the ding, the
+ * ding's octave rings on over its fundamental */
 static void test_bar(void)
 {
     static const uint8_t K[2][5] = {{HIT_SHLD_L, HIT_UPPER_L, HIT_BETW_L, HIT_LOWER_L, HIT_EDGE_L},
                                     {HIT_SHLD_R, HIT_UPPER_R, HIT_BETW_R, HIT_LOWER_R, HIT_EDGE_R}};
+    static const uint8_t T[2] = {HIT_THWAP_L, HIT_THWAP_R};
     const float f = hz(5000);
-    float br[5], pk[5];
+    float rm[5], th, tb, eb = 0.0f;
     int s, i;
-    for (s = 0; s < 2; s++)
+    for (s = 0; s < 2; s++) {
+        const float *near = s ? bufr : bufl, *far = s ? bufl : bufr;
         for (i = 0; i < 5; i++) {
-            const float *near = s ? bufr : bufl, *far = s ? bufl : bufr;
             fresh();
             give_pan(0, 2);
             render(0, 256);
             km_hit(K[s][i], 104, 0);
             render(0, 8820);
             CHECK(bright(near, 8820) > 1.4f * bright(far, 8820), "thwap bar: hit %d on its side", K[s][i]);   /* (the steel) */
-            /* (the shell's upper modes against its low ones, at the default size and thickness: 430 Hz up) */
-            br[i] = (mag(0, 4096, 1380.0f) + mag(0, 4096, 1668.0f)) / (mag(0, 4096, 430.0f) + mag(0, 4096, 632.0f));
-            pk[i] = peak;
+            rm[i] = rms(near, 0, 8820);
             CHECK(!nan_seen && peak < 0.95f, "thwap bar: hit %d peak %.3f", K[s][i], (double)peak);
-            if (i > 1)                           /* (the shoulder is the ding's: its own check, below) */
-                CHECK(br[i] > br[i - 1], "thwap bar: hit %d brighter than the one inside it (%.3f, %.3f)", K[s][i],
-                      (double)br[i], (double)br[i - 1]);
+            if (i > 2)
+                CHECK(rm[i] > rm[i - 1], "thwap bar: hit %d fuller than the one inside it", K[s][i]);
         }
-    CHECK(pk[4] > 2.0f * pk[2], "the edge louder than between the fields: %.1f dB", (double)db(pk[4] / pk[2]));
+        fresh();
+        give_pan(0, 2);
+        render(0, 256);
+        km_hit(T[s], 104, 0);
+        render(0, 8820);
+        th = rms(near, 0, 8820);
+        CHECK(rm[4] > th && rm[4] < 1.25f * th, "the bar's edge a hair over the end key's thwap: %+.2f dB", (double)db(rm[4] / th));
+        tb = bright(near, 8820) / th;
+        fresh();
+        give_pan(0, 2);
+        render(0, 256);
+        km_hit(K[s][4], 104, 0);
+        render(0, 8820);
+        eb = bright(near, 8820) / rms(near, 0, 8820);
+        CHECK(eb > 0.7f * tb && eb < 1.4f * tb, "the bar's edge the end key's tone: %+.1f dB brightness", (double)db(eb / tb));
+    }
     fresh();
     give_pan(0, 2);
     render(0, 256);
     km_hit(HIT_SHLD_L, 104, 0);
     render(0, 44100);
     CHECK(mag(13230, 8192, 2.0f * f) > 2.0f * mag(13230, 8192, f), "the shoulder: the ding's octave over its fundamental");
-    printf("  thwap bar: shoulder to edge, the shell's upper modes over its low %.2f %.2f %.2f %.2f %.2f; the edge %.1f dB over between\n",
-           (double)br[0], (double)br[1], (double)br[2], (double)br[3], (double)br[4], (double)db(pk[4] / pk[2]));
+    printf("  thwap bar: between, lower, edge %.1f %.1f %.1f dB; the edge %+.2f dB over the end key, its brightness %+.1f dB\n",
+           (double)db(rm[2]), (double)db(rm[3]), (double)db(rm[4]), (double)db(rm[4] / th), (double)db(eb / tb));
 }
 
 /* the ding's field (D3 ding): as the recordings of an E3 ding struck around its dome. Open: the ding's
@@ -1175,15 +1189,16 @@ static void test_field(void)
             side[i] = rms(bufr, 0, 22050) / rms(bufl, 0, 22050);
             fund[i] = mag(2205, 4096, f) / mag(2205, 4096, 3.0f * f);
         }
-        CHECK(side[0] > 1.1f && side[2] > 1.1f && side[1] < 0.9f && side[3] < 0.9f, "the fifth sits toward the side struck (%.2f %.2f %.2f %.2f)", (double)side[0], (double)side[1], (double)side[2], (double)side[3]);
+        CHECK(side[0] > 1.05f && side[2] > 1.05f && side[1] < 0.95f && side[3] < 0.95f, "the fifth sits toward the side struck (%.2f %.2f %.2f %.2f)", (double)side[0], (double)side[1], (double)side[2], (double)side[3]);
         CHECK(fund[2] > 1.5f * fund[0] && fund[3] > 1.5f * fund[1], "across: the fundamental lingers (%.1f, %.1f dB more)",
               (double)db(fund[2] / fund[0]), (double)db(fund[3] / fund[1]));
         printf("  field: the fifth across, the fundamental %.1f / %.1f dB more at 0.05 s than on the same side\n",
                (double)db(fund[2] / fund[0]), (double)db(fund[3] / fund[1]));
     }
-    {   /* the field against the ding's dome, as recorded (alternating, then rolls): about as loud, its
-         * fundamental and octave a few dB under the dome's, the steel above 2 kHz well over it */
-        float fd[2], hd[2];
+    {   /* the field against the ding's dome, as recorded (alternating, then rolls): from rest a soft
+         * fingertip, under the dome (its fundamental a few dB down, its attack no harder); struck again
+         * while it rings, firmer and brighter: it builds as it's played into */
+        float fd[2], hd[2], h1, h2;
         for (i = 0; i < 2; i++) {
             fresh();
             give_pan(0, 2);
@@ -1196,10 +1211,15 @@ static void test_field(void)
             fd[i] = mag(0, 2048, f);
             hd[i] = bright(bufl, 1024);
         }
-        CHECK(fd[1] < fd[0] && fd[1] > 0.4f * fd[0], "the field's fundamental under the dome's: %.1f dB", (double)db(fd[1] / fd[0]));
-        CHECK(hd[1] > 2.0f * hd[0], "the field brighter than the dome: %.1f dB", (double)db(hd[1] / hd[0]));
-        printf("  field: against the dome, the fundamental %.1f dB, the steel %+.1f dB\n", (double)db(fd[1] / fd[0]),
-               (double)db(hd[1] / hd[0]));
+        CHECK(fd[1] < fd[0] && fd[1] > 0.3f * fd[0], "the field's fundamental under the dome's: %.1f dB", (double)db(fd[1] / fd[0]));
+        CHECK(hd[1] < hd[0], "from rest the field no harder than the dome: %.1f dB", (double)db(hd[1] / hd[0]));
+        h1 = hd[1];
+        km_hit(HIT_FIELD, 100, 0);                    /* again, while it rings */
+        render(8820, 8820);
+        h2 = bright(bufl + 8820, 1024);
+        CHECK(h2 > 2.0f * h1, "struck again while it rings, brighter: %.1f dB", (double)db(h2 / h1));
+        printf("  field: from rest against the dome, the fundamental %.1f dB, the steel %+.1f dB; again %+.1f dB\n",
+               (double)db(fd[1] / fd[0]), (double)db(hd[1] / hd[0]), (double)db(h2 / h1));
     }
     fresh();                                     /* the ding ringing, a finger lands on it: its fundamental damped */
     give_pan(0, 2);
