@@ -142,11 +142,12 @@ are either side of the ding's one key. They record and play back like any other 
 The pan's own notes are the ding and its 7 to 9 fields. The outer note keys carry the scale on up, as
 the extra fields of an extended ("mutant") pan do. The screen shows every note the keys play on the
 pan: the ding in the middle and every other note in one ring round it, evenly spaced, climbing in the
-same zigzag from the player's side (the extra notes' labels a little quieter). The ding's keys and
-its field's keys beside them always glow dimly, so you can find the center without looking.
+same zigzag from the player's side (the extra notes' labels a little quieter). The ding's keys
+always glow dimly and its field's keys beside them are just lit, so you can find the center without
+looking.
 
 The key lights keep the kinds of key apart: a note's key lights fully as it rings; the ding's field
-keys never past 60 %; a thwap (the end keys, the thwap bar) never past 80 %.
+keys (about 5 % at rest) never past 40 %; a thwap (the end keys, the thwap bar) never past 80 %.
 
 ### Black keys: the kit, the second pan
 
@@ -194,9 +195,10 @@ that shoulder, tuned against recordings of each spot:
   sets the ding's octave and fifth ringing for seconds, with little steel in it.
 - **Between** (keys 3 and 9): between two fields, level with their middles. Bright and quick, the
   fields either side singing.
-- **Edge** (keys 1 and 11): the pan's outer edge, below the fields. The loudest, the shell's own
-  modes ringing hard.
-- **Upper** and **Lower** (keys 4 and 8, 2 and 10) blend their neighbors.
+- **Edge** (keys 1 and 11): the pan's outer edge, below the fields: the end white keys' thwap, a
+  hair louder and fuller.
+- **Upper** and **Lower** (keys 4 and 8, 2 and 10) blend their neighbors: Lower goes from the bright
+  thwap between the fields to the full one at the edge.
 
 Key 6, in the middle over the ding, is the **top** (and bottom) of the ding's field, where its
 fundamental lives ([below](#the-dings-field)). The heel, fingers, closed and both-palms thwaps from
@@ -610,10 +612,10 @@ it with the fields.
 Each hit is a force pulse into the shell (on one side or both), a push on the air, and a burst of
 noise for skin on steel, each shaped for what it imitates: a palm thwap is long, deep and wide, a tak
 short and bright, the Gu nearly all air. The ding slap strikes the ding and lays a palm on it 30 ms
-later; the harmonic strikes it with the fundamental damped. On the thwap bar, a hand moving out from the shoulder to the outer edge lands
-harder and narrower: a shorter push that drives the shell's upper modes harder (at the edge its
-0.6-1.7 kHz modes lead, as recorded), louder, with less of the ding in it; by the ding, the thwap
-rings its octave and fifth, not its fundamental. The heel is a longer, deeper push with more air;
+later; the harmonic strikes it with the fundamental damped. On the thwap bar, between the fields the hand lands narrow and
+hard: a short push that drives the shell's upper modes (the fields either side singing); out at the
+edge it's the flat palm of the end keys' thwap, a longer push with a little more air; by the ding,
+the thwap rings its octave and fifth, not its fundamental. The heel is a longer, deeper push with more air;
 the fingers a quicker one, mostly steel; the closed thwap chokes the shell 40 ms in. Both palms push
 both shoulders at once.
 

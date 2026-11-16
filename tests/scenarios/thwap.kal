@@ -99,16 +99,16 @@ expect hitlast 43
 expect shellR >5
 key b10 up
 wait 400
-# the lights: a thwap to 80 %, the top (the ding's field's) dim, to 60 % when struck
+# the lights: a thwap to 80 %, the top (the ding's field's) just lit, to 40 % when struck
 tapkey b8
 wait 30
 expect ledb8 80
-expect ledb5 20
-expect ledw6 20
+expect ledb5 5
+expect ledw6 5
 tapkey b5
 wait 30
-expect ledb5 60
-expect ledw6 60
+expect ledb5 40
+expect ledw6 40
 # a thwap on the left, the field on the left: the same side
 tapkey w3
 tapkey b2

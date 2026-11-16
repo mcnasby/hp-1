@@ -25,9 +25,11 @@
  * quadrature cycle. fm1_enc_take() returns the steps.
  * LEDs: set fm1_led[col] (packed row bits, bit1 PA5..bit4 PA8); they are lit
  * while that column is selected. fm1_led_key/btn helpers address them by id.
- * HP-1: three more levels, the same packed bits, lit some frames in FM1_LED_DIM
- * (~900 frames a second from the tick: a cycle at ~180 Hz): fm1_led_80[col] four
- * frames in five (80 %), fm1_led_60[col] three (60 %), fm1_led_dim[col] one (dim).
+ * HP-1: more levels, the same packed bits, lit some frames in FM1_LED_DIM (~900
+ * frames a second from the tick: a cycle at ~180 Hz): fm1_led_80[col] four frames
+ * in five (80 %), fm1_led_40[col] two (40 %), fm1_led_dim[col] one (20 %); and
+ * fm1_led_faint[col] every frame, but only the first FM1_FAINT_US of its column's
+ * ~100 us (~5 %: just lit, no flicker).
  */
 #pragma once
 #include <stdint.h>
@@ -43,6 +45,9 @@
 #define FM1_DEBOUNCE 8u           /* frames (~0.6 ms each) */
 #ifndef FM1_LED_DIM
 #define FM1_LED_DIM 5u            /* the levels' cycle, frames: a dim LED lit one of them */
+#endif
+#ifndef FM1_FAINT_US
+#define FM1_FAINT_US 5u           /* a faint LED: lit this long a column (of ~100 from the tick) */
 #endif
 #define FM1_SETTLE_US 10u
 #define FM1_REST_FRAMES 40u       /* ~25 ms still = a detent position */
@@ -86,13 +91,25 @@ static volatile struct {
 } fm1_in;
 static uint8_t fm1_led[FM1_NCOL];
 static uint8_t fm1_led_dim[FM1_NCOL];
-static uint8_t fm1_led_80[FM1_NCOL], fm1_led_60[FM1_NCOL];
-static uint8_t fm1__dim_ph;           /* frames, mod FM1_LED_DIM: dim LEDs are lit on 0, 60 % on 0..2, 80 % 0..3 */
+static uint8_t fm1_led_80[FM1_NCOL], fm1_led_40[FM1_NCOL], fm1_led_faint[FM1_NCOL];
+static uint8_t fm1__dim_ph;           /* frames, mod FM1_LED_DIM: dim LEDs are lit on 0, 40 % on 0..1, 80 % 0..3 */
 /* the LEDs of column p lit this frame */
 static inline uint32_t fm1__lit(uint32_t p)
 {
     const uint32_t ph = fm1__dim_ph;
-    return fm1_led[p] | (ph < 4u ? fm1_led_80[p] : 0u) | (ph < 3u ? fm1_led_60[p] : 0u) | (ph == 0u ? fm1_led_dim[p] : 0u);
+    return fm1_led[p] | (ph < 4u ? fm1_led_80[p] : 0u) | (ph < 2u ? fm1_led_40[p] : 0u) | (ph == 0u ? fm1_led_dim[p] : 0u);
+}
+static void fm1__wait(uint32_t us);
+static void fm1__led_lines(uint32_t rowmask);
+/* column p's LEDs on: the faint ones only for a moment */
+static void fm1__led_on(uint32_t p)
+{
+    const uint32_t lit = fm1__lit(p);
+    if (fm1_led_faint[p] & ~lit) {
+        fm1__led_lines(lit | fm1_led_faint[p]);
+        fm1__wait(FM1_FAINT_US);
+    }
+    fm1__led_lines(lit);
 }
 
 static void fm1__led_lines(uint32_t rowmask)
@@ -209,7 +226,7 @@ static void fm1_input_scan(void)
         fm1__sr_word(0xFFFFu ^ (1u << p) ^ (p < 2u ? 1u << (11u + p) : 0u));
         fm1__wait(FM1_SETTLE_US);
         fm1_in.raw[p] = (uint8_t)fm1__rows();
-        fm1__led_lines(fm1__lit(p));
+        fm1__led_on(p);
         fm1__wait(FM1_LED_US);
     }
     fm1__led_lines(0);
@@ -283,7 +300,7 @@ static void fm1_input_tick(void)
     fm1__sr_word(0xFFFFu ^ (1u << n) ^ (n < 2u ? 1u << (11u + n) : 0u));
     if (n == 0u)
         fm1__dim_ph = (uint8_t)(fm1__dim_ph + 1u == FM1_LED_DIM ? 0u : fm1__dim_ph + 1u);
-    fm1__led_lines(fm1__lit(n));
+    fm1__led_on(n);
     fm1__tick_col = (uint8_t)n;
     if (n == 0u)
         fm1__frame();

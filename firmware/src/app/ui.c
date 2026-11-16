@@ -2094,7 +2094,7 @@ static void leds(void)
         k = 1u << WHITE_K[sq.h.cur];
         if (seq_next_pat() >= 0 && beat < SEQ_PPQ / 2u)
             k |= 1u << WHITE_K[seq_next_pat()];
-        plat_leds(b, k | ui.keys, d & ~k, 0, 0);
+        plat_leds(b, k | ui.keys, d & ~k, 0, 0, 0);
         return;
     }
     for (i = 0; i < NWHITE; i++)                     /* the notes that ring, the steel just struck */
@@ -2106,8 +2106,8 @@ static void leds(void)
         if (is_duo_key((int)i) ? note_level(duo_cents(duo_index((int)i))) > 0.08f : ripple_age(ui.hit_t[black_hit((int)i)]) < 12u)
             k |= 1u << BLACK_K[i];
     k |= ui.keys;
-    {   /* the ding's field always faintly lit, never past 60 %; a thwap (the end keys, the thwap bar) never
-         * past 80 %: the notes always the brightest */
+    {   /* the ding's field always just lit (~5 %), never past 40 %; a thwap (the end keys, the thwap bar)
+         * never past 80 %: the notes always the brightest */
         uint32_t f = 0, t = 1u << WHITE_K[0] | 1u << WHITE_K[NWHITE - 1];
         for (i = 0; i < NWHITE; i++)
             if (km_white_field(proj.par[P_LAYOUT], (int)i) >= 0)
@@ -2119,7 +2119,7 @@ static void leds(void)
                 else
                     t |= 1u << BLACK_K[i];
         }
-        plat_leds(b, k & ~f & ~t, ding_keys() | f, k & t, k & f);
+        plat_leds(b, k & ~f & ~t, ding_keys(), k & t, k & f, f);
     }
 }
 
