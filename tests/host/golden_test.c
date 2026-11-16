@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* The sound, held still: a fixed performance on every metal (the pan's notes at several strengths, the
  * ding struck again and again, every hit of the steel and the kit, a second pan, a palm mute, the delay
- * and the grains) rendered and measured block by block, against tests/host/golden.txt. Any change to the
- * engine that moves the sound fails here; a change meant to move it regenerates the file on purpose:
+ * and the grains; then the thwap bar and the ding's field) rendered and measured block by block,
+ * against tests/host/golden.txt. Any change to the engine that moves the sound fails here; a change
+ * meant to move it regenerates the file on purpose:
  *   golden_test tests/host/golden.txt          compare (0.01 dB a block)
  *   golden_test tests/host/golden.txt write    rewrite it (only when the sound is meant to change) */
 #include <stdio.h>
@@ -24,7 +25,7 @@ static void play(uint32_t f, const int *pan, const int *duo)
         km_pluck(pan[(f / 10) % KM_NPAN], VEL[(f / 10) % 6], (f / 10) & 1 ? 40 : -40, 0);
     if (f >= 120 && f < 168 && f % 12 == 0)                /* the ding, again and again */
         km_pluck(pan[0], 100, 0, 0);
-    if (f >= 170 && f < 170 + 3 * HIT_N && (f - 170) % 3 == 0 && (f - 170) / 3 != HIT_MUTE)
+    if (f >= 170 && f < 170 + 3 * (HIT_CASTANET + 1) && (f - 170) % 3 == 0 && (f - 170) / 3 != HIT_MUTE)
         km_hit((int)(f - 170) / 3, 104, 0);                /* every hit (the mute below) */
     if (f >= 220 && f < 250 && f % 5 == 0)                 /* the second pan */
         km_pluck(duo[(f / 5) % KM_NDUO], 90, 55, 0);
@@ -36,6 +37,8 @@ static void play(uint32_t f, const int *pan, const int *duo)
         km_pluck(pan[2], 100, -30, 0);
     if (f == 300)
         km_damp(pan[2]);
+    if (f >= 320 && f < 320 + 6 * (HIT_N - HIT_HEEL_L) && f % 6 == 2)
+        km_hit(HIT_HEEL_L + (int)(f - 320) / 6, 104, 0);   /* the thwap bar, the ding's field (0.5.3) */
 }
 
 int main(int argc, char **argv)

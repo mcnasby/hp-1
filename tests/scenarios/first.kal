@@ -17,24 +17,22 @@ expect par25 2
 # right (A3 right, Bb3 left, C4 right, D4 left ... C5)
 expect white7 5000
 expect white8 5000
-expect white9 5700
-expect white6 5800
-expect white10 6000
-expect white5 6200
-expect white12 6700
-expect white3 6900
-expect white13 7200
-# past the pan's own fields, the scale goes on (D Kurd: one more, D5); the two keys at each end are the
-# steel
-expect white2 7400
+expect white10 5700
+expect white5 5800
+expect white11 6000
+expect white4 6200
+expect white13 6700
+expect white2 6900
+expect white14 7200
+# past the pan's own fields, the scale goes on (D Kurd: one more, D5); the key at each end is the steel,
+# the two beside the ding's are its own field
+expect white1 7400
 expect white0 -1
-expect white1 -1
-expect white14 -1
+expect white6 -1
+expect white9 -1
 expect white15 -1
 # the ding, then out and up: D | A Bb C D E F G A C
 tapkey w8
-tapkey w9
-tapkey w6
 tapkey w10
 tapkey w5
 tapkey w11
@@ -42,6 +40,8 @@ tapkey w4
 tapkey w12
 tapkey w3
 tapkey w13
+tapkey w2
+tapkey w14
 wait 50
 shot ringing.png
 expect note6900 >10
@@ -137,7 +137,7 @@ expect par24 3
 # Pygmy comes in F#: F#3 / G# A C# E F# G# A C#
 expect par25 6
 expect white8 5400
-expect white9 5600
+expect white10 5600
 wait 50
 shot pygmy.png
 turn PRESET -1

@@ -1,0 +1,97 @@
+# the ding's own field: the white keys either side of the ding's (6 and 9). Struck alone, open; a finger
+# on the other side, closed; a finger on the ding (one of its keys held), the octave (left) or the fifth
+# (right) sings; a finger on the field (its key held), a strike of the ding lets its octave (left) or its
+# fifth (right) ring. The ding alone, as ever.
+# (params: 23 Layout; hits: 22 field 23 closed 24 field oct 25 field fifth 26 ding oct 27 ding fifth)
+wav field.wav
+wait 1600
+expect white6 -1
+expect white9 -1
+tapkey w6
+wait 30
+expect hitlast 22
+expect note5000 >5
+shot field.png
+wait 600
+tapkey w9
+wait 30
+expect hitlast 22
+wait 600
+# closed: a finger on one side, struck on the other
+key w6 down
+wait 30
+tapkey w9
+wait 30
+expect hitlast 23
+key w6 up
+wait 600
+key w9 down
+wait 30
+tapkey w6
+expect hitlast 23
+key w9 up
+wait 600
+# a finger on the ding (its key held): the field's bottom edge (left), its right edge (right)
+key w7 down
+wait 400
+tapkey w6
+wait 30
+expect hitlast 24
+expect note5000 >1
+wait 500
+tapkey w9
+wait 30
+expect hitlast 25
+key w7 up
+wait 600
+key w8 down
+wait 30
+tapkey w9
+expect hitlast 25
+key w8 up
+wait 600
+# a finger on the field (its key held), the ding struck: inner left, outer right
+key w6 down
+wait 30
+tapkey w7
+wait 30
+expect hitlast 26
+expect note5000 >1
+key w6 up
+wait 600
+key w9 down
+wait 30
+tapkey w8
+wait 30
+expect hitlast 27
+key w9 up
+wait 600
+# nothing held: the ding as ever (a note, no hit)
+tapkey w7
+wait 30
+expect hitlast 27
+expect note5000 >5
+wait 600
+# Linear: the field either side of the ding's one key (white 1, 2, 3)
+tap SEL
+spin K1 2
+expect par23 2
+expect white1 -1
+expect white2 5000
+expect white3 -1
+key w2 down
+wait 30
+tapkey w3
+expect hitlast 25
+key w2 up
+key w1 down
+wait 30
+tapkey w2
+expect hitlast 26
+key w1 up
+spin K1 -2
+expect par23 0
+wait 1500
+wavstop
+expect peak_db_max -0.3
+expect dropped 0

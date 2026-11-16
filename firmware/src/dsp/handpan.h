@@ -41,7 +41,8 @@
 #define KM_NMODE 11                    /* resonators per field: fundamental, octave + twin, fifth + twin, 2 oct,
                                         * four of the strike's metallic ping, and a high field's stray mode */
 #define KM_NWHITE 16                   /* the white keys: a field each (the middle two both the ding), but... */
-#define KM_WSTEEL 2                    /* ...the two at each end: the steel (a thwap outside, a tak inside) */
+#define KM_WSTEEL 1                    /* ...the end ones: the steel (a thwap), and (Pan) the two either side
+                                        * of the ding's: the ding's own field, around its dome */
 #define KM_NBLACK 11
 #define KM_NPAN 12                     /* a pan's notes the keys reach: the ding and up to 11 above it */
 #define KM_NDUO 9                      /* the second pan on the black keys: its ding and eight fields */
@@ -77,7 +78,8 @@ void km_param_text(int i, int v, char *buf);   /* the value as the screen shows 
 
 enum { MET_NITRIDED, MET_STAINLESS, MET_EMBER, MET_RAW, MET_N };
 enum { LAY_PAN, LAY_PANREV, LAY_LINEAR, LAY_N };   /* Pan: the first field on the right, as makers lay them out */
-enum { BLK_KIT, BLK_DUO, BLK_DUOKEY, BLK_N };   /* Duo key: the second pan in another key than the first */
+enum { BLK_KIT, BLK_DUO, BLK_DUOKEY, BLK_THWAP, BLK_N };   /* Duo key: the second pan in another key than the
+                                                         * first. Thwap: the thwap bar */
 enum { PAT_HEART, PAT_CASCADE, PAT_HEMIOLA, PAT_BACKBEAT, PAT_N };
 enum { TUNE_EQUAL, TUNE_JUST, TUNE_N };
 enum { THEME_DARK, THEME_LIGHT, THEME_N };
@@ -107,6 +109,20 @@ enum {
     HIT_SHAKE_L,                       /* an egg shaker, pushed (left) */
     HIT_SHAKE_R,                       /* ...and pulled back (right) */
     HIT_CASTANET,                      /* castanets */
+    /* the thwap bar (Black: Thwap), each on its own shoulder: */
+    HIT_HEEL_L,                        /* the heel of the palm, low on the shoulder: deep, the air */
+    HIT_FING_L,                        /* four fingers flat: brighter, quicker */
+    HIT_CLOSED_L,                      /* a thwap the palm stays on: the shell choked */
+    HIT_CLOSED_R, HIT_FING_R, HIT_HEEL_R,
+    HIT_BOTH,                          /* both palms at once */
+    /* the ding's own field, around its dome (the white keys beside the ding's). A finger resting on the
+     * steel damps the modes it sits on and leaves the rest ringing: */
+    HIT_FIELD,                         /* the field struck, open */
+    HIT_FIELD_CLOSED,                  /* a finger on one side of it, struck on the other: closed */
+    HIT_FIELD_OCT,                     /* a finger on the ding, its bottom edge struck: the octave sings */
+    HIT_FIELD_FIFTH,                   /* a finger on the ding, its right edge struck: the fifth sings */
+    HIT_DING_OCT,                      /* the ding struck, a finger on the field's inner left edge: the octave */
+    HIT_DING_FIFTH,                    /* the ding struck, a finger on the field's outer right edge: the fifth */
     HIT_N
 };
 
@@ -131,10 +147,19 @@ int km_ding_cents(int key, int octave);            /* the ding: between A2 and G
 int km_pan_notes(int scale, int key, int octave, int out[KM_NPAN]);
 /* the note white key w (0..15) plays: Pan (the ding on both middle keys, the fields zigzag outward as
  * they climb around a real pan, the first on the right), Pan rev (the same, the first on the left) or
- * Linear (low to high). The KM_WSTEEL keys at each end play the steel, not a note: -1 */
+ * Linear (low to high). The end keys play the steel and the keys of the ding's field strike it, not a
+ * note: -1 */
 int km_white_index(int layout, int w);             /* into km_pan_notes */
 int km_white_cents(int layout, int scale, int key, int octave, int w);
 int km_white_hit(int w);                           /* what a steel key plays (HIT_*), -1 for a note's */
+/* a key of the ding's own field: 0 the one on the left, 1 on the right; -1 not. Pan, Pan rev: either
+ * side of the ding's two keys; Linear: either side of its one. Struck alone, the field (HIT_FIELD); the
+ * other one held, closed; a ding key held, the octave (left) or the fifth (right) sings. Held, a strike
+ * of the ding: HIT_DING_OCT (left), HIT_DING_FIFTH (right) */
+int km_white_field(int layout, int w);
+int km_field_hit(int side, int ding_held, int other_held);   /* what a strike of it plays (HIT_*) */
+int km_ding_hit(int held);                         /* the ding's key, the field's key `held` (0, 1) held:
+                                                    * what it plays (HIT_*); -1 (none held): the ding */
 /* where on the instrument a field sits: -1 (left) .. +1 (right), for its pan */
 float km_white_pos(int layout, int w);
 /* a pan's accidentals spelled as its scale spells them: bit p set, pitch class p is a sharp (C#), else

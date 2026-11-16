@@ -75,13 +75,23 @@ static const uint8_t BLACK_K[NBLACK] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
 static const uint8_t HIT_OF[NBLACK] = {HIT_CASTANET, HIT_SHAKE_L, HIT_GU, HIT_GHOST, HIT_SLAP, HIT_TAK, HIT_HARM,
                                        HIT_RIM, HIT_MUTE, HIT_SHAKE_R, HIT_SPLASH};
 static const char *const HIT_NAME[HIT_N] = {"Thwp", "Tak", "Gu", "Gho", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwp",
-                                            "Spl", "Shk", "Shk", "Cas"};
+                                            "Spl", "Shk", "Shk", "Cas", "Heel", "Fngr", "Shut", "Shut", "Fngr", "Heel",
+                                            "Both", "Fld", "Fld", "Fld", "Fld", "Ding", "Ding"};
+/* the thwap bar (Black: Thwap): each side's thwaps on its own half, the deepest at the ends, the tak by
+ * the ding, both palms in the middle */
+static const uint8_t THWAP_OF[NBLACK] = {HIT_THWAP_L, HIT_HEEL_L, HIT_FING_L, HIT_CLOSED_L, HIT_TAK_L, HIT_BOTH,
+                                         HIT_TAK_R, HIT_CLOSED_R, HIT_FING_R, HIT_HEEL_R, HIT_THWAP_R};
 /* the black keys a second pan (Duo: it shares the first's root, Duo key: in another key) */
 static int duo_on(void) { return proj.par[P_BLACK] == BLK_DUO || proj.par[P_BLACK] == BLK_DUOKEY; }
 static int duo_other(void) { return proj.par[P_BLACK] == BLK_DUOKEY; }
 static int is_duo_key(int b) { return duo_on() && b >= B_DUO0 && b < B_DUO0 + KM_NDUO; }
 /* what black key b plays when it isn't the second pan's */
-static int black_hit(int b) { return duo_on() && b == NBLACK - 1 ? HIT_GU : HIT_OF[b]; }
+static int black_hit(int b)
+{
+    if (proj.par[P_BLACK] == BLK_THWAP)
+        return THWAP_OF[b];
+    return duo_on() && b == NBLACK - 1 ? HIT_GU : HIT_OF[b];
+}
 
 /* the screen's colors (Setup: Theme). Dark (the default): a dim room, warm cream type, and gold for what
  * sounds. Light: sand and ink. The pan keeps its metal in both. */
@@ -148,6 +158,7 @@ static struct {
     uint8_t rim[3];                    /* the rim's glow, left and right, and the air's (0..16): they follow
                                         * the shell and the cavity, and fade slower than they do */
     uint32_t hit_t[HIT_N];             /* ...each hit */
+    uint32_t held;                     /* the keys already held when this scan's went down */
     int16_t key_cents[NKEYS];          /* what each key struck (to damp it, and its MIDI note off) */
     uint8_t key_on[NKEYS];
     uint8_t key_arp[NKEYS];            /* ...or gave the arp (EV_* + 1) */
@@ -540,13 +551,13 @@ static void set_freeze(int on)
 static void hit_seen(int kind)
 {
     ui.hit_t[kind] = ui.frame + 1u;
-    if (kind == HIT_SLAP || kind == HIT_HARM)
+    if (kind == HIT_SLAP || kind == HIT_HARM || kind >= HIT_FIELD)
         ui.ripple[0] = ui.frame + 1u;
 }
 
 static void strike_hit(int kind, int rec)
 {
-    const int vel = human_vel(104);
+    const int vel = human_vel(kind >= HIT_FIELD ? 100 : 104);   /* (the ding's field: as its keys) */
     km_hit(kind, vel, 0);
     hit_seen(kind);
     if (rec)
@@ -603,14 +614,44 @@ static void choose_pattern(int p)
     say(seq_next_pat() >= 0 ? "NEXT PATTERN" : "PATTERN", t);
 }
 
+/* white key w held since before this scan (a key pressed with it at once doesn't count) */
+static int white_held(int w) { return (ui.held >> WHITE_K[w] & 1u) != 0; }
+
+/* the ding's field's key held (0 left, 1 right), else -1; one of the ding's keys held */
+static int field_held(int except)
+{
+    int w;
+    for (w = 0; w < NWHITE; w++)
+        if (w != except && km_white_field(proj.par[P_LAYOUT], w) >= 0 && white_held(w))
+            return km_white_field(proj.par[P_LAYOUT], w);
+    return -1;
+}
+static int ding_held(void)
+{
+    int w;
+    for (w = 0; w < NWHITE; w++)
+        if (!white_index(w) && white_held(w))
+            return 1;
+    return 0;
+}
+
 static void white_down(int w)
 {
+    const int f = km_white_field(proj.par[P_LAYOUT], w);
     if (seq_held()) {                                /* SEQ held: the patterns */
         choose_pattern(w);
         return;
     }
     if (km_white_hit(w) >= 0) {                      /* the steel, at the ends */
         hit_key(WHITE_K[w], km_white_hit(w));
+        return;
+    }
+    if (f >= 0) {                                    /* the ding's field: open, closed, a harmonic */
+        hit_key(WHITE_K[w], km_field_hit(f, ding_held(), field_held(w) >= 0));
+        return;
+    }
+    if (!white_index(w) && field_held(-1) >= 0) {   /* the ding, a finger resting on its field */
+        hit_key(WHITE_K[w], km_ding_hit(field_held(-1)));
         return;
     }
     if (note_key(WHITE_K[w], EV_PAN, white_cents(w), 100, white_pan(w)))
@@ -684,7 +725,10 @@ static void seq_out_say(const char *a, const char *b) { say(a, b); }
 /* ------------------------------------------- the sequence's knobs (KV_*) --- */
 static const char NAME_CH[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
 static const char *const HIT_LONG[HIT_N] = {"Thwap L", "Tak L", "Gu", "Ghost", "Slap", "Tak", "Harmonic", "Rim", "Mute",
-                                            "Tak R", "Thwap R", "Splash", "Shaker", "Shaker 2", "Castanet"};
+                                            "Tak R", "Thwap R", "Splash", "Shaker", "Shaker 2", "Castanet",
+                                            "Heel L", "Fingers L", "Closed L", "Closed R", "Fingers R", "Heel R",
+                                            "Both", "Field", "Field shut", "Field oct", "Field 5th", "Ding oct",
+                                            "Ding 5th"};
 #define NCHOICE (1 + KM_NPAN + KM_NDUO + HIT_N)
 
 /* what a step can hold: a rest, the notes the keys reach, the second pan's (Duo), the hits */
@@ -1157,6 +1201,19 @@ static int drum_hit(uint32_t note)
     case 69: return HIT_SHAKE_L;                           /* cabasa */
     case 70: return HIT_SHAKE_R;                           /* maracas */
     case 85: return HIT_CASTANET;                          /* castanets (GM2) */
+    case 45: return HIT_HEEL_L;                            /* toms: the thwap bar */
+    case 47: return HIT_HEEL_R;
+    case 48: return HIT_FING_L;
+    case 50: return HIT_FING_R;
+    case 61: return HIT_CLOSED_L;                          /* bongos */
+    case 60: return HIT_CLOSED_R;
+    case 63: return HIT_BOTH;                              /* open conga */
+    case 65: return HIT_FIELD;                             /* timbales, agogos, wood blocks: the ding's field */
+    case 66: return HIT_FIELD_CLOSED;
+    case 68: return HIT_FIELD_OCT;
+    case 67: return HIT_FIELD_FIFTH;
+    case 77: return HIT_DING_OCT;
+    case 76: return HIT_DING_FIFTH;
     default: return -1;
     }
 }
@@ -1255,6 +1312,7 @@ static void input(void)
     ch = keys ^ ui.keys;
     if (ui.reset_ask && (ch & keys))                 /* a key while "RESET?" asks: kept (and it plays) */
         reset_ask(0);
+    ui.held = ui.keys & keys;
     ui.keys = keys;
     if (!keys)
         ui.entry = 0;
@@ -1646,7 +1704,8 @@ static void draw_black(int32_t y0)
     for (b = 0; b < NBLACK; b++) {
         char t[12];
         int32_t x = 4 + b * 20 + ((b >= 3) + (b >= 5) + (b >= 8) + (b >= 10)) * 3;   /* grouped as the keys are */
-        int on = (ui.keys >> BLACK_K[b] & 1u) != 0, hand = duo_on() || b < 2 || b > NBLACK - 3;
+        int on = (ui.keys >> BLACK_K[b] & 1u) != 0,
+            hand = proj.par[P_BLACK] != BLK_THWAP && (duo_on() || b < 2 || b > NBLACK - 3);
         uint16_t bg = hand ? K_ACC_T : K_TEAL_T, fg = hand ? K_ACC : K_TEXT;
         const int k = black_hit(b);
         if (is_duo_key(b))
@@ -1969,7 +2028,8 @@ static void leds(void)
     }
     for (i = 0; i < NWHITE; i++)                     /* the notes that ring, the steel just struck */
         if (km_white_hit((int)i) >= 0 ? ripple_age(ui.hit_t[km_white_hit((int)i)]) < 12u
-                                      : note_level(white_cents((int)i)) > 0.08f)
+            : km_white_field(proj.par[P_LAYOUT], (int)i) >= 0 ? note_level(tune(ding_now())) > 0.08f
+                                                               : note_level(white_cents((int)i)) > 0.08f)
             k |= 1u << WHITE_K[i];
     for (i = 0; i < NBLACK; i++)
         if (is_duo_key((int)i) ? note_level(duo_cents(duo_index((int)i))) > 0.08f : ripple_age(ui.hit_t[black_hit((int)i)]) < 12u)

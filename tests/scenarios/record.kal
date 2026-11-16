@@ -21,7 +21,7 @@ tapkey w8
 expect run 1
 expect rec 1
 wait 410
-tapkey w9
+tapkey w10
 wait 410
 shot recording.png
 tapkey b4
@@ -58,7 +58,7 @@ expect wait 1
 shot wait.png
 wait 2000
 expect rec 1
-tapkey w10
+tapkey w11
 wait 300
 tap PLAY
 expect armed 0
@@ -76,7 +76,7 @@ tap SEQ
 tap SEQ
 expect view 14
 spin K1 1
-tapkey w5
+tapkey w4
 expect step1 6200
 spin K2 1
 expect step2 5000

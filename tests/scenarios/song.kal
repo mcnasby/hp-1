@@ -19,7 +19,7 @@ expect seqpat 1
 expect view 14
 expect outn 0
 spin K1 -1
-tapkey w9
+tapkey w10
 expect step0 5700
 tap SEQ
 tap SEQ
