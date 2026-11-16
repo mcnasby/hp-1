@@ -67,6 +67,8 @@ __attribute__((used, visibility("default"))) void web_master(uint32_t v) { maste
 __attribute__((used, visibility("default"))) uint32_t web_lit_buttons(void) { return lit_btn; }
 __attribute__((used, visibility("default"))) uint32_t web_lit_keys(void) { return lit_keys; }
 __attribute__((used, visibility("default"))) uint32_t web_dim_keys(void) { return dim_keys; }
+__attribute__((used, visibility("default"))) uint32_t web_lit80_keys(void) { return lit80_keys; }
+__attribute__((used, visibility("default"))) uint32_t web_lit60_keys(void) { return lit60_keys; }
 __attribute__((used, visibility("default"))) uint16_t *web_fb(void) { return fb; }
 __attribute__((used, visibility("default"))) uint32_t web_blits(void) { return blits; }
 __attribute__((used, visibility("default"))) uint32_t web_now(void) { return now_ms; }

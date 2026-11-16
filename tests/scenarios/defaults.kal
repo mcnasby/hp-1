@@ -8,18 +8,34 @@ expect par25 2
 expect par26 0
 expect par39 0
 expect par40 0
-# the ding's keys glow dim (white 7 and 8: keys 12 and 14); lit while it rings
+# the ding's keys and its field's beside them glow dim (white 6 to 9); while it rings the ding's are lit,
+# its field's to 60 %; a note's key, a thwap's to 80 % (ledwW: white key W's LED, 100 80 60 20 0)
 wait 50
-expect dimkey 14
+expect ledw7 20
+expect ledw8 20
+expect ledw6 20
+expect ledw9 20
+expect ledw10 0
 tapkey w8
 wait 30
-expect dimkey -1
+expect ledw8 100
+expect ledw7 100
+expect ledw6 60
+expect ledw9 60
+tapkey w10
+wait 30
+expect ledw10 100
+tapkey w0
+wait 30
+expect ledw0 80
 # (REC held: the palm mute)
 press REC
 wait 600
 release REC
 wait 400
-expect dimkey 14
+expect ledw8 20
+expect ledw9 20
+expect ledw10 0
 # change a sound and the Setup page
 spin K2 20
 expect par1 60

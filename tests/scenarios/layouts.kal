@@ -5,7 +5,7 @@
 # the white key at each end: the steel, in every layout; the ding's own field beside its keys)
 wait 1600
 expect par23 0
-expect dimkey 14
+expect ledw8 20
 tap SEL
 spin K1 1
 expect par23 1
@@ -28,7 +28,9 @@ expect white4 5700
 expect white9 6500
 expect white14 7600
 wait 30
-expect dimkey 4
+expect ledw2 20
+expect ledw1 20
+expect ledw3 20
 shot linear.png
 tapkey w2
 tapkey w4
