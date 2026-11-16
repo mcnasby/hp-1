@@ -6,12 +6,12 @@ wait 1300
 tap ARP
 expect view 11
 expect par42 0
-# Mode Up: D3 (white 8) and A3 (white 9) held: D3 first (at once, as it goes down), then A3, at the
+# Mode Up: D3 (white 8) and A3 (white 10) held: D3 first (at once, as it goes down), then A3, at the
 # default 1/16 of 84 BPM (179 ms)
 spin K1 1
 expect par42 1
 key w8 down
-key w9 down
+key w10 down
 wait 20
 expect arpheld 2
 expect outn 1
@@ -26,7 +26,7 @@ expect outn 4
 leds
 shot arp.png
 # let go: it stops
-key w9 up
+key w10 up
 key w8 up
 wait 600
 expect arpheld 0
@@ -34,26 +34,26 @@ expect outn 4
 # Down: the high one first
 spin K1 1
 expect par42 2
-key w9 down
+key w10 down
 key w8 down
 wait 20
 expect outlast 5700
 wait 179
 expect outlast 5000
 key w8 up
-key w9 up
+key w10 up
 # Octaves 2, Up: D3 A3 D4 A4
 spin K1 -1
 spin K3 1
 expect par44 2
 key w8 down
-key w9 down
+key w10 down
 wait 400
 expect outlast 6200
 wait 179
 expect outlast 6900
 key w8 up
-key w9 up
+key w10 up
 spin K3 -1
 # Arp 2: Hold latches the notes; a new key after them replaces them
 tap ARP
@@ -65,7 +65,7 @@ tapkey w8
 wait 400
 expect arpheld 1
 expect outlast 5000
-tapkey w10
+tapkey w11
 wait 1300
 expect arpheld 1
 expect outlast 6000
@@ -89,7 +89,7 @@ expect view 11
 spin K1 -9
 expect par42 0
 wait 1500
-tapkey w5
+tapkey w4
 wait 20
 expect note6200 >5
 expect outlast 6000

@@ -11,7 +11,7 @@ tap LFO
 expect view 6
 spin K2 20
 expect par21 60
-tapkey w6
+tapkey w5
 wait 1500
 # grains: live, then frozen (PLAY)
 tap LFO
@@ -20,7 +20,7 @@ expect par16 80
 spin K4 -2
 expect par19 2
 tapkey w8
-tapkey w9
+tapkey w10
 wait 600
 expect grains >0
 # PLAY held: frozen (a tap is the transport)

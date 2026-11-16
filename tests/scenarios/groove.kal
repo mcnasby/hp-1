@@ -15,7 +15,7 @@ expect pat 3
 wait 1500
 expect voices >1
 # the white keys play over it
-tapkey w5
+tapkey w4
 wait 20
 expect note6200 >5
 spin K1 3

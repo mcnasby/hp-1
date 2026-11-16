@@ -1,29 +1,29 @@
 # Feel, the keys' touch (params: 6 Sympathy 39 MIDI out 41 Feel). The FM-1's keys are on / off, so
 # Expressive (the default) plays the touch in time: a quick tap rings shorter, a key held presses in
 # (fuller, darker), and a controller's pressure presses over MIDI. Classic: the sound as it always was.
-# The note: A3 (5700) on white key 9 of the D Kurd; Sympathy off (each note on its own)
+# The note: A3 (5700) on white key 10 of the D Kurd; Sympathy off (each note on its own)
 tap HOME
 spin K3 -50
 expect par6 0
 expect par41 0
 wav touch.wav
 # a quick tap: at ~1.5 s, a little down (Classic: ~40)
-tapkey w9
+tapkey w10
 wait 1440
 expect level5700 <33
 wait 4000
 # held: nothing for ~0.3 s, then the hand presses in, all of it by ~1.5 s; let go, it comes off
-key w9 down
+key w10 down
 wait 250
-expect touchw9 0
+expect touchw10 0
 wait 500
-expect touchw9 >20
-expect touchw9 <80
+expect touchw10 >20
+expect touchw10 <80
 wait 750
-expect touchw9 127
+expect touchw10 127
 expect level5700 <50
-key w9 up
-expect touchw9 0
+key w10 up
+expect touchw10 0
 wait 4000
 # MIDI in: poly pressure (A0) on a note held over MIDI, then channel pressure (D0) on all of them
 midi 90 39 64
@@ -45,9 +45,9 @@ tap GLO
 spin K3 1
 expect par39 1
 expect midi_out 0
-key w9 down
+key w10 down
 wait 1600
-key w9 up
+key w10 up
 expect midi_out >25
 expect midi_out <45
 wait 4000
@@ -63,16 +63,16 @@ wait 50
 shot classic.png
 wav classic.wav
 # the tap rings on, the key held never presses, nothing goes out but the note, MIDI pressure is ignored
-tapkey w9
+tapkey w10
 wait 1440
 expect level5700 >30
 wait 4000
 expect midi_out 33
-key w9 down
+key w10 down
 wait 1500
-expect touchw9 0
+expect touchw10 0
 expect level5700 >50
-key w9 up
+key w10 up
 wait 4000
 expect midi_out 35
 midi 90 39 64

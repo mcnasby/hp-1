@@ -18,7 +18,7 @@ expect luma200 >200
 shot setup_light.png
 tap HOME
 tapkey w8
-tapkey w6
+tapkey w5
 wait 50
 expect luma2 >200
 shot home_light.png

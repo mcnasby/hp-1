@@ -182,32 +182,41 @@ static void test_music(void)
     CHECK(own == 10, "Kurd has a ding and 9 fields (%d)", own);
     for (i = 0; i < KM_NPAN; i++)
         CHECK(n[i] == KURD[i], "D Kurd note %d: %d, wanted %d", i, n[i], KURD[i]);
-    /* Pan: the ding on both middle keys, then the fields zigzag outward, the first on the right, as a
-     * maker lays a D Kurd out (A3 right, Bb3 left, C4 right, D4 left ... C5 at the top) */
+    /* Pan: the ding on both middle keys, its own field either side of them, then the fields zigzag
+     * outward, the first on the right, as a maker lays a D Kurd out (A3 right, Bb3 left, C4 right, D4
+     * left ... C5 at the top) */
     CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 7) == 5000 && km_white_cents(LAY_PAN, 0, 2, 0, 8) == 5000, "ding in the middle");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 9) == 5700 && km_white_cents(LAY_PAN, 0, 2, 0, 6) == 5800, "A right, Bb left");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 10) == 6000 && km_white_cents(LAY_PAN, 0, 2, 0, 5) == 6200, "C right, D left");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 3) == 6900 && km_white_cents(LAY_PAN, 0, 2, 0, 13) == 7200, "A4 left, C5 right");
-    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 2) == 7400 && km_white_cents(LAY_PAN, 0, 2, 0, 12) == 6700, "the outer notes");
-    for (i = 1; i < 6; i++) {                    /* each step out from the middle climbs */
-        CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 7 - i) > km_white_cents(LAY_PAN, 0, 2, 0, 8 - i), "left climbs %d", i);
-        CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 8 + i) > km_white_cents(LAY_PAN, 0, 2, 0, 7 + i), "right climbs %d", i);
+    CHECK(km_white_field(LAY_PAN, 6) == 0 && km_white_field(LAY_PAN, 9) == 1, "the ding's field beside it");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 10) == 5700 && km_white_cents(LAY_PAN, 0, 2, 0, 5) == 5800, "A right, Bb left");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 11) == 6000 && km_white_cents(LAY_PAN, 0, 2, 0, 4) == 6200, "C right, D left");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 2) == 6900 && km_white_cents(LAY_PAN, 0, 2, 0, 14) == 7200, "A4 left, C5 right");
+    CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 1) == 7400 && km_white_cents(LAY_PAN, 0, 2, 0, 13) == 6700, "the outer notes");
+    for (i = 1; i < 5; i++) {                    /* each step out from the field climbs */
+        CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 5 - i) > km_white_cents(LAY_PAN, 0, 2, 0, 6 - i), "left climbs %d", i);
+        CHECK(km_white_cents(LAY_PAN, 0, 2, 0, 10 + i) > km_white_cents(LAY_PAN, 0, 2, 0, 9 + i), "right climbs %d", i);
     }
-    /* the two keys at each end are the steel, in every layout: a thwap outside, a tak inside */
+    /* the key at each end is the steel, a thwap, in every layout; the ding's field is no note either */
     for (k = 0; k < LAY_N; k++)
         for (i = 0; i < 16; i++) {
-            const int steel = i < 2 || i > 13;
-            CHECK((km_white_index(k, i) < 0) == steel && (km_white_cents(k, 0, 2, 0, i) < 0) == steel,
-                  "layout %d key %d: %s", k, i, steel ? "the steel" : "a note");
+            const int steel = i == 0 || i == 15, fld = k == LAY_LINEAR ? i == 1 || i == 3 : i == 6 || i == 9;
+            CHECK((km_white_index(k, i) < 0) == (steel || fld) && (km_white_cents(k, 0, 2, 0, i) < 0) == (steel || fld),
+                  "layout %d key %d: %s", k, i, steel ? "the steel" : fld ? "the ding's field" : "a note");
             CHECK((km_white_hit(i) >= 0) == steel, "key %d hit %d", i, km_white_hit(i));
+            CHECK((km_white_field(k, i) >= 0) == fld, "layout %d key %d field %d", k, i, km_white_field(k, i));
         }
-    CHECK(km_white_hit(0) == HIT_THWAP_L && km_white_hit(1) == HIT_TAK_L && km_white_hit(14) == HIT_TAK_R &&
-          km_white_hit(15) == HIT_THWAP_R, "thwap, tak ... tak, thwap");
-    for (i = 2; i < 14; i++) {
+    CHECK(km_white_hit(0) == HIT_THWAP_L && km_white_hit(15) == HIT_THWAP_R, "thwap ... thwap");
+    for (i = 1; i < 15; i++)
         CHECK(km_white_cents(LAY_PANREV, 3, 6, 0, i) == km_white_cents(LAY_PAN, 3, 6, 0, 15 - i), "pan rev %d", i);
-        CHECK(km_white_cents(LAY_LINEAR, 0, 2, 0, i) == KURD[i - 2], "linear %d", i);
-    }
-    CHECK(km_white_pos(LAY_PAN, 7) == 0.0f && km_white_pos(LAY_PAN, 2) < -0.5f && km_white_pos(LAY_PAN, 13) > 0.5f, "pan position");
+    CHECK(km_white_cents(LAY_LINEAR, 0, 2, 0, 2) == KURD[0], "linear: the ding between its field");
+    for (i = 4; i < 15; i++)
+        CHECK(km_white_cents(LAY_LINEAR, 0, 2, 0, i) == KURD[i - 3], "linear %d", i);
+    /* what the ding's field plays: open; the other side held, closed; the ding held, a harmonic; and the
+     * ding struck with the field held */
+    CHECK(km_field_hit(0, 0, 0) == HIT_FIELD && km_field_hit(1, 0, 0) == HIT_FIELD, "the field, open");
+    CHECK(km_field_hit(0, 0, 1) == HIT_FIELD_CLOSED && km_field_hit(1, 1, 1) == HIT_FIELD_CLOSED, "closed");
+    CHECK(km_field_hit(0, 1, 0) == HIT_FIELD_OCT && km_field_hit(1, 1, 0) == HIT_FIELD_FIFTH, "the ding held");
+    CHECK(km_ding_hit(-1) < 0 && km_ding_hit(0) == HIT_DING_OCT && km_ding_hit(1) == HIT_DING_FIFTH, "the field held");
+    CHECK(km_white_pos(LAY_PAN, 7) == 0.0f && km_white_pos(LAY_PAN, 1) < -0.5f && km_white_pos(LAY_PAN, 14) > 0.5f, "pan position");
     CHECK(km_white_pos(LAY_PAN, 0) < -0.9f && km_white_pos(LAY_PAN, 15) > 0.9f, "the steel at the sides");
     /* the ding between A2 and G#3, as the makers have it; the octave moves it */
     for (k = 0; k < 12; k++) {
@@ -991,6 +1000,113 @@ static float bright(const float *b, uint32_t n)    /* the rms above ~700 Hz (thr
     return fm_sqrtf(e / (float)n);
 }
 
+/* the thwap bar: each thwap on its own side; both palms on both; a closed thwap choked; the heel low */
+static void test_thwaps(void)
+{
+    static const uint8_t L[4] = {HIT_HEEL_L, HIT_FING_L, HIT_CLOSED_L, HIT_THWAP_L}, R[4] = {HIT_HEEL_R, HIT_FING_R,
+                                                                                         HIT_CLOSED_R, HIT_THWAP_R};
+    float open_, closed, heel, fing;
+    int i;
+    for (i = 0; i < 4; i++) {
+        fresh();
+        give_pan(0, 2);
+        render(0, 256);
+        km_hit(L[i], 110, 0);
+        render(0, 8820);
+        CHECK(bright(bufl, 8820) > 1.4f * bright(bufr, 8820), "thwap bar: hit %d is left", L[i]);
+        fresh();
+        give_pan(0, 2);
+        render(0, 256);
+        km_hit(R[i], 110, 0);
+        render(0, 8820);
+        CHECK(bright(bufr, 8820) > 1.4f * bright(bufl, 8820), "thwap bar: hit %d is right", R[i]);
+    }
+    fresh();
+    give_pan(0, 2);
+    render(0, 256);
+    km_hit(HIT_BOTH, 110, 0);
+    render(0, 8820);
+    {
+        const float l = bright(bufl, 8820), r = bright(bufr, 8820);
+        CHECK(l < 1.3f * r && r < 1.3f * l, "both palms: both sides (%.4f %.4f)", (double)l, (double)r);
+    }
+    fresh();
+    km_hit(HIT_THWAP_L, 110, 0);
+    render(0, 22050);
+    open_ = rms(bufl, 6615, 4410);
+    fresh();
+    km_hit(HIT_CLOSED_L, 110, 0);
+    render(0, 22050);
+    closed = rms(bufl, 6615, 4410);
+    CHECK(closed < 0.1f * open_, "closed thwap choked: %.1f dB under an open one", (double)db(open_ / closed));
+    fresh();
+    km_hit(HIT_HEEL_L, 110, 0);
+    render(0, 11025);
+    heel = lowness(0, 11025);
+    fresh();
+    km_hit(HIT_FING_L, 110, 0);
+    render(0, 11025);
+    fing = lowness(0, 11025);
+    CHECK(heel > fing + 3.0f, "the heel deeper than the fingers: %.1f, %.1f dB below 160 Hz", (double)heel, (double)fing);
+    printf("  thwap bar: closed %.1f dB under open at 0.15 s; heel %.1f, fingers %.1f dB low\n",
+           (double)db(open_ / closed), (double)heel, (double)fing);
+}
+
+/* the ding's field (D3 ding): as the recordings of an E3 ding struck around its dome. Open: the ding's
+ * note; closed: gone in a moment; a finger on the ding: the octave or the fifth sings alone, the
+ * fundamental gone; the ding struck, a finger on its field: likewise. Its strikes are notes: Percussion
+ * doesn't touch them */
+static void test_field(void)
+{
+    const float f = hz(5000);
+    float open_, closed, a1, a2, a3;
+    int k;
+    fresh();
+    give_pan(0, 2);
+    render(0, 256);
+    km_hit(HIT_FIELD, 100, 0);
+    render(0, 44100);
+    open_ = rms(bufl, 22050, 4410);
+    a1 = mag(22050, 8192, f);
+    CHECK(a1 > 2.0f * mag(22050, 8192, 3.0f * f), "field open: the ding's note rings");
+    fresh();
+    give_pan(0, 2);
+    render(0, 256);
+    km_hit(HIT_FIELD_CLOSED, 100, 0);
+    render(0, 44100);
+    closed = rms(bufl, 22050, 4410);
+    CHECK(closed < 0.05f * open_, "field closed: %.1f dB under open at 0.5 s", (double)db(open_ / closed));
+    for (k = HIT_FIELD_OCT; k <= HIT_DING_FIFTH; k++) {
+        const float h = k == HIT_FIELD_OCT || k == HIT_DING_OCT ? 2.0f : 3.0f;
+        fresh();
+        give_pan(0, 2);
+        render(0, 256);
+        km_hit(k, 100, 0);
+        render(0, 44100);
+        a1 = mag(13230, 8192, f);
+        a2 = mag(13230, 8192, h * f);
+        a3 = mag(13230, 8192, (5.0f - h) * f);
+        CHECK(a2 > 10.0f * a1 && a2 > 4.0f * a3 && a2 > 1e-3f, "hit %d: x%.0f %.1f dB over the fundamental, %.1f over x%.0f",
+              k, (double)h, (double)db(a2 / a1), (double)db(a2 / a3), (double)(5.0f - h));
+        printf("  field: hit %d at 0.3 s, x%.0f %.1f dB over the fundamental\n", k, (double)h, (double)db(a2 / a1));
+    }
+    fresh();                                     /* the ding ringing, a finger lands on it: its fundamental damped */
+    give_pan(0, 2);
+    km_pluck(5000, 100, 0, 0);
+    render(0, 22050);
+    a1 = mag(13230, 8192, f);
+    km_hit(HIT_FIELD_FIFTH, 100, 0);
+    render(0, 22050);
+    CHECK(mag(22050 + 8820, 8192, f) < 0.05f * a1, "a finger on the ringing ding damps it");
+    fresh();
+    km_set(P_PERC, 0);
+    give_pan(0, 2);
+    km_hit(HIT_FIELD, 100, 0);
+    render(0, 8820);
+    CHECK(peak > 0.05f, "Percussion 0: the field still sounds (%.3f)", (double)peak);
+    printf("  field: closed %.1f dB under open at 0.5 s\n", (double)db(open_ / closed));
+}
+
 static void test_hits(void)
 {
     int k;
@@ -1524,6 +1640,8 @@ int main(int argc, char **argv)
     test_groove_pulse();
     test_sympathy();
     test_hits();
+    test_thwaps();
+    test_field();
     test_delay();
     test_reverb_idle();
     test_grains();

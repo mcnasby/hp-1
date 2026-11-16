@@ -29,6 +29,7 @@
  *                                 lumaY (brightness 0..255 of the screen at x 2, row Y: the theme)
  *                                 dimkey (the key whose LED is dim, -1 none) litkeys (bits)
  *                                 touchK (the pressure Feel gives held key K, 0..127: K as for key)
+ *                                 hitlast (the hit the keys or the sequencer struck last, HIT_*)
  *                                 peak_db_max peak_db_min)
  *   reboot                       re-run boot from the simulated flash (persistence test)
  *   oldproject                   put a FiMba-1 project in the simulated flash (it must not load)
@@ -485,6 +486,16 @@ static int expect(const char *what, const char *val)
         got = (int)ui.out_n;
     else if (!strcmp(what, "outlast"))
         got = ui.out_last;
+    else if (!strcmp(what, "hitlast")) {          /* the hit last struck (HIT_*), -1 none */
+        int h;
+        uint32_t t = 0;
+        got = -1;
+        for (h = 0; h < HIT_N; h++)
+            if (ui.hit_t[h] > t) {
+                t = ui.hit_t[h];
+                got = h;
+            }
+    }
     else if (!strcmp(what, "arpheld"))
         got = seq_arp_held();
     else if (!strcmp(what, "bpm"))

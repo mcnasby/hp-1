@@ -1,6 +1,6 @@
-# the steel on the white keys at both ends (thwap outside, tak inside); the black keys the kit:
-# castanets, the cabasa pushed, the steel's Gu, ghost, ding slap, tak, harmonic, rim, mute, the cabasa
-# pulled, a splash cymbal; REC mutes too
+# the steel on the white key at each end (a thwap); the black keys the kit: castanets, the cabasa pushed,
+# the steel's Gu, ghost, ding slap, tak, harmonic, rim, mute, the cabasa pulled, a splash cymbal; REC
+# mutes too
 # (params: 26 Black 29 Percussion; shellL / shellR / cavity: x 1000)
 wav steel.wav
 wait 1600
@@ -15,10 +15,6 @@ key w15 down
 wait 20
 expect shellR >5
 key w15 up
-wait 300
-tapkey w1
-wait 300
-tapkey w14
 wait 300
 # the kit's own sounds: not the steel (the shell stays still), but heard
 wait 1500
@@ -74,8 +70,8 @@ tapkey b7
 wait 300
 # mute: everything ringing, damped
 tapkey w8
-tapkey w6
-tapkey w9
+tapkey w5
+tapkey w10
 wait 100
 expect note5700 >5
 tapkey b8
@@ -83,7 +79,7 @@ wait 500
 expect note5700 <2
 expect note5000 <2
 # REC held: the palm mute too (a tap arms recording)
-tapkey w5
+tapkey w4
 wait 100
 expect note6200 >5
 press REC
@@ -105,7 +101,7 @@ expect par29 0
 wait 2000
 peakreset
 tapkey w0
-tapkey w1
+tapkey w15
 tapkey b10
 tapkey b0
 wait 200

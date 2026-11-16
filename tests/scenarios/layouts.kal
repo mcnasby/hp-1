@@ -2,7 +2,7 @@
 # to high); the ding's
 # keys dim-lit; Just tuning over the ding
 # (params: 23 Layout 33 Tuning; keys: 0 F3 .. 26 G5; white 7 is key 12, white 8 key 14, white 2 key 4;
-# the two white keys at each end: the steel, in every layout)
+# the white key at each end: the steel, in every layout; the ding's own field beside its keys)
 wait 1600
 expect par23 0
 expect dimkey 14
@@ -10,26 +10,29 @@ tap SEL
 spin K1 1
 expect par23 1
 expect white8 5000
-expect white6 5700
-expect white9 5800
-expect white2 7200
-expect white13 7400
+expect white5 5700
+expect white10 5800
+expect white1 7200
+expect white14 7400
+expect white6 -1
 expect white15 -1
 wait 50
 shot pan_rev.png
 spin K1 1
 expect par23 2
 expect white0 -1
+expect white1 -1
 expect white2 5000
-expect white3 5700
-expect white8 6500
-expect white13 7600
+expect white3 -1
+expect white4 5700
+expect white9 6500
+expect white14 7600
 wait 30
 expect dimkey 4
 shot linear.png
 tapkey w2
-tapkey w3
 tapkey w4
+tapkey w5
 wait 50
 expect note5700 >5
 spin K1 -2
@@ -38,22 +41,22 @@ expect par23 0
 tap ENV
 spin K3 1
 expect par33 1
-expect white9 5702
-expect white11 6404
-expect white10 6018
-tapkey w9
+expect white10 5702
+expect white12 6404
+expect white11 6018
+tapkey w10
 wait 30
 expect note5702 >5
 spin K3 -1
-expect white9 5700
+expect white10 5700
 # the scales wrap round: one back from Kurd is SaByeD, in E: E3 / A3 B3 C#4 ... (its G# and D# named so)
 tap SEL
 turn ALGO -1
 expect par24 10
 expect par25 4
 expect white8 5200
-expect white9 5700
-expect white6 5900
-expect white10 6100
+expect white10 5700
+expect white5 5900
+expect white11 6100
 wait 50
 shot sabyed.png

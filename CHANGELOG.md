@@ -4,6 +4,24 @@ A release is a push to `main` that changes `VERSION` to a version with no tag ye
 release build, tags the commit `vX.Y.Z` and publishes the GitHub Release with that version's notes,
 taken from its section below. Add the section in the same pull request as the `VERSION` change.
 
+## 0.5.3
+
+- **The ding's field, and a finger resting on it.** The white keys either side of the ding's keys now
+  strike the ding's own field, the steel around its dome. Struck alone, it rings open: the ding's
+  note, brighter, with more steel. Hold one of the four middle keys and strike another, and the held
+  key is a finger on the steel. Hold one field key and strike the other for a closed, muted tok. Hold
+  a ding key and strike the field: the fundamental dies and the octave (left) or the fifth (right)
+  rings out. Hold a field key and strike the ding: its octave (left) or fifth (right) rings. It's
+  all tuned against recordings of a real ding played each way. The ding struck on its own sounds
+  exactly as before.
+- **The new white-key layout.** To make room, the taks are off the white keys and the notes move out
+  one key each way. The thwaps stay on the end keys. The tak is still on the kit (black key 6) and on
+  the thwap bar.
+- **The thwap bar**, a new setting for the black keys (SEL → Keys, Black: **Thwap**): eleven thwaps,
+  the left half on the left shoulder, the right half on the right, so a thwap sounds from the same
+  side as the notes under your hand. Out from each end: thwap, heel (deep), fingers (bright), closed
+  (the palm stays on), tak. Both palms at once in the middle.
+
 ## 0.5.2
 
 - **The ding builds the way a real one does.** Strike it again and again and each hit keeps its attack

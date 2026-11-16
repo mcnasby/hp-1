@@ -109,25 +109,47 @@ int km_pan_notes(int s, int key, int octave, int out[KM_NPAN])
     return sc->n + 1;
 }
 
-/* Pan: the ding on both middle keys (either thumb finds it), then the fields climbing outward in turn,
- * right, left, right, left, as they zigzag up around a real pan from the player's side (a D Kurd's A3 on
- * the right, Bb3 on the left, C4 right ...). The two keys at each end are the steel (S):
+/* Pan: the ding on both middle keys (either thumb finds it), the ding's own field either side of them
+ * (F), then the fields climbing outward in turn, right, left, right, left, as they zigzag up around a
+ * real pan from the player's side (a D Kurd's A3 on the right, Bb3 on the left, C4 right ...). The key
+ * at each end is the steel (S), a thwap:
  *   w:      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
- *   note    S   S  10   8   6   4   2   0   0   1   3   5   7   9   S   S
- * Pan rev: the same, left first. Linear: the ding on the left, then up the keys. */
+ *   note    S  10   8   6   4   2   F   0   0   F   1   3   5   7   9   S
+ * Pan rev: the same, left first. Linear: the field, the ding, the field, then up the keys. */
+int km_white_field(int layout, int w)
+{
+    w &= 15;
+    if (layout == LAY_LINEAR)
+        return w == 1 ? 0 : w == 3 ? 1 : -1;
+    return w == 6 ? 0 : w == 9 ? 1 : -1;
+}
+
 int km_white_index(int layout, int w)
 {
     w &= 15;
-    if (w < KM_WSTEEL || w >= KM_NWHITE - KM_WSTEEL)
+    if (w < KM_WSTEEL || w >= KM_NWHITE - KM_WSTEEL || km_white_field(layout, w) >= 0)
         return -1;
     if (layout == LAY_LINEAR)
-        return w - KM_WSTEEL;
+        return w == 2 ? 0 : w - 3;
     if (layout == LAY_PAN)
         w = 15 - w;
     if (w == 7 || w == 8)
         return 0;
-    return w < 7 ? 2 * (7 - w) - 1 : 2 * (w - 8);
+    return w < 7 ? 2 * (6 - w) - 1 : 2 * (w - 9);
 }
+
+/* the ding's field struck: the other side of it held closes it; a finger on the ding lets a harmonic
+ * ring out, the octave from its bottom edge (the left key), the fifth from its right edge */
+int km_field_hit(int side, int ding_held, int other_held)
+{
+    if (other_held)
+        return HIT_FIELD_CLOSED;
+    if (ding_held)
+        return side ? HIT_FIELD_FIFTH : HIT_FIELD_OCT;
+    return HIT_FIELD;
+}
+
+int km_ding_hit(int held) { return held < 0 ? -1 : held ? HIT_DING_FIFTH : HIT_DING_OCT; }
 
 int km_white_cents(int layout, int s, int key, int octave, int w)
 {
@@ -138,17 +160,18 @@ int km_white_cents(int layout, int s, int key, int octave, int w)
     return n[i];
 }
 
-/* the steel on the white keys: a palm thwap on each end key, a fingertip tak inside it */
+/* the steel on the white keys: a palm thwap on each end key */
 int km_white_hit(int w)
 {
-    static const int8_t HIT[2 * KM_WSTEEL] = {HIT_THWAP_L, HIT_TAK_L, HIT_TAK_R, HIT_THWAP_R};
     w &= 15;
-    return w < KM_WSTEEL ? HIT[w] : w >= KM_NWHITE - KM_WSTEEL ? HIT[w - (KM_NWHITE - 2 * KM_WSTEEL)] : -1;
+    return w == 0 ? HIT_THWAP_L : w == KM_NWHITE - 1 ? HIT_THWAP_R : -1;
 }
 
 float km_white_pos(int layout, int w)
 {
     int i = km_white_index(layout, w);
+    if (km_white_field(layout, w) >= 0)
+        return 0.0f;                                    /* (the ding's own) */
     if (i < 0)
         return (w & 15) < 8 ? -1.0f : 1.0f;
     if (layout == LAY_LINEAR)
@@ -339,7 +362,7 @@ void km_param_text(int i, int v, char *b)
 {
     static const char *const ONOFF[2] = {"Off", "On"};
     static const char *const LAY[LAY_N] = {"Pan", "Pan rev", "Linear"};
-    static const char *const BLK[BLK_N] = {"Kit", "Duo", "Duo key"};
+    static const char *const BLK[BLK_N] = {"Kit", "Duo", "Duo key", "Thwap"};
     static const char *const GP[GP_N] = {"-12", "-7", "0", "+7", "+12", "+19", "Shimmer", "Reverse"};
     static const char *const REL[2] = {"Ring", "Damp"};
     static const char *const PAT[PAT_N] = {"Heartbeat", "Cascade", "3 over 2", "Backbeat"};
@@ -536,6 +559,8 @@ typedef struct {
     float bloom;                                      /* a ding struck again and again: its harmonics building (0..1) */
     float press;                                      /* a hand resting on it (km_press), 0..1 */
     uint8_t stacc;                                    /* let go of quickly (km_staccato): it rings shorter */
+    uint8_t fing;                                     /* the ding's field: how it was struck, where a finger
+                                                       * rests on it (FG_*, below); 0 the ding as ever */
 } voice_t;
 /* Two spare slots where a stolen voice fades out over a few milliseconds while its slot takes the new
  * field: cutting it dead was a pop (as loud as the field was) */
@@ -560,6 +585,49 @@ static voice_t vc[KM_NVOICE + KM_NFADE];
 enum { M_FUND, M_OCT, M_OCT2, M_FIFTH, M_FIFTH2, M_DBL, M_PING, M_STRAY = M_PING + 4 };
 static const float PING_RATIO[4] = {5.21f, 6.83f, 8.62f, 11.27f}, PING_AMP[4] = {1.0f, 0.75f, 0.55f, 0.38f},
                    PING_T60[4] = {0.22f, 0.16f, 0.12f, 0.09f};
+
+/* The ding's own field, the ring of steel around its dome, struck with the fingers, and a finger resting
+ * on the steel as it's struck. One membrane with the ding (the same voice: it adds to what's ringing),
+ * but struck off the dome with a fingertip: a quicker contact, the skin, and the field's own higher
+ * modes (measured on a recorded E3 ding: 5.5, 7.25, 8.1 and 10 times it). A finger resting on it damps
+ * the modes it sits on and leaves the others to ring, as the recordings do:
+ *   open        struck alone: the ding's note, brighter, the octave and the fifth up, more steel
+ *   closed      a finger on one side, struck on the other: all of it dies in a moment (a pitched tok)
+ *   field oct   a finger on the ding, the field's bottom edge struck: the fundamental gone in ~0.15 s,
+ *               the octave ringing on ~2 s, the double octave and the 7.25 mode singing (a bell)
+ *   field fifth a finger on the ding, the field's right edge struck: the fundamental and the octave
+ *               gone, the fifth alone ringing ~4 s: a clear harmonic
+ *   ding oct    the ding struck (the thumb), a finger on the field's inner left edge: the octave rings
+ *   ding fifth  ...a finger on its outer right edge: the fifth rings
+ * Per pattern: struck by the thumb (the ding's contact) or a finger; how much of each mode the strike
+ * wakes (the six partials, the stray); each mode's T60 (> 0 s: a finger on it, never longer than it
+ * would ring; < 0: free, times the fundamental's T60; 0 as it is); the field's modes; the skin; sympathy */
+enum { FG_NONE, FG_OPEN, FG_CLOSED, FG_FOCT, FG_FFIFTH, FG_DOCT, FG_DFIFTH };
+static const float FIELD_RATIO[4] = {5.53f, 7.25f, 8.14f, 9.96f};
+typedef struct {
+    uint8_t thumb;
+    float e[KM_NMODE], t60[KM_NMODE], ping[4], click, sym;
+} fing_t;
+static const fing_t FING[6] = {
+    {0, {1.0f, 0.6f, 0.6f, 1.3f, 1.3f, 1.2f, 0, 0, 0, 0, 1.0f},                         /* open */
+     {0, 0, 0, 0, 0, 0, 0.60f, 0.40f, 0.50f, 0.35f, 0},
+     {0.35f, 0.20f, 0.30f, 0.45f}, 2.5f, 1.0f},
+    {0, {1.0f, 0.45f, 0.45f, 1.4f, 1.4f, 0.6f, 0, 0, 0, 0, 0},                          /* closed */
+     {0.10f, 0.35f, 0.35f, 0.22f, 0.22f, 0.15f, 0.35f, 0.25f, 0.25f, 0.30f, 0.10f},
+     {0.60f, 0.40f, 0.90f, 1.00f}, 3.0f, 0.25f},
+    {0, {1.0f, 1.6f, 1.6f, 0.25f, 0.25f, 4.5f, 0, 0, 0, 0, 0},                          /* field oct */
+     {0.20f, -0.5f, -0.5f, 1.2f, 1.2f, -0.6f, 0.60f, 1.40f, 0.12f, 0.10f, 0.10f},
+     {1.20f, 2.00f, 0.40f, 0.60f}, 2.0f, 0.5f},
+    {0, {0.6f, 0.3f, 0.3f, 2.0f, 2.0f, 0.05f, 0, 0, 0, 0, 0.3f},                        /* field fifth */
+     {0.12f, 0.30f, 0.30f, -0.8f, -0.8f, 0.15f, 0.60f, 0.75f, 0.25f, 0.20f, 0.30f},
+     {0.45f, 0.80f, 0.40f, 0.40f}, 2.0f, 0.5f},
+    {1, {1.3f, 0.9f, 0.9f, 0.6f, 0.6f, 0.3f, 0, 0, 0, 0, 0},                            /* ding oct */
+     {0.13f, -0.3f, -0.3f, 0.15f, 0.15f, 0.20f, 0.50f, 0.20f, 0.30f, 0.25f, 0.20f},
+     {0.60f, 0.15f, 0.80f, 0.20f}, 0.6f, 0.5f},
+    {1, {1.0f, 0.5f, 0.5f, 2.6f, 2.6f, 1.5f, 0, 0, 0, 0, 0.4f},                         /* ding fifth */
+     {0.15f, 0.45f, 0.45f, -0.5f, -0.5f, 0.30f, 0.60f, 0.20f, 0.25f, 0.25f, 0.50f},
+     {0.60f, 0.15f, 0.70f, 0.60f}, 1.5f, 0.5f},
+};
 
 static float cents_hz(int c) { return 8.17579892f * fm_exp2f((float)c * (1.0f / 1200.0f)) * tunefac * bendfac; }
 
@@ -706,6 +774,20 @@ static void voice_coefs(voice_t *v)
     }
     if (v->press > 0.0f || v->stacc)
         touch_t60(v, tk);
+    if (v->fing) {                                      /* the ding's field: a finger on it (FING) */
+        const fing_t *fp = &FING[v->fing - 1];
+        for (k = 0; k < 4; k++) {
+            ratio[M_PING + k] = FIELD_RATIO[k] * fm_powf(th, 0.15f);
+            amp[M_PING + k] = m->ping * th * fp->ping[k];
+        }
+        for (k = 0; k < KM_NMODE; k++) {
+            const float t = fp->t60[k];
+            if (t < 0.0f)
+                tk[k] = -t * t1;
+            else if (t > 0.0f)
+                tk[k] = k >= M_PING ? t * th : fm_minf(tk[k], t);
+        }
+    }
     for (k = 0; k < KM_NMODE; k++) {
         float f = f0 * ratio[k], t60 = tk[k], r, a = amp[k] * lvl;
         v->amp[k] = 0.0f;
@@ -794,7 +876,7 @@ static float knock_amt = 0.5f;                         /* how much of a strike r
 
 /* how a strike wakes the modes */
 enum { EMPH_ALL, EMPH_HARMONIC, EMPH_FUND, EMPH_OCT, EMPH_FIFTH };
-static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph)
+static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph, int fing)
 {
     const km_metal_t *m = km_metal(par[P_METAL]);
     /* a fingertip leaves the steel in tp: soft fingers (1.2 ms) round off the top, a firm flick
@@ -803,7 +885,10 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     float tp = 0.0012f * fm_exp2f(-2.6f * hard), vg = (float)vel * (1.0f / 127.0f), a, n;
     int k, again = v->on;
     float ring;                                         /* the ding ringing when struck again (0..1) */
+    const fing_t *fp = fing ? &FING[fing - 1] : 0;     /* (its field: FING) */
+    const int thumb = !fp || fp->thumb;
     v->ding = (uint8_t)is_ding(cents);
+    v->fing = (uint8_t)(v->ding ? fing : 0);
     ring = v->ding && v->on ? fm_clampf(v->level * 3.0f, 0.0f, 1.0f) : 0.0f;
     if (v->ding) {                                      /* a thumb or a palm: a soft, long contact */
         /* Struck again while it rings, the hand meets steel already moving: it bounces off quicker (a
@@ -811,7 +896,8 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
          * octave, the fifth, the double octave and its fifth harmonic ringing longer: it builds, fuller
          * and shining (as a recorded ding struck nine times in a row does: its upper harmonics up 10 to
          * 30 dB, its attack as bright or brighter) */
-        tp = 0.0024f * fm_exp2f(-1.0f * hard) * (1.0f - 0.35f * ring);
+        if (thumb)                                      /* (its field: a fingertip) */
+            tp = 0.0024f * fm_exp2f(-1.0f * hard) * (1.0f - 0.35f * ring);
         v->bloom = v->on ? fm_minf(ring * (v->bloom + 0.3f), 1.0f) : 0.0f;
         again = 0;                                      /* (and nothing stops what rings: below) */
     }
@@ -825,7 +911,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
                                              {1, 0.1f, 0.05f, 0.06f, 0.03f, 0, 0, 0, 0, 0, 0},       /* sympathy: one partial */
                                              {0.1f, 1, 1, 0.08f, 0.04f, 0, 0, 0, 0, 0, 0},
                                              {0.08f, 0.08f, 0.04f, 1, 1, 0, 0, 0, 0, 0, 0}};
-        v->emph[k] = E[emph][k];
+        v->emph[k] = fp ? fp->e[k] : E[emph][k];
     }
     v->cents = (int16_t)cents;
     v->live = 0xFFFFu;                                  /* every mode, until it falls silent */
@@ -864,7 +950,7 @@ static void strike(voice_t *v, int cents, int vel, int pan, float hard, int emph
     v->ex_ph = again ? -(float)(CONTACT_N * 64u) * v->ex_inc : 0.0f;
     v->ex_amp = a * (FM_PI * 0.5f) / n;                 /* area a: the first mode rings at ~a */
     v->click = emph == EMPH_ALL || emph == EMPH_HARMONIC ? a * m->touch * hard * (0.5f + 0.5f * hard) * 0.9f *
-                                                               (1.0f + 0.5f * v->hx) * (v->ding ? 0.35f : 1.0f) *
+                                                               (1.0f + 0.5f * v->hx) * (fp ? fp->click : v->ding ? 0.35f : 1.0f) *
                                                                (1.0f + 0.3f * v->bloom * v->ding) : 0.0f;
     v->click_dec = fm_expf(-1.0f / ((0.007f - 0.004f * hard) * KM_SR));
     v->click_a = fm_minf(0.12f + 0.4f * hard + 0.2f * v->hx, 0.8f);   /* its low-pass: ~0.9 to ~4 kHz (more up top) */
@@ -883,7 +969,7 @@ static float strike_hard(int vel)
 }
 
 /* strikes to come (delayed hits, sympathetic rings, the slap's palm) */
-enum { PD_STRIKE, PD_SYMP, PD_HIT, PD_SLAPDAMP, PD_GROOVE, PD_RELEASE };
+enum { PD_STRIKE, PD_SYMP, PD_HIT, PD_SLAPDAMP, PD_GROOVE, PD_RELEASE, PD_CHOKE };
 #define NPEND 48
 static struct {
     uint32_t due;
@@ -966,7 +1052,7 @@ static void pluck(int cents, int vel, int pan, int light)
 {
     voice_t *v = voice_for(cents);
     float hard = fm_minf(strike_hard(vel) + (float)light * LIGHT_HARD, 1.0f);
-    strike(v, cents, vel, pan, hard, EMPH_ALL);
+    strike(v, cents, vel, pan, hard, EMPH_ALL, FG_NONE);
     sympathy(cents, vel, 1.0f);
 }
 
@@ -980,7 +1066,7 @@ static void symp_ring(int cents, int vel, int emph)
         for (i = 1; i < pan_n && i < KM_NPAN; i++)      /* where it sits: odd fields right, even left */
             if (pan_c[i] == cents)
                 pan = (i & 1) ? 35 : -35;
-        strike(v, cents, vel, pan, 0.0f, emph);
+        strike(v, cents, vel, pan, 0.0f, emph, FG_NONE);
         v->ex_inc *= 0.25f;                             /* it builds up, slower than a strike */
         v->ex_amp *= 0.25f;
     }
@@ -1327,14 +1413,37 @@ static const hit_t HITS[HIT_N] = {
     {1, 0.35f, 0.55f, 0.12f, 0.55f, 4100.0f, 1.3f, 8.0f, 0.15f},     /* tak, right edge */
     {1, 3.2f, 1.00f, 0.75f, 0.38f, 1850.0f, 0.8f, 26.0f, 0.55f},     /* thwap, right */
     {0}, {0}, {0}, {0},                                              /* the kit (above) */
+    {-1, 6.5f, 0.60f, 1.70f, 0.20f, 900.0f, 0.8f, 30.0f, 0.60f},     /* heel, left: deep, the air */
+    {-1, 1.6f, 0.85f, 0.12f, 0.50f, 2600.0f, 0.9f, 15.0f, 0.40f},    /* fingers, left */
+    {-1, 3.0f, 1.00f, 0.60f, 0.40f, 1600.0f, 0.8f, 14.0f, 0.25f},    /* closed, left (choked: below) */
+    {1, 3.0f, 1.00f, 0.60f, 0.40f, 1750.0f, 0.8f, 14.0f, 0.25f},     /* closed, right */
+    {1, 1.6f, 0.85f, 0.12f, 0.50f, 2800.0f, 0.9f, 15.0f, 0.40f},     /* fingers, right */
+    {1, 6.5f, 0.60f, 1.70f, 0.20f, 950.0f, 0.8f, 30.0f, 0.60f},      /* heel, right */
+    {0, 3.4f, 1.00f, 1.00f, 0.38f, 1750.0f, 0.8f, 26.0f, 0.55f},     /* both palms */
+    {0}, {0}, {0}, {0}, {0}, {0},                                    /* the ding's field (field()) */
 };
+
+/* the ding's own field struck (HIT_FIELD ...): the ding's voice, at the note's own level (not the
+ * percussion's) */
+static void field(int kind, int vel)
+{
+    const int ding = pan_n ? pan_c[0] : 5000, fg = FG_OPEN + kind - HIT_FIELD;
+    voice_t *v = voice_for(ding);
+    strike(v, ding, vel, 0, fm_minf(strike_hard(vel) + (FING[fg - 1].thumb ? 0.0f : 0.15f), 1.0f), EMPH_ALL, fg);
+    sympathy(ding, vel, FING[fg - 1].sym);
+}
 
 static void hit(int kind, int vel)
 {
     const hit_t *h = &HITS[(unsigned)kind < HIT_N ? kind : 0];
+    const int both = kind == HIT_BOTH;                  /* (both palms: each side as loud as one) */
     float vg = (float)vel * (1.0f / 127.0f), a = vg * vg * perc_lvl,
-          l = h->side < 0 ? 1.0f : h->side > 0 ? 0.15f : 0.7f, r = h->side > 0 ? 1.0f : h->side < 0 ? 0.15f : 0.7f;
+          l = h->side < 0 || both ? 1.0f : h->side > 0 ? 0.15f : 0.7f, r = h->side > 0 || both ? 1.0f : h->side < 0 ? 0.15f : 0.7f;
     int ding = pan_n ? pan_c[0] : 5000;
+    if (kind >= HIT_FIELD && kind < HIT_N) {           /* the ding's field: a note, not percussion */
+        field(kind, vel);
+        return;
+    }
     switch (kind) {                                     /* the kit: its own sounds */
     case HIT_SPLASH: splash(a); return;
     case HIT_SHAKE_L: shake(0, a); return;
@@ -1346,17 +1455,19 @@ static void hit(int kind, int vel)
     if (h->noise > 0.0f) {
         float jit = 1.0f + 0.12f * rnds();                /* never quite the same hand twice */
         if (h->side <= 0)
-            burst(&nb[0], a * h->noise * (h->side ? 1.0f : 0.7f), h->nhz * jit, h->nq, h->nms);
+            burst(&nb[0], a * h->noise * (h->side || both ? 1.0f : 0.7f), h->nhz * jit, h->nq, h->nms);
         if (h->side >= 0)
-            burst(&nb[1], a * h->noise * (h->side ? 1.0f : 0.7f), h->nhz * jit, h->nq, h->nms);
+            burst(&nb[1], a * h->noise * (h->side || both ? 1.0f : 0.7f), h->nhz * jit * (both ? 1.06f : 1.0f), h->nq, h->nms);
     }
+    if (kind == HIT_CLOSED_L || kind == HIT_CLOSED_R)   /* the palm stays: the shell choked */
+        pend_add(PD_CHOKE, 0, 0, 0, 0, (uint32_t)(0.04f * KM_SR));
     if (kind == HIT_SLAP) {                             /* the ding struck, the palm stays on it */
         voice_t *v = voice_for(ding);
-        strike(v, ding, vel, 0, 0.8f, EMPH_ALL);
+        strike(v, ding, vel, 0, 0.8f, EMPH_ALL, FG_NONE);
         pend_add(PD_SLAPDAMP, ding, 0, 0, 0, (uint32_t)(0.03f * KM_SR));
     } else if (kind == HIT_HARM) {                      /* a finger on the ding's center: its octave sings */
         voice_t *v = voice_for(ding);
-        strike(v, ding, vel, 0, 0.7f, EMPH_HARMONIC);
+        strike(v, ding, vel, 0, 0.7f, EMPH_HARMONIC, FG_NONE);
     } else if (kind == HIT_MUTE) {
         int i;
         for (i = 0; i < KM_NVOICE; i++)
@@ -2238,13 +2349,14 @@ static void render_voices(uint32_t n)
                 v->on = 0;
         }
         {
-            const float pl = v->pl, pr = v->pr;
+            /* (a finger resting on the ding's field: the air under it barely stirs) */
+            const float pl = v->pl, pr = v->pr, ai = v->fing > FG_OPEN ? 0.25f : 1.0f;
             for (j = 0; j < n; j++) {
                 float o = vb[j], a = fm_fabsf(o);
                 pk = a > pk ? a : pk;
                 mixl[j] += o * pl;
                 mixr[j] += o * pr;
-                mono[j] += o;
+                mono[j] += o * ai;
             }
         }
         if (i >= KM_NVOICE)
@@ -2595,6 +2707,7 @@ void km_render(int32_t *out, uint32_t n, uint32_t gain_q12)
                         pat_play(pend[i].cents);
                     break;
                 case PD_RELEASE: damp_cents(pend[i].cents); break;
+                case PD_CHOKE: sh_mute = 0.08f * KM_SR; break;   /* the closed thwap's palm stays */
                 default: {                              /* the slap's palm settles on the ding */
                     voice_t *v = voice_ringing(pend[i].cents);
                     if (v)

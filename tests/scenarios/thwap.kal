@@ -1,0 +1,79 @@
+# Black: Thwap, the thwap bar: every black key a thwap on the steel, the left half on the left shoulder,
+# the right half on the right, so a thwap sounds on the side of the fields beside it. Out from the ends:
+# thwap, heel, fingers, closed, tak; both palms in the middle.
+# (params: 26 Black; hits: 0 thwap L 1 tak L 9 tak R 10 thwap R 15 heel L 16 fingers L 17 closed L
+#  18 closed R 19 fingers R 20 heel R 21 both)
+wav thwap.wav
+wait 1600
+tap SEL
+expect view 7
+spin K4 3
+expect par26 3
+key b0 down
+wait 10
+expect hitlast 0
+expect shellL >5
+shot thwap_bar.png
+key b0 up
+wait 400
+tapkey b1
+wait 30
+expect hitlast 15
+wait 400
+tapkey b2
+wait 30
+expect hitlast 16
+wait 400
+tapkey b3
+wait 30
+expect hitlast 17
+wait 400
+tapkey b4
+wait 30
+expect hitlast 1
+wait 400
+key b5 down
+wait 10
+expect hitlast 21
+expect shellL >5
+expect shellR >5
+key b5 up
+wait 400
+tapkey b6
+wait 30
+expect hitlast 9
+wait 400
+tapkey b7
+wait 30
+expect hitlast 18
+wait 400
+tapkey b8
+wait 30
+expect hitlast 19
+wait 400
+tapkey b9
+wait 30
+expect hitlast 20
+wait 400
+key b10 down
+wait 10
+expect hitlast 10
+expect shellR >5
+key b10 up
+wait 400
+# a thwap on the left, the field on the left: the same side
+tapkey w3
+tapkey b2
+wait 30
+expect hitlast 16
+leds
+# back to the kit
+spin K4 -3
+expect par26 0
+tapkey b0
+wait 30
+expect hitlast 14
+wait 1500
+wavstop
+expect peak_db_max -0.3
+expect dropped 0

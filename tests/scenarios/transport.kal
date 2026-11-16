@@ -32,7 +32,7 @@ expect armed 1
 leds
 tap REC
 expect armed 0
-tapkey w5
+tapkey w4
 wait 100
 expect note6200 >5
 press REC
@@ -67,7 +67,7 @@ expect count 1
 expect click 4
 wait 520
 expect rec 1
-tapkey w9
+tapkey w10
 wait 1400
 shot rec.png
 tap REC
