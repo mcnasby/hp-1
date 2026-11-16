@@ -1,8 +1,8 @@
 # the ding's own field: the white keys either side of the ding's (6 and 9). Struck alone, open; a finger
-# on the other side, closed; a finger on the ding (one of its keys held), the octave (left) or the fifth
-# (right) sings; a finger on the field (its key held), a strike of the ding lets its octave (left) or its
+# on the other side, closed; a finger on the ding (one of its keys held), the fifth sings (either side); a finger on the field (its key held), a strike of the ding lets its octave (left) or its
 # fifth (right) ring. The ding alone, as ever.
-# (params: 23 Layout; hits: 22 field 23 closed 24 field oct 25 field fifth 26 ding oct 27 ding fifth)
+# (params: 23 Layout; hits: 22 field 23 closed 24 field oct 25 field fifth (right on right) 26 ding oct
+#  27 ding fifth 31 fifth left on left 32 left hand, right edge 33 right hand, left edge)
 wav field.wav
 wait 1600
 expect white6 -1
@@ -31,24 +31,37 @@ tapkey w6
 expect hitlast 23
 key w9 up
 wait 600
-# a finger on the ding (its key held): the field's bottom edge (left), its right edge (right)
+# a finger on the ding (its key held): the field's left or right edge, the fifth
 key w7 down
 wait 400
 tapkey w6
 wait 30
-expect hitlast 24
+expect hitlast 31
 expect note5000 >1
 wait 500
 tapkey w9
 wait 30
-expect hitlast 25
+expect hitlast 32
 key w7 up
 wait 600
 key w8 down
 wait 30
 tapkey w9
 expect hitlast 25
+wait 300
+tapkey w6
+expect hitlast 33
 key w8 up
+wait 300
+# the left hand on the ding: the left edge (the same side), the right edge (across)
+key w7 down
+wait 30
+tapkey w6
+expect hitlast 31
+wait 300
+tapkey w9
+expect hitlast 32
+key w7 up
 wait 600
 # a finger on the field (its key held), the ding struck: inner left, outer right
 key w6 down

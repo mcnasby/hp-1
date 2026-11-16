@@ -10,8 +10,8 @@ taken from its section below. Add the section in the same pull request as the `V
   strike the ding's own field, the steel around its dome. Struck alone, it rings open: the ding's
   note, brighter, with more steel. Hold one of the four middle keys and strike another, and the held
   key is a finger on the steel. Hold one field key and strike the other for a closed, muted tok. Hold
-  a ding key and strike the field: the fundamental dies and the octave (left) or the fifth (right)
-  rings out. Hold a field key and strike the ding: its octave (left) or fifth (right) rings. It's
+  a ding key and strike the field: the fundamental dies and the fifth rings out, a little different
+  as your hands sit (same side: tight and pure; across: longer and softer). Hold a field key and strike the ding: its octave (left) or fifth (right) rings. It's
   all tuned against recordings of a real ding played each way. The ding struck on its own sounds
   exactly as before.
 - **The new white-key layout.** To make room, the taks are off the white keys and the notes move out
@@ -21,8 +21,9 @@ taken from its section below. Add the section in the same pull request as the `V
   the left half on the left shoulder, the right half on the right, so a thwap sounds from the same
   side as the notes under your hand. Out from each end: thwap, heel (deep), fingers (bright), closed
   (the palm stays on), tak. The middle key, over the ding, strikes the top of the ding's field and
-  brings its fundamental forward. Hold it and strike the ding or a field key (or the reverse), and
-  the fundamental rings alone, the harmonics damped.
+  brings its fundamental forward. Hold a ding key and strike it: the octave rings out. Hold it and
+  strike the ding or a field key (or hold a field key and strike it), and the fundamental rings
+  alone, the harmonics damped.
 
 ## 0.5.2
 

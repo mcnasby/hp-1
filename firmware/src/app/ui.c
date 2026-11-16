@@ -77,7 +77,7 @@ static const uint8_t HIT_OF[NBLACK] = {HIT_CASTANET, HIT_SHAKE_L, HIT_GU, HIT_GH
 static const char *const HIT_NAME[HIT_N] = {"Thwp", "Tak", "Gu", "Gho", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwp",
                                             "Spl", "Shk", "Shk", "Cas", "Heel", "Fngr", "Shut", "Shut", "Fngr", "Heel",
                                             "Both", "Fld", "Fld", "Fld", "Fld", "Ding", "Ding", "Top", "Ding",
-                                            "Fld"};
+                                            "Fld", "Fld", "Fld", "Fld"};
 /* the thwap bar (Black: Thwap): each side's thwaps on its own half, the deepest at the ends, the tak by
  * the ding; in the middle, over the ding, its field's top and bottom (B_TOP) */
 #define B_TOP 5
@@ -638,6 +638,15 @@ static int ding_held(void)
             return 1;
     return 0;
 }
+/* which of the ding's keys is held: -1 none, 0 the left, 1 the right, 2 its only one (Linear) */
+static int ding_side(void)
+{
+    int w;
+    for (w = NWHITE - 1; w >= 0; w--)
+        if (!white_index(w) && white_held(w))
+            return proj.par[P_LAYOUT] == LAY_LINEAR ? 2 : w > NWHITE / 2 - 1;
+    return -1;
+}
 
 static void white_down(int w)
 {
@@ -652,7 +661,7 @@ static void white_down(int w)
     }
     if (f >= 0) {                                    /* the ding's field: open, closed, a harmonic */
         hit_key(WHITE_K[w], field_held(w) < 0 && top_held() ? km_top_held_hit(0)
-                                                              : km_field_hit(f, ding_held(), field_held(w) >= 0));
+                                                              : km_field_hit(f, ding_side(), field_held(w) >= 0));
         return;
     }
     if (!white_index(w) && field_held(-1) >= 0) {   /* the ding, a finger resting on its field */
@@ -676,7 +685,7 @@ static void black_down(int b)
         return;
     }
     if (proj.par[P_BLACK] == BLK_THWAP && b == B_TOP) {   /* the field's top: a finger on the ding or the field? */
-        hit_key(BLACK_K[b], km_top_hit(ding_held() || field_held(-1) >= 0));
+        hit_key(BLACK_K[b], km_top_hit(ding_held(), field_held(-1) >= 0));
         return;
     }
     hit_key(BLACK_K[b], black_hit(b));
@@ -741,7 +750,8 @@ static const char *const HIT_LONG[HIT_N] = {"Thwap L", "Tak L", "Gu", "Ghost", "
                                             "Tak R", "Thwap R", "Splash", "Shaker", "Shaker 2", "Castanet",
                                             "Heel L", "Fingers L", "Closed L", "Closed R", "Fingers R", "Heel R",
                                             "Both", "Field", "Field shut", "Field oct", "Field 5th", "Ding oct",
-                                            "Ding 5th", "Field top", "Ding fund", "Field fund"};
+                                            "Ding 5th", "Field top", "Ding fund", "Field fund", "Field 5th L",
+                                            "5th across", "5th acr. L"};
 #define NCHOICE (1 + KM_NPAN + KM_NDUO + HIT_N)
 
 /* what a step can hold: a rest, the notes the keys reach, the second pan's (Duo), the hits */
@@ -1230,6 +1240,9 @@ static int drum_hit(uint32_t note)
     case 73: return HIT_FIELD_FUND;                        /* guiros, claves */
     case 74: return HIT_DING_FUND;
     case 75: return HIT_FIELD_PURE;
+    case 78: return HIT_FIFTH_L;                           /* cuicas, triangle */
+    case 79: return HIT_FIFTH_XR;
+    case 80: return HIT_FIFTH_XL;
     default: return -1;
     }
 }
