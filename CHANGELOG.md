@@ -20,7 +20,9 @@ taken from its section below. Add the section in the same pull request as the `V
 - **The thwap bar**, a new setting for the black keys (SEL → Keys, Black: **Thwap**): eleven thwaps,
   the left half on the left shoulder, the right half on the right, so a thwap sounds from the same
   side as the notes under your hand. Out from each end: thwap, heel (deep), fingers (bright), closed
-  (the palm stays on), tak. Both palms at once in the middle.
+  (the palm stays on), tak. The middle key, over the ding, strikes the top of the ding's field and
+  brings its fundamental forward. Hold it and strike the ding or a field key (or the reverse), and
+  the fundamental rings alone, the harmonics damped.
 
 ## 0.5.2
 

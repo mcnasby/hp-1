@@ -151,6 +151,11 @@ int km_field_hit(int side, int ding_held, int other_held)
 
 int km_ding_hit(int held) { return held < 0 ? -1 : held ? HIT_DING_FIFTH : HIT_DING_OCT; }
 
+/* the field's top and bottom, where the fundamental lives: struck there, it comes forward; a finger
+ * resting there damps the harmonics and leaves it ringing */
+int km_top_hit(int other_held) { return other_held ? HIT_FIELD_PURE : HIT_FIELD_FUND; }
+int km_top_held_hit(int ding) { return ding ? HIT_DING_FUND : HIT_FIELD_PURE; }
+
 int km_white_cents(int layout, int s, int key, int octave, int w)
 {
     int n[KM_NPAN], i = km_white_index(layout, w);
@@ -599,34 +604,49 @@ static const float PING_RATIO[4] = {5.21f, 6.83f, 8.62f, 11.27f}, PING_AMP[4] = 
  *               gone, the fifth alone ringing ~4 s: a clear harmonic
  *   ding oct    the ding struck (the thumb), a finger on the field's inner left edge: the octave rings
  *   ding fifth  ...a finger on its outer right edge: the fifth rings
+ *   top         the field struck at its top or bottom (the thwap bar's middle key): the fundamental
+ *               forward, the octave and the fifth tucked in
+ *   ding fund   a finger there, the ding struck: the octave and the fifth damped, the fundamental full
+ *               and long
+ *   pure        a finger there and a strike elsewhere on the field (or the reverse): the fundamental
  * Per pattern: struck by the thumb (the ding's contact) or a finger; how much of each mode the strike
  * wakes (the six partials, the stray); each mode's T60 (> 0 s: a finger on it, never longer than it
- * would ring; < 0: free, times the fundamental's T60; 0 as it is); the field's modes; the skin; sympathy */
-enum { FG_NONE, FG_OPEN, FG_CLOSED, FG_FOCT, FG_FFIFTH, FG_DOCT, FG_DFIFTH };
+ * would ring; < 0: free, times the fundamental's T60; 0 as it is); the field's modes; the skin; sympathy;
+ * how much it stirs the air inside (a finger on the steel: little) */
+enum { FG_NONE, FG_OPEN, FG_CLOSED, FG_FOCT, FG_FFIFTH, FG_DOCT, FG_DFIFTH, FG_TOP, FG_DFUND, FG_PURE };
 static const float FIELD_RATIO[4] = {5.53f, 7.25f, 8.14f, 9.96f};
 typedef struct {
     uint8_t thumb;
-    float e[KM_NMODE], t60[KM_NMODE], ping[4], click, sym;
+    float e[KM_NMODE], t60[KM_NMODE], ping[4], click, sym, air;
 } fing_t;
-static const fing_t FING[6] = {
+static const fing_t FING[9] = {
     {0, {1.0f, 0.6f, 0.6f, 1.3f, 1.3f, 1.2f, 0, 0, 0, 0, 1.0f},                         /* open */
      {0, 0, 0, 0, 0, 0, 0.60f, 0.40f, 0.50f, 0.35f, 0},
-     {0.35f, 0.20f, 0.30f, 0.45f}, 2.5f, 1.0f},
+     {0.35f, 0.20f, 0.30f, 0.45f}, 2.5f, 1.0f, 1.0f},
     {0, {1.0f, 0.45f, 0.45f, 1.4f, 1.4f, 0.6f, 0, 0, 0, 0, 0},                          /* closed */
      {0.10f, 0.35f, 0.35f, 0.22f, 0.22f, 0.15f, 0.35f, 0.25f, 0.25f, 0.30f, 0.10f},
-     {0.60f, 0.40f, 0.90f, 1.00f}, 3.0f, 0.25f},
+     {0.60f, 0.40f, 0.90f, 1.00f}, 3.0f, 0.25f, 0.25f},
     {0, {1.0f, 1.6f, 1.6f, 0.25f, 0.25f, 4.5f, 0, 0, 0, 0, 0},                          /* field oct */
      {0.20f, -0.5f, -0.5f, 1.2f, 1.2f, -0.6f, 0.60f, 1.40f, 0.12f, 0.10f, 0.10f},
-     {1.20f, 2.00f, 0.40f, 0.60f}, 2.0f, 0.5f},
+     {1.20f, 2.00f, 0.40f, 0.60f}, 2.0f, 0.5f, 0.25f},
     {0, {0.6f, 0.3f, 0.3f, 2.0f, 2.0f, 0.05f, 0, 0, 0, 0, 0.3f},                        /* field fifth */
      {0.12f, 0.30f, 0.30f, -0.8f, -0.8f, 0.15f, 0.60f, 0.75f, 0.25f, 0.20f, 0.30f},
-     {0.45f, 0.80f, 0.40f, 0.40f}, 2.0f, 0.5f},
+     {0.45f, 0.80f, 0.40f, 0.40f}, 2.0f, 0.5f, 0.25f},
     {1, {1.3f, 0.9f, 0.9f, 0.6f, 0.6f, 0.3f, 0, 0, 0, 0, 0},                            /* ding oct */
      {0.13f, -0.3f, -0.3f, 0.15f, 0.15f, 0.20f, 0.50f, 0.20f, 0.30f, 0.25f, 0.20f},
-     {0.60f, 0.15f, 0.80f, 0.20f}, 0.6f, 0.5f},
+     {0.60f, 0.15f, 0.80f, 0.20f}, 0.6f, 0.5f, 0.25f},
     {1, {1.0f, 0.5f, 0.5f, 2.6f, 2.6f, 1.5f, 0, 0, 0, 0, 0.4f},                         /* ding fifth */
      {0.15f, 0.45f, 0.45f, -0.5f, -0.5f, 0.30f, 0.60f, 0.20f, 0.25f, 0.25f, 0.50f},
-     {0.60f, 0.15f, 0.70f, 0.60f}, 1.5f, 0.5f},
+     {0.60f, 0.15f, 0.70f, 0.60f}, 1.5f, 0.5f, 0.25f},
+    {0, {1.5f, 0.35f, 0.35f, 0.45f, 0.45f, 0.3f, 0, 0, 0, 0, 0.5f},                       /* top */
+     {-1.1f, 0, 0, 0, 0, 0, 0.30f, 0.20f, 0.15f, 0.12f, 0},
+     {0.25f, 0.12f, 0.15f, 0.20f}, 2.0f, 1.0f, 1.0f},
+    {1, {1.3f, 0.6f, 0.6f, 0.4f, 0.4f, 0.3f, 0, 0, 0, 0, 0},                              /* ding fund */
+     {-1.15f, 0.35f, 0.35f, 0.20f, 0.20f, 0.20f, 0.25f, 0.15f, 0.12f, 0.10f, 0.20f},
+     {0.30f, 0.10f, 0.30f, 0.15f}, 0.6f, 0.6f, 0.8f},
+    {0, {1.4f, 0.4f, 0.4f, 0.4f, 0.4f, 0.2f, 0, 0, 0, 0, 0},                              /* pure */
+     {0, 0.30f, 0.30f, 0.18f, 0.18f, 0.15f, 0.30f, 0.20f, 0.12f, 0.10f, 0.15f},
+     {0.40f, 0.20f, 0.30f, 0.40f}, 2.0f, 0.6f, 0.8f},
 };
 
 static float cents_hz(int c) { return 8.17579892f * fm_exp2f((float)c * (1.0f / 1200.0f)) * tunefac * bendfac; }
@@ -2350,7 +2370,7 @@ static void render_voices(uint32_t n)
         }
         {
             /* (a finger resting on the ding's field: the air under it barely stirs) */
-            const float pl = v->pl, pr = v->pr, ai = v->fing > FG_OPEN ? 0.25f : 1.0f;
+            const float pl = v->pl, pr = v->pr, ai = v->fing ? FING[v->fing - 1].air : 1.0f;
             for (j = 0; j < n; j++) {
                 float o = vb[j], a = fm_fabsf(o);
                 pk = a > pk ? a : pk;

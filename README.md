@@ -117,6 +117,18 @@ and bring out the ding's harmonics:
 | the left field  | the ding       | The ding's thumb strike, its fundamental damped: the octave rings             |
 | the right field | the ding       | The same, the fifth rings                                                     |
 
+With Black on Thwap, the middle black key is the field's top and bottom, and it brings the
+fundamental forward:
+
+| You hold                  | You strike       | What you hear                                                    |
+| ------------------------- | ---------------- | ---------------------------------------------------------------- |
+| nothing                   | the middle black | The field struck at its top: the fundamental forward, the octave and fifth tucked in |
+| the middle black          | the ding         | The octave and fifth damped: the fundamental alone, full and long |
+| the middle black          | a field key      | The fundamental alone, struck with fingers                      |
+| a ding or field key       | the middle black | The same                                                         |
+
+Holding one field key and striking the other still closes it, the middle key held or not.
+
 A finger landing on a ding that's already ringing damps it there and then, as on a real pan. These
 are tuned against recordings of a real ding played each of these ways. In Linear, the field's keys
 are either side of the ding's one key. They record and play back like any other strike.
@@ -135,7 +147,7 @@ The black keys follow **Black** (SEL → Keys, KNOB 4).
 | --------- | --------- | ------ | ----- | ----- | --------- | ----- | -------- | ----- | ----- | ------ | ------ |
 | **Kit**   | Castanets | Shaker | Gu    | Ghost | Ding slap | Tak   | Harmonic | Rim   | Mute  | Shaker | Splash |
 | **Duo**   | Castanets | Pan 2  | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Pan 2 | Gu     |
-| **Thwap** | Thwap     | Heel   | Fingers | Closed | Tak  | Both  | Tak      | Closed | Fingers | Heel | Thwap |
+| **Thwap** | Thwap     | Heel   | Fingers | Closed | Tak  | Top   | Tak      | Closed | Fingers | Heel | Thwap |
 
 - **Castanets:** two hardwood shells clacked.
 - **Shaker:** an egg shaker: pushed on key 2 (left, swelling a little slower and longer), pulled back
@@ -169,7 +181,8 @@ player does on a real pan. Keys 1 to 5 thwap the left shoulder and keys 7 to 11 
 thwap sounds from the same side as the fields under your hand. Out from each end: a flat-palm
 **thwap**, the **heel** of the palm (deeper, more air), four **fingers** flat (brighter, quicker), a
 **closed** thwap (the palm stays on, choking the shell) and a fingertip **tak**. Key 6, in the
-middle, is **both** palms at once.
+middle over the ding, is the **top** (and bottom) of the ding's field, where its fundamental lives
+([below](#the-dings-field)). Both palms at once is still there over MIDI (63).
 
 ![The thwap bar](docs/img/thwap_bar.png)
 
@@ -579,7 +592,7 @@ noise for skin on steel, each shaped for what it imitates: a palm thwap is long,
 short and bright, the Gu nearly all air. The ding slap strikes the ding and lays a palm on it 30 ms
 later; the harmonic strikes it with the fundamental damped. On the thwap bar, the heel is a longer,
 deeper push with more air; the fingers a quicker one, mostly steel; the closed thwap chokes the shell
-40 ms in; both palms push both shoulders at once.
+40 ms in. Both palms (MIDI only) push both shoulders at once.
 
 The ding's field is not percussion: its strikes are the ding's own voice, at the note's level.
 Struck with a fingertip off the dome, it rings the field's own higher modes (measured on a recorded
@@ -627,7 +640,7 @@ MIDI comes in over USB and the TRS jack, on the Setup page's channel (Omni by de
 | -------------------------------- | -------------------------------------------------------------------------------- |
 | Note on                          | Strikes the note of that pitch at that velocity (Tuning and Tune applied)        |
 | Note off                         | Damps it when Release is Damp                                                    |
-| Channel 10 notes (any MIDI ch)   | The steel and the kit: 35/36 Gu, 37 rim, 38/40 thwap left, 41/43 thwap right, 39 ding slap, 42/44 tak, 46 tak right, 49/55/57 splash, 53 harmonic, 51/59 ghost, 54 tak left, 69 shaker (pushed), 70 shaker (pulled), 85 castanets; the thwap bar: 45/47 heel left/right, 48/50 fingers left/right, 61/60 closed left/right, 63 both; the ding's field: 65 open, 66 closed, 68/67 field octave/fifth, 77/76 ding octave/fifth |
+| Channel 10 notes (any MIDI ch)   | The steel and the kit: 35/36 Gu, 37 rim, 38/40 thwap left, 41/43 thwap right, 39 ding slap, 42/44 tak, 46 tak right, 49/55/57 splash, 53 harmonic, 51/59 ghost, 54 tak left, 69 shaker (pushed), 70 shaker (pulled), 85 castanets; the thwap bar: 45/47 heel left/right, 48/50 fingers left/right, 61/60 closed left/right, 63 both; the ding's field: 65 open, 66 closed, 68/67 field octave/fifth, 77/76 ding octave/fifth, 73 top, 74 ding fundamental, 75 field fundamental |
 | CC 1 (mod wheel)                 | Sympathy                                                                         |
 | CC 64 (sustain)                  | Holds damps back until the pedal lifts                                           |
 | CC 72 / 73 / 74                  | Sustain / Strike / Harmonics                                                     |

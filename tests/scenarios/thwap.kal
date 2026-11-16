@@ -1,8 +1,9 @@
 # Black: Thwap, the thwap bar: every black key a thwap on the steel, the left half on the left shoulder,
 # the right half on the right, so a thwap sounds on the side of the fields beside it. Out from the ends:
-# thwap, heel, fingers, closed, tak; both palms in the middle.
+# thwap, heel, fingers, closed, tak; in the middle, over the ding, the top and bottom of its field: the
+# fundamental forward, and with the ding's keys, the fundamental alone.
 # (params: 26 Black; hits: 0 thwap L 1 tak L 9 tak R 10 thwap R 15 heel L 16 fingers L 17 closed L
-#  18 closed R 19 fingers R 20 heel R 21 both)
+#  18 closed R 19 fingers R 20 heel R 28 field top 29 ding fund 30 field fund)
 wav thwap.wav
 wait 1600
 tap SEL
@@ -32,11 +33,45 @@ tapkey b4
 wait 30
 expect hitlast 1
 wait 400
+tapkey b5
+wait 30
+expect hitlast 28
+expect note5000 >5
+wait 600
+# a finger on the top (the middle key held), the ding struck: its fundamental alone; the field struck: the same
 key b5 down
-wait 10
-expect hitlast 21
-expect shellL >5
-expect shellR >5
+wait 30
+tapkey w7
+wait 30
+expect hitlast 29
+expect note5000 >5
+wait 300
+tapkey w9
+wait 30
+expect hitlast 30
+key b5 up
+wait 400
+# a finger on the ding or the field, the top struck
+key w8 down
+wait 30
+tapkey b5
+wait 30
+expect hitlast 30
+key w8 up
+key w6 down
+wait 30
+tapkey b5
+wait 30
+expect hitlast 30
+key w6 up
+# the other field held still closes it, the top held or not
+key b5 down
+key w6 down
+wait 30
+tapkey w9
+wait 30
+expect hitlast 23
+key w6 up
 key b5 up
 wait 400
 tapkey b6

@@ -76,10 +76,12 @@ static const uint8_t HIT_OF[NBLACK] = {HIT_CASTANET, HIT_SHAKE_L, HIT_GU, HIT_GH
                                        HIT_RIM, HIT_MUTE, HIT_SHAKE_R, HIT_SPLASH};
 static const char *const HIT_NAME[HIT_N] = {"Thwp", "Tak", "Gu", "Gho", "Slap", "Tak", "Harm", "Rim", "Mute", "Tak", "Thwp",
                                             "Spl", "Shk", "Shk", "Cas", "Heel", "Fngr", "Shut", "Shut", "Fngr", "Heel",
-                                            "Both", "Fld", "Fld", "Fld", "Fld", "Ding", "Ding"};
+                                            "Both", "Fld", "Fld", "Fld", "Fld", "Ding", "Ding", "Top", "Ding",
+                                            "Fld"};
 /* the thwap bar (Black: Thwap): each side's thwaps on its own half, the deepest at the ends, the tak by
- * the ding, both palms in the middle */
-static const uint8_t THWAP_OF[NBLACK] = {HIT_THWAP_L, HIT_HEEL_L, HIT_FING_L, HIT_CLOSED_L, HIT_TAK_L, HIT_BOTH,
+ * the ding; in the middle, over the ding, its field's top and bottom (B_TOP) */
+#define B_TOP 5
+static const uint8_t THWAP_OF[NBLACK] = {HIT_THWAP_L, HIT_HEEL_L, HIT_FING_L, HIT_CLOSED_L, HIT_TAK_L, HIT_FIELD_FUND,
                                          HIT_TAK_R, HIT_CLOSED_R, HIT_FING_R, HIT_HEEL_R, HIT_THWAP_R};
 /* the black keys a second pan (Duo: it shares the first's root, Duo key: in another key) */
 static int duo_on(void) { return proj.par[P_BLACK] == BLK_DUO || proj.par[P_BLACK] == BLK_DUOKEY; }
@@ -626,6 +628,8 @@ static int field_held(int except)
             return km_white_field(proj.par[P_LAYOUT], w);
     return -1;
 }
+/* the field's top and bottom held (the thwap bar's middle key) */
+static int top_held(void) { return proj.par[P_BLACK] == BLK_THWAP && (ui.held >> BLACK_K[B_TOP] & 1u) != 0; }
 static int ding_held(void)
 {
     int w;
@@ -647,11 +651,16 @@ static void white_down(int w)
         return;
     }
     if (f >= 0) {                                    /* the ding's field: open, closed, a harmonic */
-        hit_key(WHITE_K[w], km_field_hit(f, ding_held(), field_held(w) >= 0));
+        hit_key(WHITE_K[w], field_held(w) < 0 && top_held() ? km_top_held_hit(0)
+                                                              : km_field_hit(f, ding_held(), field_held(w) >= 0));
         return;
     }
     if (!white_index(w) && field_held(-1) >= 0) {   /* the ding, a finger resting on its field */
         hit_key(WHITE_K[w], km_ding_hit(field_held(-1)));
+        return;
+    }
+    if (!white_index(w) && top_held()) {             /* ...on its top or bottom */
+        hit_key(WHITE_K[w], km_top_held_hit(1));
         return;
     }
     if (note_key(WHITE_K[w], EV_PAN, white_cents(w), 100, white_pan(w)))
@@ -664,6 +673,10 @@ static void black_down(int b)
         const int i = duo_index(b);
         if (note_key(BLACK_K[b], EV_DUO, duo_cents(i), 100 * proj.par[P_DUOLVL] / 100 + 12, 55 + 6 * (b - B_DUO0 - KM_NDUO / 2)))
             ui.ripple[KM_NPAN + i] = ui.frame + 1u;
+        return;
+    }
+    if (proj.par[P_BLACK] == BLK_THWAP && b == B_TOP) {   /* the field's top: a finger on the ding or the field? */
+        hit_key(BLACK_K[b], km_top_hit(ding_held() || field_held(-1) >= 0));
         return;
     }
     hit_key(BLACK_K[b], black_hit(b));
@@ -728,7 +741,7 @@ static const char *const HIT_LONG[HIT_N] = {"Thwap L", "Tak L", "Gu", "Ghost", "
                                             "Tak R", "Thwap R", "Splash", "Shaker", "Shaker 2", "Castanet",
                                             "Heel L", "Fingers L", "Closed L", "Closed R", "Fingers R", "Heel R",
                                             "Both", "Field", "Field shut", "Field oct", "Field 5th", "Ding oct",
-                                            "Ding 5th"};
+                                            "Ding 5th", "Field top", "Ding fund", "Field fund"};
 #define NCHOICE (1 + KM_NPAN + KM_NDUO + HIT_N)
 
 /* what a step can hold: a rest, the notes the keys reach, the second pan's (Duo), the hits */
@@ -1214,6 +1227,9 @@ static int drum_hit(uint32_t note)
     case 67: return HIT_FIELD_FIFTH;
     case 77: return HIT_DING_OCT;
     case 76: return HIT_DING_FIFTH;
+    case 73: return HIT_FIELD_FUND;                        /* guiros, claves */
+    case 74: return HIT_DING_FUND;
+    case 75: return HIT_FIELD_PURE;
     default: return -1;
     }
 }
