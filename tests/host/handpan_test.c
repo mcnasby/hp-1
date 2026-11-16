@@ -1058,6 +1058,43 @@ static void test_thwaps(void)
            (double)db(open_ / closed), (double)heel, (double)fing);
 }
 
+/* the thwap bar's positions, shoulder to edge (as recorded): each on its side; brighter the further out;
+ * the edge the loudest; by the ding, the ding's octave rings on over its fundamental */
+static void test_bar(void)
+{
+    static const uint8_t K[2][5] = {{HIT_SHLD_L, HIT_UPPER_L, HIT_BETW_L, HIT_LOWER_L, HIT_EDGE_L},
+                                    {HIT_SHLD_R, HIT_UPPER_R, HIT_BETW_R, HIT_LOWER_R, HIT_EDGE_R}};
+    const float f = hz(5000);
+    float br[5], pk[5];
+    int s, i;
+    for (s = 0; s < 2; s++)
+        for (i = 0; i < 5; i++) {
+            const float *near = s ? bufr : bufl, *far = s ? bufl : bufr;
+            fresh();
+            give_pan(0, 2);
+            render(0, 256);
+            km_hit(K[s][i], 104, 0);
+            render(0, 8820);
+            CHECK(bright(near, 8820) > 1.4f * bright(far, 8820), "thwap bar: hit %d on its side", K[s][i]);   /* (the steel) */
+            /* (the shell's upper modes against its low ones, at the default size and thickness: 430 Hz up) */
+            br[i] = (mag(0, 4096, 1380.0f) + mag(0, 4096, 1668.0f)) / (mag(0, 4096, 430.0f) + mag(0, 4096, 632.0f));
+            pk[i] = peak;
+            CHECK(!nan_seen && peak < 0.95f, "thwap bar: hit %d peak %.3f", K[s][i], (double)peak);
+            if (i > 1)                           /* (the shoulder is the ding's: its own check, below) */
+                CHECK(br[i] > br[i - 1], "thwap bar: hit %d brighter than the one inside it (%.3f, %.3f)", K[s][i],
+                      (double)br[i], (double)br[i - 1]);
+        }
+    CHECK(pk[4] > 2.0f * pk[2], "the edge louder than between the fields: %.1f dB", (double)db(pk[4] / pk[2]));
+    fresh();
+    give_pan(0, 2);
+    render(0, 256);
+    km_hit(HIT_SHLD_L, 104, 0);
+    render(0, 44100);
+    CHECK(mag(13230, 8192, 2.0f * f) > 2.0f * mag(13230, 8192, f), "the shoulder: the ding's octave over its fundamental");
+    printf("  thwap bar: shoulder to edge, the shell's upper modes over its low %.2f %.2f %.2f %.2f %.2f; the edge %.1f dB over between\n",
+           (double)br[0], (double)br[1], (double)br[2], (double)br[3], (double)br[4], (double)db(pk[4] / pk[2]));
+}
+
 /* the ding's field (D3 ding): as the recordings of an E3 ding struck around its dome. Open: the ding's
  * note; closed: gone in a moment; a finger on the ding: the octave or the fifth sings alone, the
  * fundamental gone; the ding struck, a finger on its field: likewise. Its strikes are notes: Percussion
@@ -1696,6 +1733,7 @@ int main(int argc, char **argv)
     test_sympathy();
     test_hits();
     test_thwaps();
+    test_bar();
     test_field();
     test_delay();
     test_reverb_idle();
